@@ -7,7 +7,10 @@
 <title>New York · May 28—31, 2026</title>
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <link rel="apple-touch-icon" href="icon.svg">
+<link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-title" content="NYC · May 2026">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=DM+Sans:opsz,wght@9..40,300..600&family=Noto+Sans+KR:wght@300..600&family=JetBrains+Mono:wght@300..500&display=swap" rel="stylesheet">
@@ -58,12 +61,11 @@
   .app {
     display: grid;
     grid-template-columns: var(--sidebar-w) 1fr;
-    grid-template-rows: auto auto 1fr auto;
+    grid-template-rows: auto auto 1fr;
     grid-template-areas:
       "hero map"
       "tabs map"
-      "list map"
-      "info map";
+      "list map";
     height: 100vh;
     height: 100dvh;
   }
@@ -71,7 +73,6 @@
   .hero       { grid-area: hero; background: var(--panel); border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 32px 32px 24px; }
   .tabs       { grid-area: tabs; background: var(--panel); border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); height: var(--tabs-h); }
   .list       { grid-area: list; background: var(--panel); border-right: 1px solid var(--rule); overflow-y: auto; min-height: 0; scrollbar-width: thin; scrollbar-color: var(--ink-4) transparent; }
-  .info       { grid-area: info; background: var(--panel); border-right: 1px solid var(--rule); border-top: 1px solid var(--rule); padding: 18px 32px 24px; }
   .map-wrap   { grid-area: map; position: relative; background: #E8E4D9; }
 
   .list::-webkit-scrollbar { width: 6px; }
@@ -90,29 +91,20 @@
   }
   .subtitle {
     font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--ink-3); margin-bottom: 20px;
+    text-transform: uppercase; color: var(--ink-3);
   }
-  .stats { display: flex; gap: 24px; padding-top: 16px; border-top: 1px dashed var(--rule); }
-  .stat { display: flex; flex-direction: column; gap: 2px; }
-  .stat-num { font-family: var(--display); font-variation-settings: 'opsz' 60; font-weight: 380; font-size: 22px; line-height: 1; color: var(--ink); }
-  .stat-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
 
   /* ========= TABS ========= */
   .tabs { display: flex; padding: 0 32px; }
   .tab {
     flex: 1; padding: 14px 0; background: none; border: 0;
     border-bottom: 2px solid transparent; font-family: var(--mono);
-    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
     color: var(--ink-3); cursor: pointer; transition: all 0.2s;
     -webkit-tap-highlight-color: transparent;
   }
   .tab:hover { color: var(--ink); }
   .tab.active { color: var(--ink); border-bottom-color: var(--ink); }
-  .tab span {
-    display: block; font-family: var(--display); font-variation-settings: 'opsz' 36;
-    font-size: 16px; font-weight: 380; text-transform: none;
-    letter-spacing: -0.01em; color: inherit; margin-top: 2px;
-  }
 
   /* ========= STOPS LIST ========= */
   .day-section { border-bottom: 1px solid var(--rule-soft); }
@@ -157,6 +149,23 @@
   .stop.active { background: var(--card); box-shadow: inset 3px 0 0 var(--ink); }
   .stop.past { opacity: 0.4; }
   .stop.past:hover { opacity: 0.7; }
+
+  /* "Now" / "Next" pills — small mono badges, top-right of the stop card.
+     Driven by JS comparing each stop's NY-time timestamp to the current clock. */
+  .stop-pill {
+    position: absolute; top: 14px; right: 18px;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em;
+    text-transform: uppercase; padding: 3px 8px;
+    line-height: 1; border-radius: 2px;
+    z-index: 2;
+  }
+  .stop-pill.now {
+    background: var(--ink); color: var(--panel);
+  }
+  .stop-pill.next {
+    color: var(--ink-3); border: 1px solid var(--rule); background: var(--panel);
+  }
+  .stop.past .stop-pill { display: none; }  /* don't badge past stops */
 
   .stop-marker-col { display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 2px; }
   .stop-num {
@@ -244,13 +253,30 @@
   .sub-point-cat[data-cat="Books"]    { color: var(--cat-books);    border-color: var(--cat-books); }
   .sub-point-cat[data-cat="Design"]   { color: var(--cat-design);   border-color: var(--cat-design); }
 
-  /* ========= INFO FOOTER ========= */
-  .info .row {
-    display: flex; justify-content: space-between; margin-bottom: 4px;
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em;
+  /* Right-column: pin star above the category chip. */
+  .sub-point-right {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+    margin-top: 2px;
   }
-  .info .row span:first-child { color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; }
-  .info .row span:last-child { color: var(--ink); }
+  .sub-point-pin {
+    background: none; border: 0; cursor: pointer; padding: 0 2px;
+    font-family: inherit; font-size: 15px; line-height: 1;
+    color: var(--ink-4);
+    transition: color 0.18s, transform 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sub-point-pin:hover { color: var(--ink-3); transform: scale(1.15); }
+  .sub-point-pin.pinned { color: #B5634A; }
+  .sub-point-pin.pinned:hover { color: var(--ink); }
+
+  /* Pinned sub-marker on the map — filled terracotta, slightly larger. */
+  .sub-marker.pinned {
+    width: 16px; height: 16px;
+    background: #B5634A !important;
+    border-color: #B5634A !important;
+    box-shadow: 0 0 0 2px var(--panel), 0 1px 3px rgba(0,0,0,0.15);
+  }
+
 
   /* ========= MAP ========= */
   #map { width: 100%; height: 100%; background: #E8E4D9; }
@@ -372,13 +398,12 @@
   @media (max-width: 900px) {
     .app {
       grid-template-columns: 1fr;
-      grid-template-rows: auto auto auto auto auto;
+      grid-template-rows: auto auto auto auto;
       grid-template-areas:
         "hero"
         "tabs"
         "map"
-        "list"
-        "info";
+        "list";
       height: auto;
       min-height: 100vh;
       min-height: 100dvh;
@@ -389,7 +414,6 @@
       padding: 24px 22px 20px;
     }
     .title { font-size: 38px; }
-    .stats { gap: 18px; }
 
     .tabs {
       position: sticky;
@@ -415,15 +439,11 @@
 
     /* Anchor offset so scrolled-to stops appear below sticky map+tabs */
     .stop { scroll-margin-top: calc(var(--tabs-h) + var(--map-mobile-h) + 8px); }
+    .stop-pill { top: 12px; right: 14px; font-size: 8.5px; padding: 2px 6px; letter-spacing: 0.16em; }
 
     .day-header { padding: 24px 22px 12px; }
     .stop { padding: 14px 22px; grid-template-columns: 48px 1fr; gap: 12px; }
     .stop-num { width: 22px; height: 22px; font-size: 10px; }
-
-    .info {
-      border-right: 0;
-      padding: 16px 22px 28px;
-    }
 
     .legend {
       bottom: 12px;
@@ -443,10 +463,8 @@
 
   /* Very small screens */
   @media (max-width: 380px) {
-    .stats { gap: 12px; }
-    .stat-num { font-size: 18px; }
     .title { font-size: 32px; }
-    .tab span { font-size: 14px; }
+    .tab { font-size: 11px; letter-spacing: 0.14em; }
   }
 
   /* ========= CHAT — 현서비 🤖 ========= */
@@ -864,19 +882,13 @@
     </div>
     <h1 class="title">New York.</h1>
     <div class="subtitle ko">2박 3일 · 친구들과 함께</div>
-    <div class="stats">
-      <div class="stat"><div class="stat-num">3</div><div class="stat-label">Days</div></div>
-      <div class="stat"><div class="stat-num">20</div><div class="stat-label">Stops</div></div>
-      <div class="stat"><div class="stat-num">2</div><div class="stat-label">Reserved</div></div>
-      <div class="stat"><div class="stat-num">4</div><div class="stat-label">Guests</div></div>
-    </div>
   </section>
 
   <nav class="tabs">
-    <button class="tab active" data-day="all">All<span>전체</span></button>
-    <button class="tab" data-day="1">Fri<span>금</span></button>
-    <button class="tab" data-day="2">Sat<span>토</span></button>
-    <button class="tab" data-day="3">Sun<span>일</span></button>
+    <button class="tab active" data-day="all">All</button>
+    <button class="tab" data-day="1">Fri</button>
+    <button class="tab" data-day="2">Sat</button>
+    <button class="tab" data-day="3">Sun</button>
   </nav>
 
   <main class="map-wrap">
@@ -897,12 +909,6 @@
 
   <div class="list" id="itinerary"></div>
 
-  <footer class="info">
-    <div class="row"><span>Hotel</span><span>InterContinental Barclay</span></div>
-    <div class="row"><span>Outbound</span><span>B6 816 · Thu 11:47 PM → JFK 8:34 AM</span></div>
-    <div class="row"><span>Return</span><span>B6 615 · Sun 6:29 PM → SFO 10:19 PM</span></div>
-    <div class="row"><span>Ref</span><span>MNQATC</span></div>
-  </footer>
 
 </div>
 
@@ -1264,7 +1270,10 @@ const itineraryEl = document.getElementById('itinerary');
                   <div class="sub-point-name">${p.name}</div>
                   <div class="sub-point-note ko">${p.note}</div>
                 </div>
-                <div class="sub-point-cat" data-cat="${p.category}">${p.category}</div>
+                <div class="sub-point-right">
+                  <button class="sub-point-pin" data-sub="${stop.num}-${i}" aria-label="Pin ${p.name.replace(/"/g, '&quot;')}" title="찜">☆</button>
+                  <div class="sub-point-cat" data-cat="${p.category}">${p.category}</div>
+                </div>
               </div>
             `).join('')}
           </div>
@@ -1575,6 +1584,197 @@ window.addEventListener('scroll', recalcMap, { passive: true });
 window.addEventListener('error', (e) => {
   console.error('Page error:', e.message, e.filename, e.lineno);
 });
+
+// =========== SERVICE WORKER (offline / PWA) ===========
+// Registered after load so it doesn't compete with first paint. Failures are
+// silent — offline mode is a progressive enhancement.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  });
+}
+
+// =========== NOW / NEXT ===========
+// Resolve each stop's "8:34 AM" + day → a NY-time epoch ms. Trip is in May
+// 2026, fully inside EDT (UTC-4), so we hardcode the offset rather than
+// drag in a timezone lib for one calculation. Date.now() returns UTC ms
+// regardless of the device's timezone, so the comparison is correct
+// whether the user is in NY, SF, or Seoul.
+const TRIP_DAYS = { 1: '2026-05-29', 2: '2026-05-30', 3: '2026-05-31' };
+function stopTimestamp(stop) {
+  const m = stop.time && stop.time.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const mm = parseInt(m[2], 10);
+  const ampm = (m[3] || '').toUpperCase();
+  if (ampm === 'PM' && h < 12) h += 12;
+  if (ampm === 'AM' && h === 12) h = 0;
+  const [y, mo, d] = TRIP_DAYS[stop.day].split('-').map(Number);
+  return Date.UTC(y, mo - 1, d, h + 4, mm);  // +4h = EDT → UTC
+}
+
+function findNowNext() {
+  const now = Date.now();
+  let active = null, next = null;
+  for (const s of itinerary) {
+    const t = stopTimestamp(s);
+    if (t == null) continue;
+    if (t <= now) active = s;
+    else if (!next) next = s;
+  }
+  return { active, next };
+}
+
+function refreshNowNext() {
+  document.querySelectorAll('.stop-pill').forEach(p => p.remove());
+  const { active, next } = findNowNext();
+  if (active) {
+    const el = document.querySelector(`.stop[data-num="${active.num}"]`);
+    if (el) {
+      const pill = document.createElement('span');
+      pill.className = 'stop-pill now';
+      pill.textContent = 'Now';
+      el.appendChild(pill);
+    }
+  }
+  if (next) {
+    const el = document.querySelector(`.stop[data-num="${next.num}"]`);
+    if (el) {
+      const pill = document.createElement('span');
+      pill.className = 'stop-pill next';
+      pill.textContent = 'Next';
+      el.appendChild(pill);
+    }
+  }
+}
+refreshNowNext();
+setInterval(refreshNowNext, 60_000);
+
+// On first load: if we're inside the trip window, jump the list + map to "Now".
+// =========== URL DEEP-LINK STATE ===========
+// Shareable URL hash format: `#stop=14&day=2&pin=14-3,14-7`
+//   stop=N → focus that stop (scroll list + fly map)
+//   day=D  → activate that day tab
+//   pin=X-Y,... → mark those sub-points (by `${stop.num}-${index}`) as pinned
+// State is single source of truth in the URL — copy URL = share state.
+
+function parseHash() {
+  const raw = location.hash.slice(1);
+  const params = new URLSearchParams(raw);
+  return {
+    stop: parseInt(params.get('stop'), 10) || null,
+    day: params.get('day') || null,
+    pin: (params.get('pin') || '').split(',').map(s => s.trim()).filter(Boolean),
+  };
+}
+
+function writeHash(state) {
+  const parts = [];
+  if (state.stop) parts.push('stop=' + state.stop);
+  if (state.day) parts.push('day=' + state.day);
+  if (state.pin && state.pin.length) parts.push('pin=' + state.pin.join(','));
+  const next = parts.length ? '#' + parts.join('&') : '';
+  if (location.hash !== next) {
+    // replaceState so back button doesn't replay every micro-interaction.
+    history.replaceState(null, '', next || location.pathname + location.search);
+  }
+}
+
+function patchHash(updates) {
+  const cur = parseHash();
+  writeHash({ ...cur, ...updates });
+}
+
+function togglePinInHash(subId) {
+  const cur = parseHash();
+  const idx = cur.pin.indexOf(subId);
+  if (idx >= 0) cur.pin.splice(idx, 1);
+  else cur.pin.push(subId);
+  writeHash(cur);
+  return idx < 0;  // returns whether it's now pinned
+}
+
+function syncPinUI() {
+  const pinned = new Set(parseHash().pin);
+  document.querySelectorAll('.sub-point-pin').forEach(btn => {
+    const on = pinned.has(btn.dataset.sub);
+    btn.classList.toggle('pinned', on);
+    btn.textContent = on ? '★' : '☆';
+  });
+  // Mirror onto map sub-markers via the inner .sub-marker[data-sub] element.
+  document.querySelectorAll('.sub-marker').forEach(m => {
+    const on = pinned.has(m.dataset.sub);
+    m.classList.toggle('pinned', on);
+  });
+}
+
+// Pin click handler — delegated so it works for all sub-points
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.sub-point-pin');
+  if (!btn) return;
+  e.stopPropagation();
+  e.preventDefault();
+  togglePinInHash(btn.dataset.sub);
+  syncPinUI();
+});
+
+// React to hash changes (back/forward, external paste)
+window.addEventListener('hashchange', () => applyHashStateFromUrl(false));
+
+function applyHashStateFromUrl(isInitial) {
+  const state = parseHash();
+  // Day tab
+  if (state.day) {
+    const tab = document.querySelector(`.tab[data-day="${state.day}"]`);
+    if (tab && !tab.classList.contains('active')) tab.click();
+  }
+  // Pins
+  syncPinUI();
+  // Focused stop (focusStop already handles scroll + fly + popup)
+  if (state.stop) {
+    setTimeout(() => {
+      if (typeof focusStop === 'function') focusStop(state.stop);
+    }, isInitial ? 900 : 0);
+  }
+}
+
+// Sync click-state changes back to the URL. Wrap existing handlers.
+(function wireHashWriters() {
+  // Stop focus → hash
+  const origFocusStop = focusStop;
+  focusStop = function (num) {
+    patchHash({ stop: num });
+    return origFocusStop(num);
+  };
+  // Day tab → hash
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const d = tab.dataset.day;
+      patchHash({ day: d === 'all' ? null : d, stop: null });
+    });
+  });
+})();
+
+(function initialJump() {
+  // If the URL hash already targets a stop, let that drive — don't override
+  // with the Now/Next auto-jump.
+  const initialHash = parseHash();
+  if (initialHash.stop || initialHash.day) {
+    setTimeout(() => applyHashStateFromUrl(true), 100);
+    return;
+  }
+  // Otherwise, jump to "Now" if we're inside the trip window.
+  const { active } = findNowNext();
+  if (!active || active.lat == null) return;
+  setTimeout(() => {
+    const el = document.querySelector(`.stop[data-num="${active.num}"]`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (typeof map !== 'undefined' && map) {
+      map.flyTo([active.lat, active.lng], 14, { duration: 1.0 });
+      if (typeof setActiveStop === 'function') setActiveStop(active.num);
+    }
+  }, 900);
+})();
 
 // =========== WEATHER ===========
 const WMO_LABELS = {
