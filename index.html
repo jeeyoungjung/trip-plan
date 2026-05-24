@@ -1706,17 +1706,18 @@ document.querySelectorAll('.legend-item[data-day]').forEach(item => {
   });
 });
 
-// Legend category items → toggle category in/out (multi-select)
+// Legend category items → mirror the day-tab pattern: clicking one
+// isolates to that category; clicking the same one again restores all.
+const ALL_CATS = ['Coffee', 'Food', 'Shopping', 'Books', 'Design'];
 document.querySelectorAll('.legend-item[data-cat]').forEach(item => {
   item.addEventListener('click', (e) => {
     e.stopPropagation();
     const cat = item.dataset.cat;
-    if (filters.activeCategories.has(cat)) filters.activeCategories.delete(cat);
-    else filters.activeCategories.add(cat);
-    // Defensive: if user turns OFF every category, turn them all back on so
-    // we never show an empty map by accident.
-    if (filters.activeCategories.size === 0) {
-      ['Coffee', 'Food', 'Shopping', 'Books', 'Design'].forEach(c => filters.activeCategories.add(c));
+    const isolated = filters.activeCategories.size === 1 && filters.activeCategories.has(cat);
+    if (isolated) {
+      filters.activeCategories = new Set(ALL_CATS);
+    } else {
+      filters.activeCategories = new Set([cat]);
     }
     applyMapFilters();
     syncLegendUI();
@@ -1727,7 +1728,7 @@ document.querySelectorAll('.legend-item[data-cat]').forEach(item => {
 const legendResetBtn = document.getElementById('legendReset');
 if (legendResetBtn) {
   legendResetBtn.addEventListener('click', () => {
-    filters.activeCategories = new Set(['Coffee', 'Food', 'Shopping', 'Books', 'Design']);
+    filters.activeCategories = new Set(ALL_CATS);
     const allTab = document.querySelector('.tab[data-day="all"]');
     if (allTab) allTab.click();  // sets activeDay='all', triggers filter apply
     syncLegendUI();
