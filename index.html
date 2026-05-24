@@ -879,6 +879,32 @@
   .chat-form button:disabled { opacity: 0.4; cursor: not-allowed; }
   .chat-form button svg { display: block; }
 
+  /* Mic button — outlined by default, fills terracotta + pulses while listening.
+     Hidden via [hidden] when the browser doesn't expose Web Speech API. */
+  .chat-form .chat-mic-btn {
+    background: var(--panel);
+    color: var(--ink-2);
+    border: 1px solid var(--rule);
+    padding: 0;
+    min-width: 44px;
+  }
+  .chat-form .chat-mic-btn:hover:not(:disabled) {
+    background: var(--ink);
+    color: var(--panel);
+    border-color: var(--ink);
+  }
+  .chat-form .chat-mic-btn.listening {
+    background: #B5634A;
+    color: var(--panel);
+    border-color: #B5634A;
+    animation: micPulse 1.4s ease-in-out infinite;
+  }
+  .chat-form .chat-mic-btn[hidden] { display: none; }
+  @keyframes micPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(181, 99, 74, 0.55); }
+    50%      { box-shadow: 0 0 0 10px rgba(181, 99, 74, 0); }
+  }
+
   /* MOBILE: full-screen takeover */
   @media (max-width: 900px) {
     .chat-toggle {
@@ -1031,6 +1057,13 @@
 
   <form class="chat-form" id="chatForm">
     <textarea id="chatInput" placeholder="현서비에게 질문…" rows="1"></textarea>
+    <button type="button" class="chat-mic-btn" id="chatMicBtn" aria-label="음성 입력" hidden>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="9" y="3" width="6" height="11" rx="3"/>
+        <path d="M5 11a7 7 0 0 0 14 0"/>
+        <line x1="12" y1="18" x2="12" y2="22"/>
+      </svg>
+    </button>
     <button type="submit" id="chatSend" aria-label="Send">
       <span class="chat-send-label">Send</span>
       <svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"><path d="M1 5 L13 5 M9 1 L13 5 L9 9"/></svg>
@@ -2566,6 +2599,127 @@ chatInputEl.addEventListener('input', (e) => {
 chatSuggestionsEl.querySelectorAll('.chat-sugg').forEach(b => {
   b.addEventListener('click', () => sendChat(b.dataset.q));
 });
+
+// =========== VOICE INPUT (Web Speech API) ===========
+// Mic button next to Send — taps a browser-side STT engine, streams the
+// transcript into the textarea live. Korean-default (the agent replies in
+// Korean and the user is likely speaking Korean). On unsupported browsers
+// (mainly Chrome on iOS), the button stays hidden so nothing's promised
+// that won't work.
+(function setupVoiceInput() {
+  const micBtn = document.getElementById('chatMicBtn');
+  if (!micBtn) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;  // unsupported → mic stays hidden via [hidden]
+  micBtn.hidden = false;
+  micBtn.title = '음성 입력 (Korean STT)';
+
+  let recognition = null;
+  let listening = false;
+  // Snapshot whatever's already in the textarea so the new transcript is
+  // appended, not overwriting. (User might dictate a follow-up to typed text.)
+  let baseValue = '';
+  // Auto-retry once on transient `network` errors — Chrome's Web Speech API
+  // streams audio to Google's servers; brief hiccups are common.
+  let retriedOnNetworkError = false;
+
+  // Friendly Korean blurbs for each known SpeechRecognitionErrorEvent.error.
+  // Chrome / Edge use Google's cloud STT for ko-KR; no network = no STT.
+  function describeError(code) {
+    switch (code) {
+      case 'not-allowed':
+      case 'service-not-allowed':
+        return '마이크 권한이 차단돼 있어요. 주소창 자물쇠 아이콘에서 마이크를 허용해 주세요.';
+      case 'audio-capture':
+        return '마이크를 찾을 수 없어요. 다른 앱이 마이크를 점유 중인지 확인해 주세요.';
+      case 'network':
+        return '음성 인식 서버(Google)에 연결하지 못했어요. 인터넷 연결 / VPN 상태를 확인하고 다시 눌러주세요. (Chrome의 한국어 STT는 온라인 전송 방식이라 네트워크가 필요해요.)';
+      case 'language-not-supported':
+        return '이 브라우저에서는 한국어 음성 인식을 지원하지 않아요. Chrome / Edge에서 시도해 주세요.';
+      case 'bad-grammar':
+        return '음성 인식이 일시적으로 실패했어요. 잠시 후 다시 시도해 주세요.';
+      default:
+        return '음성 인식 오류: ' + (code || 'unknown');
+    }
+  }
+
+  function start() {
+    if (listening) return;
+    recognition = new SR();
+    recognition.lang = 'ko-KR';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    baseValue = chatInputEl.value;
+    if (baseValue && !/\s$/.test(baseValue)) baseValue += ' ';
+
+    recognition.onstart = () => {
+      listening = true;
+      micBtn.classList.add('listening');
+      micBtn.setAttribute('aria-label', '듣는 중 — 다시 누르면 멈춤');
+    };
+    recognition.onresult = (e) => {
+      let transcript = '';
+      for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
+      chatInputEl.value = baseValue + transcript;
+      chatInputEl.dispatchEvent(new Event('input'));
+      // Got a result → this was clearly a clean run; clear the retry flag.
+      retriedOnNetworkError = false;
+    };
+    recognition.onerror = (e) => {
+      // 'no-speech' / 'aborted' are normal flow events — silent.
+      if (e.error === 'no-speech' || e.error === 'aborted') return;
+      // Transient network blip: try one auto-retry before bothering the user.
+      if (e.error === 'network' && !retriedOnNetworkError) {
+        retriedOnNetworkError = true;
+        // The recognizer fires onend after onerror; restart from there.
+        recognition._retryAfterEnd = true;
+        return;
+      }
+      appendChatMsg('error', describeError(e.error));
+      retriedOnNetworkError = false;
+    };
+    recognition.onend = () => {
+      listening = false;
+      micBtn.classList.remove('listening');
+      micBtn.setAttribute('aria-label', '음성 입력');
+      // If we flagged a retry, restart now (after a short pause so the
+      // recognizer fully settles between sessions).
+      if (recognition && recognition._retryAfterEnd) {
+        recognition._retryAfterEnd = false;
+        setTimeout(() => { try { start(); } catch (_) {} }, 400);
+        return;
+      }
+      // Refocus the textarea so the user can immediately edit or Send.
+      chatInputEl.focus();
+    };
+
+    try { recognition.start(); }
+    catch (_) {
+      listening = false;
+      micBtn.classList.remove('listening');
+    }
+  }
+
+  function stop() {
+    if (recognition) {
+      try { recognition.stop(); } catch (_) {}
+    }
+  }
+
+  micBtn.addEventListener('click', () => {
+    if (listening) stop();
+    else start();
+  });
+
+  // Stop recognition if the chat drawer closes mid-listen — avoids the
+  // mic continuing to capture after the user dismisses the panel.
+  chatCloseEl.addEventListener('click', () => { if (listening) stop(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && listening) stop();
+  });
+})();
 </script>
 
 </body>
