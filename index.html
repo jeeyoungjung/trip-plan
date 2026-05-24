@@ -991,6 +991,10 @@ const itinerary = [
       { name: 'Cafe Integral',            lat: 40.7211, lng: -73.9956, category: 'Coffee',   addr: '149 Elizabeth St · NoLita', note: '니카라과 산지 직배송. 작고 조용한 로컬 시크릿 카페. 광고 1도 안 해요.' },
       { name: 'Prince Street Pizza',      lat: 40.7228, lng: -73.9947, category: 'Food',     addr: '27 Prince St · NoLita',     note: '바이럴 페퍼로니 스퀘어 슬라이스의 본진. 광고 없이 입소문만으로 줄 섬. 회전 빠름.' },
       { name: "L'Industrie Pizzeria",     lat: 40.7297, lng: -74.0033, category: 'Food',     addr: '254 Bleecker St · West Village', note: '현재 뉴욕 NO.1 슬라이스 후보. 부라타 슬라이스 시그니처. 점심 피크는 줄 진짜 김.' },
+      // === Designer picks (photo + inspiration) ===
+      { name: '★ Dashwood Books',         lat: 40.7257, lng: -73.9938, category: 'Books',    addr: '33 Bond St · NoHo',       note: '사진집의 메카 — David Strettell 큐레이션. Wolfgang Tillmans, Ari Marcopoulos, 1990s Japanese 사진집까지. 작은 지하 매장이지만 한 권 사면 평생. 디자이너라면 절대.' },
+      { name: '★ Greene Street SoHo',     lat: 40.7233, lng: -74.0011, category: 'Design',   addr: 'Greene St · Houston→Canal', note: '세계에서 가장 잘 보존된 cast-iron 건물 거리 (1850s). 250 Greene 등 파사드 디테일이 산업디자인 레퍼런스. 늦은 오후 광선이 베스트 — 카메라/폰 들고 천천히.' },
+      { name: '★ MZ Wallace SoHo',        lat: 40.7233, lng: -73.9988, category: 'Shopping', addr: '93 Crosby St',            note: '뉴욕 출신 퀼팅 토트. 매장 디스플레이 자체가 제품 디자인 케이스 스터디. 한국에서도 슬슬 알려진 브랜드.' },
     ]
   },
   { day: 1, num: 7, time: '5:30 PM', name: 'Raku Soho',
@@ -1040,21 +1044,98 @@ const itinerary = [
       { name: 'Black Fox Coffee Co', lat: 40.7068, lng: -74.0073, category: 'Coffee', addr: '70 Pine St · FiDi',         note: '아르데코 로비 1층 카페. 호주 스타일 라떼 + 빵. 바이럴 + 로컬 둘 다 인정.' },
     ]
   },
-  { day: 2, num: 14, time: '1:30 PM', name: 'Afternoon · 셋 중 하나',
+  { day: 2, num: 14, time: '1:30 PM', name: 'Afternoon · 골라잡기',
     lat: null, lng: null, address: '맨해튼 다운타운 · 점심 + 산책',
     transit: 'Brooklyn Bridge 도착 후 도보 또는 6 train',
-    note: '브루클린 다리 도착 ~1:30PM → Oiji Mi(Flatiron) 7PM. 5시간 비어있음. 셋 중 하나 픽 — 당일 컨디션 보고 결정.',
+    note: '브루클린 다리 도착 ~1:30PM → Oiji Mi(Flatiron) 7PM. 5시간 비어있음. 아래 동선 픽 중 하나로 큰 줄기 정하고, 그 다음 개별 픽 (★) 중에서 끼워넣기 — 당일 컨디션 보고 자유롭게.',
     tbd: true,
     points: [
+      // === 동선 픽 — 큰 줄기 ===
       { name: 'A · Chinatown → LES → Union Sq', lat: 40.7158, lng: -73.9970, category: 'Food',
         addr: '~1:30 Chinatown 점심 → 3:00 LES 산책 → 5:00 Union Sq',
-        note: 'Xi\'an Famous Foods (45 Bayard St) 우육면 + Joe\'s Shanghai 샤오롱바오 옵션. 3PM Russ & Daughters (179 E Houston) 베이글, Economy Candy (108 Rivington) 빈티지 캔디. 도보로 천천히 Union Sq 거쳐 19th St (Oiji Mi).' },
-      { name: 'B · Tribeca + SoHo 슬로우 루프', lat: 40.7195, lng: -74.0072, category: 'Food',
+        note: '먹거리 중심. Xi\'an Famous Foods 우육면 + Joe\'s Shanghai 샤오롱바오. 3PM LES (Russ & Daughters / Economy Candy / Tenement Museum). 도보로 천천히 Union Sq → 19th St (Oiji Mi).' },
+      { name: 'B · Tribeca + SoHo 슬로우 루프', lat: 40.7195, lng: -74.0072, category: 'Shopping',
         addr: '~1:30 Tribeca 점심 → 3:00 SoHo 재방문',
-        note: 'Frenchette Bakery (220 W Broadway) 또는 Bubby\'s Tribeca 브런치. SoHo는 금요일 저녁 시간 없어서 못 본 가게 (Aimé Leon Dore, McNally Jackson) 다시. Union Sq까지 6 train.' },
-      { name: 'C · Whitney + Meatpacking', lat: 40.7396, lng: -74.0089, category: 'Design',
-        addr: '~1:30 Whitney → 3:30 Meatpacking 카페/숍',
-        note: 'Whitney Museum (99 Gansevoort) $30, 2시간. American art 컬렉션 + 옥상 데크 뷰. Hudson Yards 다음 동선이라 Brooklyn Bridge에서 1/2/3 train 환승 멀어 — A/C가 더 자연스러움.' },
+        note: '쇼핑 중심. Frenchette Bakery 또는 Bubby\'s 브런치. 금요일 못 본 SoHo 가게 (Aimé Leon Dore, McNally Jackson) 다시. Union Sq까지 6 train.' },
+      { name: 'C · Village + Washington Sq', lat: 40.7308, lng: -73.9973, category: 'Books',
+        addr: '~1:30 Joe\'s Pizza → 2:30 Washington Sq → 4:00 Strand → Union Sq',
+        note: 'NYC 클래식 무드. Joe\'s Pizza (7 Carmine St) 슬라이스 → Washington Sq 사람 구경 + 즉흥 공연 → Strand 책방 (1시간) → 도보 Union Sq.' },
+      { name: 'D · Whitney + Meatpacking', lat: 40.7396, lng: -74.0089, category: 'Design',
+        addr: '~1:30 Whitney → 3:30 Meatpacking',
+        note: '아트 중심. Whitney Museum (99 Gansevoort, $30, 2시간). American art + 옥상 데크 뷰. Brooklyn Bridge에서 1/2/3 환승 약간 멀어 — 비 오면 보류.' },
+
+      // === 개별 픽 — 위 동선에 끼워넣기 (시간/지리 맞춰서) ===
+      { name: '★ Strand Bookstore', lat: 40.7332, lng: -73.9907, category: 'Books',
+        addr: '828 Broadway · Union Sq',
+        note: '"18 miles of books." 1927년부터. 1층 신간 + 지하 헌책 + 3층 아트북. 토트백 사가는 게 통과의례. 30~45분이면 충분 — Union Sq 도착 직전 들리기 좋음.' },
+      { name: '★ Union Square Greenmarket', lat: 40.7359, lng: -73.9911, category: 'Food',
+        addr: 'Union Square · Sat 8AM–6PM',
+        note: '토요일은 주중 최대 규모 — 농장 직배송 빵, 사과, 치즈, 꿀, 꽃. 시즌 과일 시식 + 빵 한 덩이 픽업하면 5분에 끝. 어느 동선이든 Union Sq 지날 때 통과.' },
+      { name: '★ Katz\'s Delicatessen', lat: 40.7223, lng: -73.9874, category: 'Food',
+        addr: '205 E Houston St · LES',
+        note: '1888년부터. 파스트라미 샌드위치 ($26)의 본가 — 자르는 사람한테 직접 팁 $1 주고 시식 한 입. "When Harry Met Sally" 그 자리. 줄 길지만 회전 빨라요.' },
+      { name: '★ Russ & Daughters Cafe', lat: 40.7222, lng: -73.9893, category: 'Food',
+        addr: '127 Orchard St · LES',
+        note: '4대째 베이글 + 훈제연어. 본점 (179 E Houston)은 to-go, Cafe는 sit-down 풀 메뉴. 토요일 12~2시 웨이팅 — 2:30 이후가 비교적 한산.' },
+      { name: '★ Joe\'s Shanghai', lat: 40.7156, lng: -73.9980, category: 'Food',
+        addr: '46 Bowery · Chinatown',
+        note: '소룡포 차이나타운 클래식. 게살 버전이 시그니처. 외관 허름해도 줄이 진실. 4명이면 게살 + 일반 두 판씩 + 사이드 — 1인 $20 안에 해결.' },
+      { name: '★ The New Museum', lat: 40.7224, lng: -73.9926, category: 'Design',
+        addr: '235 Bowery · LES',
+        note: 'SANAA 디자인 화이트 박스 — 7층 컨템포러리 아트. $22, 90분~2시간. 옥상 Sky Room은 무료 — 다운타운 전망 30분이면 핵심.' },
+      { name: '★ Tenement Museum', lat: 40.7188, lng: -73.9905, category: 'Design',
+        addr: '103 Orchard St · LES',
+        note: '19세기 이민자 아파트 복원 — 가이드 투어로만 입장 ($30, 60분, 시간대별). 미리 예약 필수. NYC가 어떻게 만들어졌는지 한 시간에 압축. 가족 단위 추천.' },
+      { name: '★ Economy Candy', lat: 40.7183, lng: -73.9881, category: 'Shopping',
+        addr: '108 Rivington St · LES',
+        note: '1937년부터. 천장까지 빈티지 캔디. 한국에서 보기 힘든 미국 클래식 (Pop Rocks, Razzles, Necco). 봉투에 담아 가는 재미 — 선물용 픽.' },
+      { name: '★ Washington Square Park', lat: 40.7308, lng: -73.9973, category: 'Design',
+        addr: 'Fifth Ave & Waverly Pl · West Village',
+        note: '체스 두는 할아버지들, 즉흥 피아노, NYU 학생들. 분수대 주위 30분 사람 구경. Stonewall Inn(인근) + Caffe Reggio (119 MacDougal) 잠깐 들렀다 출발.' },
+      { name: '★ Joe\'s Pizza', lat: 40.7305, lng: -74.0023, category: 'Food',
+        addr: '7 Carmine St · West Village',
+        note: 'NYC 슬라이스의 정석. 1975년부터. $4 슬라이스, Spider-Man 영화 그 자리 (홀랜드 터널 부근). 줄은 5분, 서서 먹고 출발 — Washington Sq 직전 픽.' },
+      { name: '★ Caffe Reggio', lat: 40.7300, lng: -74.0007, category: 'Coffee',
+        addr: '119 MacDougal St · West Village',
+        note: '1927년 — 미국 최초 카푸치노 서빙. 빨간 벨벳 + 1902년 라마르초코 머신. Bob Dylan, Jack Kerouac 단골이었음. 인테리어 자체가 박물관.' },
+      { name: '★ La Cabra', lat: 40.7287, lng: -73.9979, category: 'Coffee',
+        addr: '152 2nd Ave · East Village',
+        note: '코펜하겐 출신 노르딕 스페셜티 — NYC 1호점. 밝은 인테리어 + 가벼운 로스트. 카르다몸 번 같이. 동네 분위기 잠깐 환기하기 좋음.' },
+      { name: '★ John Derian Company', lat: 40.7268, lng: -73.9885, category: 'Design',
+        addr: '6 E 2nd St · East Village',
+        note: '데쿠파주 트레이로 유명한 큐레이션 홈굿즈. 옆 매장 (Dry Goods, Furniture) 세 곳 같이 봐야 진가 — 디자인 좋아하면 30분 머무름.' },
+      { name: '★ McSorley\'s Old Ale House', lat: 40.7286, lng: -73.9897, category: 'Food',
+        addr: '15 E 7th St · East Village',
+        note: '1854년 — NYC 최고령 술집. 메뉴: 라이트 에일 / 다크 에일 두 가지만, $7씩 두 잔이 한 주문. 톱밥 바닥, 100년 된 벽. 5시쯤 한 잔 — 박물관급.' },
+      { name: '★ Pearl River Mart', lat: 40.7170, lng: -74.0019, category: 'Shopping',
+        addr: '395 Broadway · Tribeca',
+        note: '1971년부터 — 미국에서 가장 오래된 아시안 디파트먼트. 도자기, 키친웨어, 슬리퍼, 차. 한국 손님들도 의외로 신기한 아이템 발견. 30~45분.' },
+
+      // === Designer picks (photo + inspiration) — locally beloved, lower-tourist ===
+      { name: '★ Wing on Wo & Co', lat: 40.7158, lng: -73.9974, category: 'Design',
+        addr: '26 Mott St · Chinatown',
+        note: '1890년부터 — 차이나타운 최고령 가게. 5대째 도자기 가게를 Mei Lum (W.O.W. Project)이 운영하며 동네 보존 활동까지. 핸드페인트 도자기 + 디자인 + 커뮤니티 스토리. 디자이너 ★★★.' },
+      { name: '★ Doyers Street', lat: 40.7142, lng: -73.9979, category: 'Design',
+        addr: 'Doyers St · Chinatown',
+        note: '맨해튼에서 유일하게 직각으로 꺾이는 골목 — 19세기 갱단 매복 자리에서 유래 ("Bloody Angle"). Nom Wah Tea Parlor + 페인팅된 골목 벽. 1분이면 끝나지만 사진 한 장 무조건.' },
+      { name: '★ Nom Wah Tea Parlor', lat: 40.7142, lng: -73.9979, category: 'Food',
+        addr: '13 Doyers St · Chinatown',
+        note: '1920년 오픈 — 맨해튼 최고령 딤섬. 빈티지 카운터 + 노란 패키지의 차 박스. 점심 후라면 차 + 딤섬 한두 개로 분위기만 — 인테리어가 디자인 레퍼런스.' },
+      { name: '★ Coming Soon', lat: 40.7142, lng: -73.9929, category: 'Design',
+        addr: '53 Canal St · LES',
+        note: 'Sara Berks가 만든 인디 디자인 스토어. 위트 있는 가정용품 + 신진 디자이너 셀렉션. Instagram보다 매장이 100배 — 제품 디자이너 영감 ★★★.' },
+      { name: '★ Dover Street Market NY', lat: 40.7479, lng: -73.9851, category: 'Design',
+        addr: '160 Lexington Ave · NoMad',
+        note: 'Rei Kawakubo (Comme des Garçons) 큐레이션 멀티 브랜드. 7층, 매장 자체가 작품. Oiji Mi 가는 길에 23rd St 환승하며 30분 들리기 좋음. Rose Bakery 카페도 그 안.' },
+      { name: '★ ABC Carpet & Home', lat: 40.7378, lng: -73.9898, category: 'Design',
+        addr: '888 Broadway · Flatiron',
+        note: '6층 거대한 디자인 백화점 — 빈티지 카펫, 라이팅, 그릇, 가구. Oiji Mi 바로 옆 (도보 3분). 6시 전 닫혀서 5시 전에 가야 함. 영감 ★★★.' },
+      { name: '★ Astor Place Cube', lat: 40.7297, lng: -73.9914, category: 'Design',
+        addr: 'Astor Pl & Lafayette · East Village',
+        note: 'Tony Rosenthal의 회전 큐브 (Alamo, 1967). 손으로 밀면 돌아감. NYC 퍼블릭 아트 클래식. 옆 Astor Pl 지하철역 모자이크 비버 (역사 디자인 디테일) 같이.' },
+      { name: '★ Mosaic Trail (E 8th)', lat: 40.7295, lng: -73.9912, category: 'Design',
+        addr: 'E 8th St & 4th Ave · East Village',
+        note: 'Jim Power "Mosaic Man"이 30년간 거리 가로등에 박은 모자이크. Astor Pl ~ Tompkins Sq 사이 80개+. 걷는 동선 자체가 야외 갤러리.' },
     ]
   },
   { day: 2, num: 15, time: '7:00 PM', name: 'Oiji Mi',
@@ -1082,6 +1163,15 @@ const itinerary = [
     points: [
       { name: 'Levain Bakery',             lat: 40.7795, lng: -73.9808, category: 'Food',   addr: '167 W 74th St',  note: '전설의 6oz 청키 쿠키. UWS 본점. 박물관 후 디저트로 픽. 줄 서지만 회전 빨라요.' },
       { name: 'Variety Coffee Roasters',   lat: 40.7770, lng: -73.9805, category: 'Coffee', addr: '162 W 72nd St',  note: '브루클린 출신 로컬 로스터의 UWS 점. 조용하고 진하게. 광고 없는 진짜 로컬 사랑.' },
+      // === Central Park photo waypoints (걷는 동선 위) ===
+      { name: '★ Bethesda Terrace & Fountain', lat: 40.7740, lng: -73.9710, category: 'Design', addr: 'Mid-Park · 72nd St',
+        note: 'Calvert Vaux 디자인 (1864). 천장 미네톤 타일 + 분수대 천사상 (Angel of the Waters). 일요일 오전엔 가스펠 공연도 종종. 5~10분 머무를 만한 NYC 대표 포토.' },
+      { name: '★ Bow Bridge', lat: 40.7760, lng: -73.9722, category: 'Design', addr: 'The Lake · 74th St',
+        note: '주철 아치 다리 (1862). NYC 영화에 가장 많이 나온 다리 — Manhattan, Spider-Man 등. The Lake 위 호수 반사 + 보트 배경. 정면 + 사이드 둘 다 찍을 만함.' },
+      { name: '★ The Mall (Literary Walk)', lat: 40.7732, lng: -73.9712, category: 'Design', addr: 'Mid-Park · 66th–72nd St',
+        note: '뉴욕에서 가장 큰 미국 느릅나무 (American Elm) 가로수길. 일요일 오전엔 햇살 새어들고 — 영화에서 본 그 길. Sant Ambroeus → AMNH 가로지를 때 자연스럽게 지나감.' },
+      { name: '★ Cherry Hill Fountain', lat: 40.7745, lng: -73.9740, category: 'Design', addr: 'Mid-Park · 72nd St',
+        note: 'Bow Bridge 옆 작은 분수 + 벚꽃 (5월 말이라 잎만 무성). Bethesda → Bow Bridge 동선에서 1분. 사람 적고 사진 차분.' },
     ]
   },
   { day: 3, num: 19, time: '3:00 PM', name: 'InterContinental Barclay · 짐 픽업',
@@ -1226,32 +1316,40 @@ const routeLines = {};
 const subMarkers = { 1: [], 2: [], 3: [] };
 
 function setupMarkersAndInteraction() {
-  itinerary.filter(s => s.lat !== null).forEach(stop => {
-    const featured = stop.featured ? 'featured' : '';
-    const icon = L.divIcon({
-      className: 'custom-marker',
-      html: `<div class="marker-pin day-${stop.day} ${featured}" data-num="${stop.num}">${stop.num}</div>`,
-      iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
-    });
-    const marker = L.marker([stop.lat, stop.lng], { icon }).addTo(map);
-    const popupHtml = `
-      <div class="popup-eyebrow">Day ${stop.day} · ${stop.time}</div>
-      <div class="popup-title">${stop.name}</div>
-      <div class="popup-address">${stop.address}</div>
-      ${stop.transit ? `<div class="popup-transit ko">${stop.transit}</div>` : ''}
-      <div class="popup-note ko">${stop.note}</div>
-      ${stop.gmaps ? `<a class="popup-link" href="${stop.gmaps}" target="_blank">Google Maps →</a>` : ''}
-    `;
-    marker.bindPopup(popupHtml, { closeButton: true, autoPan: true });
-    marker.on('click', () => {
-      setActiveStop(stop.num);
-      if (!isMobile()) scrollListToStop(stop.num);
-    });
-    markers[stop.num] = marker;
+  itinerary.forEach(stop => {
+    // Main marker — only if the stop itself has coords. (TBD stops like #14
+    // have lat: null and render no numbered pin, but their sub-points still
+    // need to appear on the map — that's handled below.)
+    if (stop.lat !== null) {
+      const featured = stop.featured ? 'featured' : '';
+      const icon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div class="marker-pin day-${stop.day} ${featured}" data-num="${stop.num}">${stop.num}</div>`,
+        iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
+      });
+      const marker = L.marker([stop.lat, stop.lng], { icon }).addTo(map);
+      const popupHtml = `
+        <div class="popup-eyebrow">Day ${stop.day} · ${stop.time}</div>
+        <div class="popup-title">${stop.name}</div>
+        <div class="popup-address">${stop.address}</div>
+        ${stop.transit ? `<div class="popup-transit ko">${stop.transit}</div>` : ''}
+        <div class="popup-note ko">${stop.note}</div>
+        ${stop.gmaps ? `<a class="popup-link" href="${stop.gmaps}" target="_blank">Google Maps →</a>` : ''}
+      `;
+      marker.bindPopup(popupHtml, { closeButton: true, autoPan: true });
+      marker.on('click', () => {
+        setActiveStop(stop.num);
+        if (!isMobile()) scrollListToStop(stop.num);
+      });
+      markers[stop.num] = marker;
+    }
 
-    // Sub-markers for sights/shopping within this stop
+    // Sub-markers for sights/shopping within this stop — render regardless
+    // of whether the parent stop has coords, so TBD stops still show their
+    // sub-points on the map.
     if (stop.points && stop.points.length) {
       stop.points.forEach((p, i) => {
+        if (p.lat == null || p.lng == null) return;
         const subIcon = L.divIcon({
           className: 'custom-marker',
           html: `<div class="sub-marker" data-sub="${stop.num}-${i}" data-cat="${p.category}" title="${p.name}"></div>`,
@@ -1281,10 +1379,17 @@ function setupMarkersAndInteraction() {
     if (dayCoords[d].length > 1) routeLines[d] = L.polyline(dayCoords[d], routeStyles[d]).addTo(map);
   });
 
-  // Initial bounds
-  const nycStops = itinerary.filter(s => s.lat !== null && s.lat > 40.70);
-  if (nycStops.length > 0) {
-    map.fitBounds(L.latLngBounds(nycStops.map(s => [s.lat, s.lng])).pad(0.15));
+  // Initial bounds — include sub-points so all dots fit in view
+  // (`lat > 40.70` filters out the JFK / SFO airport stops).
+  const allNycCoords = [];
+  itinerary.forEach(s => {
+    if (s.lat !== null && s.lat > 40.70) allNycCoords.push([s.lat, s.lng]);
+    (s.points || []).forEach(p => {
+      if (p.lat != null && p.lat > 40.70) allNycCoords.push([p.lat, p.lng]);
+    });
+  });
+  if (allNycCoords.length > 0) {
+    map.fitBounds(L.latLngBounds(allNycCoords).pad(0.12));
   }
 }
 
@@ -1378,13 +1483,26 @@ document.querySelectorAll('.tab').forEach(tab => {
       else s.classList.add('hidden');
     });
 
+    // Helper: collect every NYC coord for a day (stops + sub-points).
+    const coordsForDay = (d) => {
+      const c = [];
+      itinerary.forEach(s => {
+        if (s.day !== d) return;
+        if (s.lat !== null && s.lat > 40.70) c.push([s.lat, s.lng]);
+        (s.points || []).forEach(p => {
+          if (p.lat != null && p.lat > 40.70) c.push([p.lat, p.lng]);
+        });
+      });
+      return c;
+    };
+
     if (day === 'all') {
       Object.values(markers).forEach(m => m.addTo(map));
       Object.values(routeLines).forEach(l => l.addTo(map));
       [1, 2, 3].forEach(dd => subMarkers[dd].forEach(m => m.addTo(map)));
-      const nycStops = itinerary.filter(s => s.lat !== null && s.lat > 40.70);
-      if (nycStops.length > 0) {
-        map.flyToBounds(L.latLngBounds(nycStops.map(s => [s.lat, s.lng])).pad(0.15), { duration: 0.7 });
+      const all = [...coordsForDay(1), ...coordsForDay(2), ...coordsForDay(3)];
+      if (all.length > 0) {
+        map.flyToBounds(L.latLngBounds(all).pad(0.12), { duration: 0.7 });
       }
     } else {
       const d = parseInt(day);
@@ -1403,9 +1521,9 @@ document.querySelectorAll('.tab').forEach(tab => {
           else map.removeLayer(m);
         });
       });
-      const dayStops = itinerary.filter(s => s.day === d && s.lat !== null && s.lat > 40.70);
-      if (dayStops.length > 0) {
-        map.flyToBounds(L.latLngBounds(dayStops.map(s => [s.lat, s.lng])).pad(0.2), { duration: 0.7 });
+      const dayAll = coordsForDay(d);
+      if (dayAll.length > 0) {
+        map.flyToBounds(L.latLngBounds(dayAll).pad(0.15), { duration: 0.7 });
       }
     }
   });
