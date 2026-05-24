@@ -2515,6 +2515,9 @@ async function sendChat(text) {
     chatKeyInputEl.focus();
     return;
   }
+  // Abort any in-flight voice recognition. Otherwise a late onresult event
+  // would re-fill the input we just cleared with the same transcript.
+  voiceAbort();
   chatSuggestionsEl.classList.add('hidden');
   appendChatMsg('user', text);
   chatHistory.push({ role: 'user', content: text });
@@ -2606,6 +2609,9 @@ chatSuggestionsEl.querySelectorAll('.chat-sugg').forEach(b => {
 // Korean and the user is likely speaking Korean). On unsupported browsers
 // (mainly Chrome on iOS), the button stays hidden so nothing's promised
 // that won't work.
+// Exposed at outer scope so sendChat can yank the recognizer when Enter
+// is pressed — otherwise a late `onresult` re-fills the input we just cleared.
+let voiceAbort = () => {};
 (function setupVoiceInput() {
   const micBtn = document.getElementById('chatMicBtn');
   if (!micBtn) return;
@@ -2707,6 +2713,18 @@ chatSuggestionsEl.querySelectorAll('.chat-sugg').forEach(b => {
       try { recognition.stop(); } catch (_) {}
     }
   }
+
+  // abort() discards any pending result (unlike stop(), which allows the
+  // last partial result to fire onresult). We use abort() when sending so
+  // a late event doesn't re-populate the just-cleared input.
+  function abort() {
+    if (recognition) {
+      try { recognition.abort(); } catch (_) {}
+    }
+    listening = false;
+    micBtn.classList.remove('listening');
+  }
+  voiceAbort = abort;
 
   micBtn.addEventListener('click', () => {
     if (listening) stop();
