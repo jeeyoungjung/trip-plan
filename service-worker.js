@@ -7,7 +7,9 @@
 //     returns a small JSON error if the network is unreachable so the UI can
 //     surface that gracefully instead of hanging.
 
-const VERSION = 'trip-plan-v1';
+// Bump this whenever a deploy needs to invalidate stale clients
+// (especially iOS Safari, which otherwise keeps serving v1 indefinitely).
+const VERSION = 'trip-plan-v2-20260524';
 const SHELL_CACHE = VERSION + '-shell';
 const TILE_CACHE = VERSION + '-tiles';
 
