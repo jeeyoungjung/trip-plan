@@ -1481,6 +1481,11 @@ function setupMarkersAndInteraction() {
           iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -8],
         });
         const subMarker = L.marker([p.lat, p.lng], { icon: subIcon }).addTo(map);
+        // Attach category + sub-id directly to the marker object so filters
+        // can read them even when the marker has been removed from the map
+        // (getElement() returns null when detached, so DOM-based lookup fails).
+        subMarker.category = p.category;
+        subMarker.subId = `${stop.num}-${i}`;
         subMarker.bindPopup(`
           <div class="popup-eyebrow">${p.category} · ${stop.name}</div>
           <div class="popup-title">${p.name}</div>
@@ -1646,12 +1651,14 @@ function applyMapFilters() {
     else if (!show && map.hasLayer(routeLines[d])) map.removeLayer(routeLines[d]);
   });
 
-  // Sub-markers — visible if both day AND category match
+  // Sub-markers — visible if both day AND category match.
+  // Read category from the marker object (set in setupMarkersAndInteraction)
+  // — NOT from the DOM, because getElement() returns null after a marker is
+  // removed, which would silently make all hidden markers re-appear on the
+  // next filter change ("category bleed" bug).
   [1, 2, 3].forEach(d => {
     subMarkers[d].forEach(marker => {
-      const el = marker.getElement && marker.getElement();
-      const subEl = el && el.querySelector ? el.querySelector('.sub-marker') : null;
-      const cat = subEl ? subEl.dataset.cat : null;
+      const cat = marker.category || null;
       const show = dayMatch(d) && (!cat || filters.activeCategories.has(cat));
       if (show && !map.hasLayer(marker)) marker.addTo(map);
       else if (!show && map.hasLayer(marker)) map.removeLayer(marker);
