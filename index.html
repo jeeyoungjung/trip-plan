@@ -391,7 +391,10 @@
 
   /* ========= LEGEND ========= */
   .legend {
-    position: absolute; bottom: 24px; left: 24px;
+    /* Pinned to the viewport's bottom-left so it stays put regardless of
+       which day-section is scrolled into view. z-index 500 keeps it above
+       the map but below the chat panel (999999) and toggle (999997). */
+    position: fixed; bottom: 24px; left: 24px;
     background: var(--panel); border: 1px solid var(--rule);
     padding: 14px 16px; z-index: 500; font-family: var(--mono);
     box-shadow: 0 4px 12px rgba(0,0,0,0.06); max-width: 180px;
@@ -486,7 +489,9 @@
     .stop-num { width: 22px; height: 22px; font-size: 10px; }
 
     .legend {
-      bottom: 12px;
+      /* Above the fixed tab bar (tabs-h + safe-area) so it stays usable
+         and doesn't get covered by the docked tabs. */
+      bottom: calc(12px + var(--tabs-h) + env(safe-area-inset-bottom, 0px));
       left: 12px;
       padding: 10px 12px;
       max-width: 140px;
@@ -2452,7 +2457,9 @@ function showOnMap(lat, lng, name) {
         .setContent(
           `<div class="popup-eyebrow">현서비 · From chat</div>` +
           `<div class="popup-title">${name.replace(/[<>&"]/g, '')}</div>` +
-          `<a class="popup-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=${lat},${lng}">Google Maps →</a>`
+          // Search by place name (not lat,lng) so Google Maps shows the
+          // place card with reviews / hours instead of a raw coordinate pin.
+          `<a class="popup-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=${encodeURIComponent(name)}">Google Maps →</a>`
         )
         .openOn(map);
     }, 700);
@@ -2475,7 +2482,7 @@ function addCustomPoint(lat, lng, name) {
   marker.bindPopup(
     `<div class="popup-eyebrow">현서비 추가</div>` +
     `<div class="popup-title">${name.replace(/[<>&"]/g, '')}</div>` +
-    `<a class="popup-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=${lat},${lng}">Google Maps →</a>`,
+    `<a class="popup-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=${encodeURIComponent(name)}">Google Maps →</a>`,
     { closeButton: true, autoPan: true }
   );
   customMarkers.set(key, marker);
