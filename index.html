@@ -1621,20 +1621,27 @@ function coordsForDay(d) {
 
 function applyMapFilters() {
   const dayMatch = (d) => filters.activeDay === 'all' || String(d) === filters.activeDay;
+  // When categories are isolated (fewer than all 5 active), hide the main
+  // numbered stop markers + route lines too — otherwise the big numbered
+  // pins stay everywhere and the "filter" looks like nothing changed.
+  // Main stops aren't tagged per-category, so they can't be filtered by
+  // category individually; we treat any isolation as "show only category
+  // sub-points".
+  const catsIsolated = filters.activeCategories.size < 5;
 
-  // Main stop markers — visible if day matches
+  // Main stop markers — visible if day matches AND categories aren't isolated
   itinerary.forEach(stop => {
     const m = markers[stop.num];
     if (!m) return;
-    const show = dayMatch(stop.day);
+    const show = dayMatch(stop.day) && !catsIsolated;
     if (show && !map.hasLayer(m)) m.addTo(map);
     else if (!show && map.hasLayer(m)) map.removeLayer(m);
   });
 
-  // Route lines per day
+  // Route lines per day — visible if day matches AND categories aren't isolated
   [1, 2, 3].forEach(d => {
     if (!routeLines[d]) return;
-    const show = dayMatch(d);
+    const show = dayMatch(d) && !catsIsolated;
     if (show && !map.hasLayer(routeLines[d])) routeLines[d].addTo(map);
     else if (!show && map.hasLayer(routeLines[d])) map.removeLayer(routeLines[d]);
   });
