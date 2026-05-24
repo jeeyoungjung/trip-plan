@@ -264,6 +264,30 @@
   .sub-point-cat[data-cat="Books"]    { color: var(--cat-books);    border-color: var(--cat-books); }
   .sub-point-cat[data-cat="Design"]   { color: var(--cat-design);   border-color: var(--cat-design); }
 
+  /* Right-column: pin star above the category chip. */
+  .sub-point-right {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+    margin-top: 2px;
+  }
+  .sub-point-pin {
+    background: none; border: 0; cursor: pointer; padding: 0 2px;
+    font-family: inherit; font-size: 15px; line-height: 1;
+    color: var(--ink-4);
+    transition: color 0.18s, transform 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sub-point-pin:hover { color: var(--ink-3); transform: scale(1.15); }
+  .sub-point-pin.pinned { color: #B5634A; }
+  .sub-point-pin.pinned:hover { color: var(--ink); }
+
+  /* Pinned sub-marker on the map — filled terracotta, slightly larger. */
+  .sub-marker.pinned {
+    width: 16px; height: 16px;
+    background: #B5634A !important;
+    border-color: #B5634A !important;
+    box-shadow: 0 0 0 2px var(--panel), 0 1px 3px rgba(0,0,0,0.15);
+  }
+
   /* ========= INFO FOOTER ========= */
   .info .row {
     display: flex; justify-content: space-between; margin-bottom: 4px;
@@ -271,6 +295,18 @@
   }
   .info .row span:first-child { color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; }
   .info .row span:last-child { color: var(--ink); }
+  .info-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .info-action {
+    flex: 1; min-width: 0; padding: 10px 8px;
+    background: var(--card); border: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink);
+    cursor: pointer; border-radius: 0;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .info-action:hover { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .info-action.copied { background: #7B8757; color: var(--panel); border-color: #7B8757; }
 
   /* ========= MAP ========= */
   #map { width: 100%; height: 100%; background: #E8E4D9; }
@@ -923,6 +959,10 @@
     <div class="row"><span>Outbound</span><span>B6 816 · Thu 11:47 PM → JFK 8:34 AM</span></div>
     <div class="row"><span>Return</span><span>B6 615 · Sun 6:29 PM → SFO 10:19 PM</span></div>
     <div class="row"><span>Ref</span><span>MNQATC</span></div>
+    <div class="info-actions">
+      <button class="info-action" id="icsDownload" type="button">↓ Save to Calendar (.ics)</button>
+      <button class="info-action" id="shareLink" type="button">↗ Copy share link</button>
+    </div>
   </footer>
 
 </div>
@@ -1285,7 +1325,10 @@ const itineraryEl = document.getElementById('itinerary');
                   <div class="sub-point-name">${p.name}</div>
                   <div class="sub-point-note ko">${p.note}</div>
                 </div>
-                <div class="sub-point-cat" data-cat="${p.category}">${p.category}</div>
+                <div class="sub-point-right">
+                  <button class="sub-point-pin" data-sub="${stop.num}-${i}" aria-label="Pin ${p.name.replace(/"/g, '&quot;')}" title="찜">☆</button>
+                  <div class="sub-point-cat" data-cat="${p.category}">${p.category}</div>
+                </div>
               </div>
             `).join('')}
           </div>
@@ -1663,10 +1706,121 @@ refreshNowNext();
 setInterval(refreshNowNext, 60_000);
 
 // On first load: if we're inside the trip window, jump the list + map to "Now".
-(function jumpToNowOnce() {
+// =========== URL DEEP-LINK STATE ===========
+// Shareable URL hash format: `#stop=14&day=2&pin=14-3,14-7`
+//   stop=N → focus that stop (scroll list + fly map)
+//   day=D  → activate that day tab
+//   pin=X-Y,... → mark those sub-points (by `${stop.num}-${index}`) as pinned
+// State is single source of truth in the URL — copy URL = share state.
+
+function parseHash() {
+  const raw = location.hash.slice(1);
+  const params = new URLSearchParams(raw);
+  return {
+    stop: parseInt(params.get('stop'), 10) || null,
+    day: params.get('day') || null,
+    pin: (params.get('pin') || '').split(',').map(s => s.trim()).filter(Boolean),
+  };
+}
+
+function writeHash(state) {
+  const parts = [];
+  if (state.stop) parts.push('stop=' + state.stop);
+  if (state.day) parts.push('day=' + state.day);
+  if (state.pin && state.pin.length) parts.push('pin=' + state.pin.join(','));
+  const next = parts.length ? '#' + parts.join('&') : '';
+  if (location.hash !== next) {
+    // replaceState so back button doesn't replay every micro-interaction.
+    history.replaceState(null, '', next || location.pathname + location.search);
+  }
+}
+
+function patchHash(updates) {
+  const cur = parseHash();
+  writeHash({ ...cur, ...updates });
+}
+
+function togglePinInHash(subId) {
+  const cur = parseHash();
+  const idx = cur.pin.indexOf(subId);
+  if (idx >= 0) cur.pin.splice(idx, 1);
+  else cur.pin.push(subId);
+  writeHash(cur);
+  return idx < 0;  // returns whether it's now pinned
+}
+
+function syncPinUI() {
+  const pinned = new Set(parseHash().pin);
+  document.querySelectorAll('.sub-point-pin').forEach(btn => {
+    const on = pinned.has(btn.dataset.sub);
+    btn.classList.toggle('pinned', on);
+    btn.textContent = on ? '★' : '☆';
+  });
+  // Mirror onto map sub-markers via the inner .sub-marker[data-sub] element.
+  document.querySelectorAll('.sub-marker').forEach(m => {
+    const on = pinned.has(m.dataset.sub);
+    m.classList.toggle('pinned', on);
+  });
+}
+
+// Pin click handler — delegated so it works for all sub-points
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.sub-point-pin');
+  if (!btn) return;
+  e.stopPropagation();
+  e.preventDefault();
+  togglePinInHash(btn.dataset.sub);
+  syncPinUI();
+});
+
+// React to hash changes (back/forward, external paste)
+window.addEventListener('hashchange', () => applyHashStateFromUrl(false));
+
+function applyHashStateFromUrl(isInitial) {
+  const state = parseHash();
+  // Day tab
+  if (state.day) {
+    const tab = document.querySelector(`.tab[data-day="${state.day}"]`);
+    if (tab && !tab.classList.contains('active')) tab.click();
+  }
+  // Pins
+  syncPinUI();
+  // Focused stop (focusStop already handles scroll + fly + popup)
+  if (state.stop) {
+    setTimeout(() => {
+      if (typeof focusStop === 'function') focusStop(state.stop);
+    }, isInitial ? 900 : 0);
+  }
+}
+
+// Sync click-state changes back to the URL. Wrap existing handlers.
+(function wireHashWriters() {
+  // Stop focus → hash
+  const origFocusStop = focusStop;
+  focusStop = function (num) {
+    patchHash({ stop: num });
+    return origFocusStop(num);
+  };
+  // Day tab → hash
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const d = tab.dataset.day;
+      patchHash({ day: d === 'all' ? null : d, stop: null });
+    });
+  });
+})();
+
+(function initialJump() {
+  // If the URL hash already targets a stop, let that drive — don't override
+  // with the Now/Next auto-jump.
+  const initialHash = parseHash();
+  if (initialHash.stop || initialHash.day) {
+    setTimeout(() => applyHashStateFromUrl(true), 100);
+    return;
+  }
+  // Otherwise, jump to "Now" if we're inside the trip window.
   const { active } = findNowNext();
   if (!active || active.lat == null) return;
-  // Wait for the map + sticky containers to settle before flying.
   setTimeout(() => {
     const el = document.querySelector(`.stop[data-num="${active.num}"]`);
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1676,6 +1830,117 @@ setInterval(refreshNowNext, 60_000);
     }
   }, 900);
 })();
+
+// =========== ICS CALENDAR EXPORT ===========
+// Builds a standards-compliant .ics file from the itinerary so phones can
+// add the whole trip — including 30-min reminders for reservations — to
+// their native Calendar app. No backend; everything runs in the browser.
+function icsEscape(s) {
+  return String(s || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\n/g, '\\n');
+}
+
+function icsDate(ms) {
+  return new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+}
+
+function buildICS() {
+  const dtstamp = icsDate(Date.now());
+  const stops = itinerary
+    .map(s => ({ stop: s, ts: stopTimestamp(s) }))
+    .filter(x => x.ts != null);
+
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//NYC Trip//jeeyoungjung//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:NYC Trip · May 28—31, 2026',
+  ];
+
+  stops.forEach((cur, i) => {
+    const stop = cur.stop;
+    const startTs = cur.ts;
+    const nextTs = stops[i + 1]?.ts;
+    // Default duration: 1hr, or up to the next stop's start, capped at 4hr.
+    const defaultEnd = startTs + 60 * 60 * 1000;
+    const endTs = Math.min(nextTs || defaultEnd, startTs + 4 * 60 * 60 * 1000);
+
+    const desc = [
+      stop.note,
+      stop.transit ? '→ ' + stop.transit : '',
+      stop.gmaps ? stop.gmaps : '',
+    ].filter(Boolean).join('\n\n');
+
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:stop-${stop.num}-2026@trip-plan`);
+    lines.push(`DTSTAMP:${dtstamp}`);
+    lines.push(`DTSTART:${icsDate(startTs)}`);
+    lines.push(`DTEND:${icsDate(endTs)}`);
+    lines.push(`SUMMARY:${icsEscape(stop.name)}`);
+    if (stop.address) lines.push(`LOCATION:${icsEscape(stop.address)}`);
+    if (desc) lines.push(`DESCRIPTION:${icsEscape(desc)}`);
+    if (stop.gmaps) lines.push(`URL:${stop.gmaps}`);
+
+    // 30-min reminder for hard reservations + ticketed shows
+    if (stop.tag && /reserved|ticket|museum/i.test(stop.tag)) {
+      lines.push('BEGIN:VALARM');
+      lines.push('TRIGGER:-PT30M');
+      lines.push('ACTION:DISPLAY');
+      lines.push(`DESCRIPTION:${icsEscape(stop.name + ' in 30 min')}`);
+      lines.push('END:VALARM');
+    }
+    lines.push('END:VEVENT');
+  });
+
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+
+function downloadICS() {
+  const ics = buildICS();
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'nyc-trip-may-2026.ics';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const icsBtn = document.getElementById('icsDownload');
+if (icsBtn) icsBtn.addEventListener('click', downloadICS);
+
+// =========== SHARE LINK ===========
+const shareBtn = document.getElementById('shareLink');
+if (shareBtn) {
+  shareBtn.addEventListener('click', async () => {
+    const url = location.href;
+    try {
+      if (navigator.share && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
+        await navigator.share({ title: 'NYC Trip · May 2026', url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      const orig = shareBtn.textContent;
+      shareBtn.textContent = '✓ Link copied';
+      shareBtn.classList.add('copied');
+      setTimeout(() => {
+        shareBtn.textContent = orig;
+        shareBtn.classList.remove('copied');
+      }, 1600);
+    } catch (e) {
+      // Final fallback: select the URL so the user can copy manually
+      window.prompt('Copy this URL:', url);
+    }
+  });
+}
 
 // =========== WEATHER ===========
 const WMO_LABELS = {
