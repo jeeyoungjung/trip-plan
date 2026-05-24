@@ -2619,6 +2619,29 @@ chatSuggestionsEl.querySelectorAll('.chat-sugg').forEach(b => {
   // Snapshot whatever's already in the textarea so the new transcript is
   // appended, not overwriting. (User might dictate a follow-up to typed text.)
   let baseValue = '';
+  // Auto-retry once on transient `network` errors — Chrome's Web Speech API
+  // streams audio to Google's servers; brief hiccups are common.
+  let retriedOnNetworkError = false;
+
+  // Friendly Korean blurbs for each known SpeechRecognitionErrorEvent.error.
+  // Chrome / Edge use Google's cloud STT for ko-KR; no network = no STT.
+  function describeError(code) {
+    switch (code) {
+      case 'not-allowed':
+      case 'service-not-allowed':
+        return '마이크 권한이 차단돼 있어요. 주소창 자물쇠 아이콘에서 마이크를 허용해 주세요.';
+      case 'audio-capture':
+        return '마이크를 찾을 수 없어요. 다른 앱이 마이크를 점유 중인지 확인해 주세요.';
+      case 'network':
+        return '음성 인식 서버(Google)에 연결하지 못했어요. 인터넷 연결 / VPN 상태를 확인하고 다시 눌러주세요. (Chrome의 한국어 STT는 온라인 전송 방식이라 네트워크가 필요해요.)';
+      case 'language-not-supported':
+        return '이 브라우저에서는 한국어 음성 인식을 지원하지 않아요. Chrome / Edge에서 시도해 주세요.';
+      case 'bad-grammar':
+        return '음성 인식이 일시적으로 실패했어요. 잠시 후 다시 시도해 주세요.';
+      default:
+        return '음성 인식 오류: ' + (code || 'unknown');
+    }
+  }
 
   function start() {
     if (listening) return;
@@ -2640,21 +2663,34 @@ chatSuggestionsEl.querySelectorAll('.chat-sugg').forEach(b => {
       let transcript = '';
       for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
       chatInputEl.value = baseValue + transcript;
-      // Trigger auto-resize via the existing input listener.
       chatInputEl.dispatchEvent(new Event('input'));
+      // Got a result → this was clearly a clean run; clear the retry flag.
+      retriedOnNetworkError = false;
     };
     recognition.onerror = (e) => {
       // 'no-speech' / 'aborted' are normal flow events — silent.
-      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-        appendChatMsg('error', '마이크 권한이 차단돼 있어요. 브라우저 설정에서 허용해 주세요.');
-      } else if (e.error && e.error !== 'no-speech' && e.error !== 'aborted') {
-        appendChatMsg('error', '음성 인식 오류: ' + e.error);
+      if (e.error === 'no-speech' || e.error === 'aborted') return;
+      // Transient network blip: try one auto-retry before bothering the user.
+      if (e.error === 'network' && !retriedOnNetworkError) {
+        retriedOnNetworkError = true;
+        // The recognizer fires onend after onerror; restart from there.
+        recognition._retryAfterEnd = true;
+        return;
       }
+      appendChatMsg('error', describeError(e.error));
+      retriedOnNetworkError = false;
     };
     recognition.onend = () => {
       listening = false;
       micBtn.classList.remove('listening');
       micBtn.setAttribute('aria-label', '음성 입력');
+      // If we flagged a retry, restart now (after a short pause so the
+      // recognizer fully settles between sessions).
+      if (recognition && recognition._retryAfterEnd) {
+        recognition._retryAfterEnd = false;
+        setTimeout(() => { try { start(); } catch (_) {} }, 400);
+        return;
+      }
       // Refocus the textarea so the user can immediately edit or Send.
       chatInputEl.focus();
     };
