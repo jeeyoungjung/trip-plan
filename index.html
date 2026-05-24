@@ -1423,13 +1423,24 @@ async function loadWeather() {
 loadWeather();
 
 // =========== CHAT (LLM) ===========
-// Two backends supported:
-//   1. Azure AI Foundry Responses API — auto-configured from window.TRIP_CONFIG (config.local.js)
-//   2. User-supplied Anthropic key — fallback when no config is present
+// Three backends supported:
+//   1. proxy           — POST to /api/chat (serverless function holds the Azure key).
+//                        Default when deployed; no api-key needed in the browser.
+//   2. azure-responses — direct Azure call with api-key in the browser.
+//                        Set via config.local.js for LOCAL DEV ONLY — never deploy this.
+//   3. anthropic       — user pastes an Anthropic key in the UI. Manual opt-in fallback.
+if (!window.TRIP_CONFIG) {
+  window.TRIP_CONFIG = {
+    provider: 'proxy',
+    endpoint: '/api/chat',
+    agent: { name: 'jeeyoungbot', version: '2' },
+  };
+}
 let apiKey = null;
 const chatHistory = []; // [{role: 'user'|'assistant', content: string}]
-const CFG = window.TRIP_CONFIG || null;
-const PROVIDER = CFG?.provider || 'anthropic'; // 'azure-responses' | 'anthropic'
+const CFG = window.TRIP_CONFIG;
+const PROVIDER = CFG.provider || 'anthropic';
+const NEEDS_BROWSER_KEY = PROVIDER === 'anthropic' || PROVIDER === 'azure-responses';
 const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
 
 const chatToggleEl = document.getElementById('chatToggle');
@@ -1456,10 +1467,12 @@ function chatOpen() {
   document.body.classList.add('chat-locked');
   if (chatMessagesEl.children.length === 0) {
     let label = 'Claude';
-    if (PROVIDER === 'azure-responses') label = CFG?.agent?.name ? `Agent · ${CFG.agent.name}` : 'Azure';
+    if (PROVIDER === 'proxy' || PROVIDER === 'azure-responses') {
+      label = CFG.agent?.name ? `Agent · ${CFG.agent.name}` : (PROVIDER === 'proxy' ? 'Hosted' : 'Azure');
+    }
     appendChatMsg('system', `안녕! NYC 트립 관련 뭐든 물어봐요 — 식당 백업, 날씨/일정 조정, 동선 추천 등. (${label})`);
   }
-  if (!apiKey) setTimeout(() => chatKeyInputEl.focus(), 320);
+  if (NEEDS_BROWSER_KEY && !apiKey) setTimeout(() => chatKeyInputEl.focus(), 320);
   else setTimeout(() => chatInputEl.focus(), 320);
 }
 function chatClose() {
@@ -1595,11 +1608,14 @@ async function callAnthropic(systemPrompt) {
 }
 
 async function callAzureResponses(systemPrompt) {
-  // Azure AI Foundry Responses API.
+  // Azure AI Foundry Responses API (or the /api/chat proxy that wraps it).
   //   - If CFG.agent is set, reference a Foundry Agent (uses its baked-in
-  //     instructions + tools). We still prepend a short context message with
-  //     the itinerary JSON so the agent has access to the current trip data.
+  //     instructions + tools). We prepend a context message with the
+  //     itinerary JSON so the agent has access to the current trip data.
   //   - Otherwise, use CFG.model and our own system prompt.
+  //   - In 'proxy' mode the server adds the api-key + pins the agent, so the
+  //     browser doesn't send (and never holds) the Azure key.
+  const isProxy = PROVIDER === 'proxy';
   const useAgent = !!CFG.agent;
   const input = [];
   if (useAgent) {
@@ -1614,17 +1630,19 @@ async function callAzureResponses(systemPrompt) {
   for (const m of chatHistory) input.push({ role: m.role, content: m.content });
 
   const body = { input };
-  if (useAgent) {
+  if (useAgent && !isProxy) {
     body.agent_reference = { name: CFG.agent.name, version: String(CFG.agent.version), type: 'agent_reference' };
-  } else {
+  } else if (!useAgent) {
     body.model = CFG.model || 'gpt-4o-mini';
   }
+  // In proxy mode the server pins agent_reference, so the client doesn't send it.
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (!isProxy) headers['api-key'] = apiKey;
+
   const r = await fetch(CFG.endpoint, {
     method: 'POST',
-    headers: {
-      'api-key': apiKey,
-      'Content-Type': 'application/json',
-    },
+    headers,
     body: JSON.stringify(body),
   });
   if (!r.ok) {
@@ -1657,7 +1675,7 @@ async function callAzureResponses(systemPrompt) {
 async function sendChat(text) {
   text = text.trim();
   if (!text) return;
-  if (!apiKey) {
+  if (NEEDS_BROWSER_KEY && !apiKey) {
     appendChatMsg('error', 'API key 먼저 입력해 주세요 ↑');
     chatKeyInputEl.focus();
     return;
@@ -1671,7 +1689,7 @@ async function sendChat(text) {
   const typing = appendTyping();
   try {
     const systemPrompt = buildSystemPrompt();
-    const result = PROVIDER === 'azure-responses'
+    const result = (PROVIDER === 'proxy' || PROVIDER === 'azure-responses')
       ? await callAzureResponses(systemPrompt)
       : await callAnthropic(systemPrompt);
     typing.remove();
@@ -1697,10 +1715,12 @@ async function sendChat(text) {
   }
 }
 
-// If config provides a key, set it on load and skip the key-paste UI entirely
-// (no "Change" affordance — the key comes from config.local.js, so changing it
-// would just mean editing that file and reloading).
-if (CFG?.apiKey) {
+// Hide the key-paste UI entirely when we don't need a browser-side key
+// (proxy mode) or when the config supplies one directly (azure-responses dev).
+if (!NEEDS_BROWSER_KEY) {
+  chatKeystripEl.classList.add('hidden');
+  chatKeystatusEl.classList.add('hidden');
+} else if (CFG.apiKey) {
   setApiKey(CFG.apiKey);
   chatKeystatusEl.classList.add('hidden');
 }
