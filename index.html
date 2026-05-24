@@ -277,6 +277,18 @@
     box-shadow: 0 0 0 2px var(--panel), 0 1px 3px rgba(0,0,0,0.15);
   }
 
+  /* Custom pin — places added from the chat into the map for this session. */
+  .custom-pin {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #B5634A; color: var(--panel);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; line-height: 1; font-weight: 500;
+    box-shadow: 0 2px 6px rgba(31, 29, 24, 0.18), 0 0 0 2px var(--panel);
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .custom-pin:hover { transform: scale(1.15); }
+
 
   /* ========= MAP ========= */
   #map { width: 100%; height: 100%; background: #E8E4D9; }
@@ -737,6 +749,42 @@
     50%  { content: '··'; }
     75%  { content: '···'; }
     100% { content: ''; }
+  }
+
+  /* Chat → Map action cards (appear after an assistant reply that
+     mentions a place with coordinates). */
+  .chat-map-cards {
+    align-self: flex-start;
+    max-width: 88%;
+    margin-top: -8px;
+    display: flex; flex-direction: column; gap: 8px;
+    animation: msgIn 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .chat-map-card {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 10px 12px;
+  }
+  .chat-map-name {
+    font-family: var(--kr); font-size: 12.5px; color: var(--ink);
+    margin-bottom: 8px; letter-spacing: -0.005em; line-height: 1.3;
+  }
+  .chat-map-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chat-map-btn {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    background: var(--card); border: 1px solid var(--rule);
+    color: var(--ink-2);
+    cursor: pointer; border-radius: 0;
+    transition: background 0.18s, color 0.18s, border-color 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chat-map-btn:hover { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .chat-map-btn:disabled {
+    background: #7B8757; color: var(--panel); border-color: #7B8757;
+    cursor: default;
   }
 
   /* Suggestions */
@@ -2023,6 +2071,102 @@ function appendTyping() {
   return div;
 }
 
+// === Map-action tokens from the agent ===
+// The agent is instructed to append `[map:LAT,LNG,NAME]` for places. We
+// strip those out of the visible reply and render small action cards
+// instead, each with "Show on map" + "+ Add" buttons.
+
+function extractMapTokens(text) {
+  const re = /\[map:\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*,\s*([^\]]+?)\s*\]/g;
+  const mapPoints = [];
+  const cleanText = text.replace(re, (_, lat, lng, name) => {
+    const la = parseFloat(lat), ln = parseFloat(lng);
+    if (Number.isFinite(la) && Number.isFinite(ln)) {
+      mapPoints.push({ lat: la, lng: ln, name: name.trim() });
+    }
+    return '';
+  }).replace(/\n{3,}/g, '\n\n').trim();
+  return { cleanText, mapPoints };
+}
+
+function renderMapActionCards(points) {
+  const wrap = document.createElement('div');
+  wrap.className = 'chat-map-cards';
+  points.forEach((p) => {
+    const card = document.createElement('div');
+    card.className = 'chat-map-card';
+    const name = document.createElement('div');
+    name.className = 'chat-map-name ko';
+    name.textContent = '📍 ' + p.name;
+    const btns = document.createElement('div');
+    btns.className = 'chat-map-buttons';
+    const show = document.createElement('button');
+    show.type = 'button';
+    show.className = 'chat-map-btn';
+    show.textContent = 'Show on map';
+    show.addEventListener('click', () => showOnMap(p.lat, p.lng, p.name));
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'chat-map-btn';
+    add.textContent = '+ Add';
+    add.addEventListener('click', () => {
+      addCustomPoint(p.lat, p.lng, p.name);
+      add.disabled = true;
+      add.textContent = '✓ Added';
+    });
+    btns.append(show, add);
+    card.append(name, btns);
+    wrap.appendChild(card);
+  });
+  chatMessagesEl.appendChild(wrap);
+  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+}
+
+// Session-only custom markers (cleared on reload, per the no-storage rule).
+const customMarkers = new Map(); // key: "lat,lng,name" → leaflet marker
+
+function showOnMap(lat, lng, name) {
+  chatClose();
+  // Wait for the drawer close animation before flying so the user perceives the motion.
+  setTimeout(() => {
+    if (!map) return;
+    map.flyTo([lat, lng], 15, { duration: 0.9 });
+    setTimeout(() => {
+      L.popup({ closeButton: true, autoPan: true, className: 'chat-popup' })
+        .setLatLng([lat, lng])
+        .setContent(
+          `<div class="popup-eyebrow">현서비 · From chat</div>` +
+          `<div class="popup-title">${name.replace(/[<>&"]/g, '')}</div>` +
+          `<a class="popup-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=${lat},${lng}">Google Maps →</a>`
+        )
+        .openOn(map);
+    }, 700);
+  }, 320);
+}
+
+function addCustomPoint(lat, lng, name) {
+  if (!map) return;
+  const key = `${lat.toFixed(5)},${lng.toFixed(5)},${name}`;
+  if (customMarkers.has(key)) {
+    showOnMap(lat, lng, name);  // already added — just focus
+    return;
+  }
+  const icon = L.divIcon({
+    className: 'custom-marker',
+    html: `<div class="custom-pin" data-name="${name.replace(/"/g, '&quot;')}">★</div>`,
+    iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -10],
+  });
+  const marker = L.marker([lat, lng], { icon }).addTo(map);
+  marker.bindPopup(
+    `<div class="popup-eyebrow">현서비 추가</div>` +
+    `<div class="popup-title">${name.replace(/[<>&"]/g, '')}</div>` +
+    `<a class="popup-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=${lat},${lng}">Google Maps →</a>`,
+    { closeButton: true, autoPan: true }
+  );
+  customMarkers.set(key, marker);
+  showOnMap(lat, lng, name);
+}
+
 function buildSystemPrompt() {
   const today = '2026-05-23';
   const slim = itinerary.map(s => ({
@@ -2081,9 +2225,22 @@ async function callAzureResponses(systemPrompt) {
   if (useAgent) {
     input.push({
       role: 'user',
-      content: 'Trip itinerary context (use this as the source of truth for stops, times, addresses):\n' + JSON.stringify(itinerary),
+      content: `Trip itinerary context (source of truth for stops, times, addresses):
+${JSON.stringify(itinerary)}
+
+Map-action protocol: whenever you mention a specific place with known coordinates, append a marker on its own line at the END of your reply, in this exact format:
+
+[map:LAT,LNG,NAME]
+
+Example: [map:40.7795,-73.9808,Levain Bakery]
+
+Rules:
+- Multiple places → multiple marker lines, each on its own line.
+- For places already in the itinerary, the marker is optional (the user can click the stop card). But for any NEW place not in the itinerary, ALWAYS include the marker so the user can add it to their map.
+- The marker does NOT replace your natural-language reply — it's appended after it. Keep your normal prose unchanged.
+- Use precise decimal coordinates (4+ decimals). Use the place's English name in NAME.`,
     });
-    input.push({ role: 'assistant', content: '네, 일정 확인했습니다.' });
+    input.push({ role: 'assistant', content: '네, 일정 확인했습니다. 새로운 장소를 추천할 때는 [map:위도,경도,이름] 마커도 같이 붙일게요.' });
   } else {
     input.push({ role: 'system', content: systemPrompt });
   }
@@ -2171,8 +2328,12 @@ async function sendChat(text) {
       chatHistory.pop();
       return;
     }
+    // Parse [map:LAT,LNG,NAME] tokens out of the visible reply, render the
+    // clean prose, then append action cards for each token.
     chatHistory.push({ role: 'assistant', content: result.text });
-    appendChatMsg('assistant', result.text);
+    const { cleanText, mapPoints } = extractMapTokens(result.text);
+    appendChatMsg('assistant', cleanText);
+    if (mapPoints.length) renderMapActionCards(mapPoints);
   } catch (e) {
     typing.remove();
     appendChatMsg('error', e.message || 'Network error');
