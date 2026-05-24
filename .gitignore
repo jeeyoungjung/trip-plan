@@ -1,0 +1,3 @@
+# Local config — contains API keys, never commit
+config.local.js
+.DS_Store

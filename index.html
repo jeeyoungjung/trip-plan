@@ -130,6 +130,16 @@
     color: var(--ink); margin-bottom: 4px; letter-spacing: -0.02em;
   }
   .day-date { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+  .day-weather {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-3);
+    margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--rule);
+    display: flex; gap: 10px; align-items: center;
+    opacity: 0; transition: opacity 0.4s;
+  }
+  .day-weather.loaded { opacity: 1; }
+  .day-weather .wx-temp { color: var(--ink-2); font-weight: 500; }
+  .day-weather .wx-cond { color: var(--ink-3); }
 
   .stop {
     display: grid; grid-template-columns: 56px 1fr; gap: 16px;
@@ -312,7 +322,7 @@
 
   /* ========= LEGEND ========= */
   .legend {
-    position: absolute; bottom: 24px; right: 24px;
+    position: absolute; bottom: 24px; left: 24px;
     background: var(--panel); border: 1px solid var(--rule);
     padding: 14px 16px; z-index: 500; font-family: var(--mono);
     box-shadow: 0 4px 12px rgba(0,0,0,0.06); max-width: 180px;
@@ -389,7 +399,7 @@
 
     .legend {
       bottom: 12px;
-      right: 12px;
+      left: 12px;
       padding: 10px 12px;
       max-width: 140px;
     }
@@ -408,6 +418,358 @@
     .stat-num { font-size: 18px; }
     .title { font-size: 32px; }
     .tab span { font-size: 14px; }
+  }
+
+  /* ========= CHAT — Ask Jeeyoung-bot ========= */
+  /* Fixed FAB bottom-right · desktop: side drawer · mobile: full-screen takeover */
+  .chat-toggle {
+    position: fixed; bottom: 28px; right: 28px; z-index: 800;
+    background: var(--ink); color: var(--panel);
+    border: 0; padding: 14px 18px 14px 16px; cursor: pointer;
+    box-shadow: 0 6px 20px rgba(31, 29, 24, 0.22), 0 0 0 1px rgba(31, 29, 24, 0.08);
+    display: inline-flex; align-items: center; gap: 12px;
+    transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+                box-shadow 0.25s, background 0.25s, opacity 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    border-radius: 999px;
+  }
+  .chat-toggle:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(31, 29, 24, 0.3), 0 0 0 1px rgba(31, 29, 24, 0.08);
+  }
+  .chat-toggle:active { transform: translateY(-1px); }
+  .chat-toggle.is-open { opacity: 0; pointer-events: none; transform: translateY(6px); }
+
+  .chat-toggle-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #B5634A; /* terracotta — only accent in the whole site, used as an "online" cue */
+    box-shadow: 0 0 0 4px rgba(181, 99, 74, 0.18);
+    animation: chatPulse 2.2s ease-in-out infinite;
+  }
+  @keyframes chatPulse {
+    0%, 100% { box-shadow: 0 0 0 4px rgba(181, 99, 74, 0.18); }
+    50%      { box-shadow: 0 0 0 7px rgba(181, 99, 74, 0.06); }
+  }
+
+  .chat-toggle-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1; }
+  .chat-toggle-eyebrow {
+    font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-4);
+    margin-bottom: 4px;
+  }
+  .chat-toggle-name {
+    font-family: var(--display); font-variation-settings: 'opsz' 36;
+    font-weight: 400; font-style: italic; font-size: 15px;
+    letter-spacing: -0.015em; color: var(--panel);
+  }
+
+  /* Backdrop */
+  .chat-backdrop {
+    position: fixed; inset: 0; z-index: 850;
+    background: rgba(31, 29, 24, 0.32);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .chat-backdrop.open { opacity: 1; pointer-events: auto; }
+
+  /* Panel — DESKTOP DEFAULT: right-side drawer */
+  .chat-panel {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 440px; max-width: 100vw;
+    z-index: 900;
+    background: var(--panel);
+    border-left: 1px solid var(--rule);
+    box-shadow: -20px 0 50px rgba(31, 29, 24, 0.18);
+    display: flex; flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.32s cubic-bezier(0.2, 0.85, 0.25, 1);
+    will-change: transform;
+  }
+  .chat-panel.open { transform: translateX(0); }
+
+  /* Header */
+  .chat-head {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 26px 28px 22px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--panel);
+    position: relative;
+  }
+  .chat-head::after {
+    content: ''; position: absolute; left: 28px; right: 28px; bottom: -1px;
+    height: 1px; background: var(--ink); transform-origin: left;
+    transform: scaleX(0); transition: transform 0.5s 0.15s ease;
+  }
+  .chat-panel.open .chat-head::after { transform: scaleX(0.22); }
+  .chat-head-text { min-width: 0; }
+  .chat-eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px;
+  }
+  .chat-status-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: #7B8757;
+    box-shadow: 0 0 0 2px rgba(123, 135, 87, 0.18);
+  }
+  .chat-title {
+    font-family: var(--display); font-variation-settings: 'opsz' 60;
+    font-weight: 360; font-style: italic; font-size: 30px; line-height: 1;
+    color: var(--ink); letter-spacing: -0.025em;
+    margin-bottom: 8px;
+  }
+  .chat-title-hyphen {
+    font-style: normal; font-variation-settings: 'opsz' 144;
+    font-weight: 300; margin: 0 2px; color: var(--ink-3);
+    display: inline-block; transform: translateY(-2px);
+  }
+  .chat-subtitle {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+    color: var(--ink-3);
+  }
+  .chat-subtitle.ko { font-family: var(--kr); font-size: 11px; letter-spacing: -0.005em; }
+  .chat-close {
+    background: var(--panel); border: 1px solid var(--rule);
+    cursor: pointer; color: var(--ink-2);
+    width: 32px; height: 32px; padding: 0; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    margin-left: 16px;
+  }
+  .chat-close:hover { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+
+  /* Key strip */
+  .chat-keystrip {
+    padding: 18px 28px 20px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .chat-keystrip.hidden { display: none; }
+  .chat-keystrip-label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px;
+  }
+  .chat-keystrip-row { display: flex; gap: 8px; }
+  .chat-keystrip input {
+    flex: 1; min-width: 0; padding: 10px 12px;
+    border: 1px solid var(--rule); background: var(--card);
+    font-family: var(--mono); font-size: 11px; color: var(--ink);
+    outline: none; border-radius: 0; transition: border-color 0.2s;
+  }
+  .chat-keystrip input:focus { border-color: var(--ink); }
+  .chat-keystrip button {
+    padding: 10px 16px; border: 0; background: var(--ink); color: var(--panel);
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.16em;
+    text-transform: uppercase; cursor: pointer;
+    transition: background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chat-keystrip button:hover { background: var(--ink-2); }
+  .chat-keystrip-hint {
+    font-family: var(--kr); font-size: 10.5px; color: var(--ink-3);
+    margin-top: 10px; line-height: 1.5;
+  }
+  .chat-keystrip-hint a { color: var(--ink-2); border-bottom: 1px solid var(--ink-4); text-decoration: none; padding-bottom: 1px; }
+  .chat-keystrip-hint a:hover { color: var(--ink); border-color: var(--ink); }
+
+  .chat-keystatus {
+    padding: 10px 28px; border-bottom: 1px solid var(--rule-soft);
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-3);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .chat-keystatus.hidden { display: none; }
+  .chat-keystatus-check { color: #7B8757; }
+  .chat-keystatus button {
+    background: none; border: 0; cursor: pointer; color: var(--ink-3);
+    font-family: inherit; font-size: inherit; letter-spacing: inherit;
+    text-transform: inherit; padding: 0;
+    border-bottom: 1px solid var(--ink-4);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chat-keystatus button:hover { color: var(--ink); border-color: var(--ink); }
+
+  /* Messages */
+  .chat-messages {
+    flex: 1; overflow-y: auto;
+    padding: 24px 28px;
+    display: flex; flex-direction: column; gap: 18px;
+    scrollbar-width: thin; scrollbar-color: var(--ink-4) transparent;
+  }
+  .chat-messages::-webkit-scrollbar { width: 5px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--ink-4); border-radius: 0; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+
+  .chat-msg {
+    max-width: 92%;
+    font-family: var(--kr); font-size: 13.5px; line-height: 1.65;
+    animation: msgIn 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .chat-msg.user {
+    align-self: flex-end;
+    color: var(--ink); padding: 0 14px 0 0;
+    border-right: 2px solid var(--ink);
+    text-align: right;
+    letter-spacing: -0.005em;
+  }
+  .chat-msg.assistant {
+    align-self: flex-start;
+    color: var(--ink-2); padding: 0 0 0 14px;
+    border-left: 2px solid var(--day-2);
+    letter-spacing: -0.005em;
+    position: relative;
+  }
+  .chat-msg.assistant::before {
+    content: 'JB';
+    position: absolute; left: -14px; top: -16px;
+    font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.16em;
+    color: var(--ink-4);
+  }
+  .chat-msg.system {
+    align-self: stretch; max-width: 100%;
+    text-align: center;
+    font-family: var(--kr); font-size: 11.5px; color: var(--ink-3);
+    padding: 6px 0;
+    border-top: 1px dashed var(--rule);
+    border-bottom: 1px dashed var(--rule);
+    letter-spacing: -0.005em;
+  }
+  .chat-msg.error {
+    align-self: stretch; max-width: 100%;
+    font-family: var(--mono); font-size: 10.5px; color: #B5634A;
+    padding: 8px 12px;
+    border-left: 2px solid #B5634A;
+    background: rgba(181, 99, 74, 0.05);
+    letter-spacing: 0.02em;
+  }
+  .chat-msg a.chat-link {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid var(--ink-4);
+    padding-bottom: 1px;
+    transition: border-color 0.15s, color 0.15s;
+    word-break: break-word;
+  }
+  .chat-msg.assistant a.chat-link { color: var(--ink); }
+  .chat-msg a.chat-link:hover { border-color: currentColor; }
+  .chat-msg a.chat-link::after {
+    content: ' ↗'; font-family: var(--mono); font-size: 0.8em;
+    color: var(--ink-4); margin-left: 1px;
+  }
+
+  .chat-msg.typing {
+    color: var(--ink-3); font-style: italic;
+  }
+  .chat-msg.typing::after {
+    content: ''; display: inline-block; margin-left: 4px;
+    animation: chatDots 1.2s steps(4) infinite;
+  }
+  @keyframes chatDots {
+    0%   { content: ''; }
+    25%  { content: '·'; }
+    50%  { content: '··'; }
+    75%  { content: '···'; }
+    100% { content: ''; }
+  }
+
+  /* Suggestions */
+  .chat-suggestions {
+    padding: 0 28px 16px;
+    border-top: 1px dashed var(--rule);
+    padding-top: 16px;
+  }
+  .chat-suggestions.hidden { display: none; }
+  .chat-sugg-label {
+    font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--ink-4); margin-bottom: 10px;
+  }
+  .chat-sugg-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chat-sugg {
+    padding: 7px 11px; background: transparent;
+    border: 1px solid var(--rule);
+    cursor: pointer;
+    font-family: var(--kr); font-size: 11.5px; color: var(--ink-2);
+    letter-spacing: -0.005em;
+    transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chat-sugg:hover {
+    background: var(--ink); color: var(--panel); border-color: var(--ink);
+    transform: translateY(-1px);
+  }
+
+  /* Composer */
+  .chat-form {
+    border-top: 1px solid var(--rule);
+    padding: 16px 20px 18px;
+    display: flex; gap: 10px; align-items: flex-end;
+    background: var(--card);
+  }
+  .chat-form textarea {
+    flex: 1; min-height: 38px; max-height: 140px; resize: none;
+    padding: 10px 12px;
+    border: 1px solid var(--rule); background: var(--panel);
+    font-family: var(--kr); font-size: 13px; color: var(--ink);
+    outline: none; border-radius: 0; line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+  .chat-form textarea:focus { border-color: var(--ink); }
+  .chat-form textarea::placeholder { color: var(--ink-4); }
+  .chat-form button {
+    height: 38px; padding: 0 14px;
+    border: 0; background: var(--ink); color: var(--panel);
+    cursor: pointer;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em;
+    text-transform: uppercase;
+    display: inline-flex; align-items: center; gap: 8px;
+    transition: background 0.2s, opacity 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .chat-form button:hover:not(:disabled) { background: var(--ink-2); }
+  .chat-form button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .chat-form button svg { display: block; }
+
+  /* MOBILE: full-screen takeover */
+  @media (max-width: 900px) {
+    .chat-toggle {
+      bottom: 20px; right: 20px;
+      padding: 12px 16px 12px 14px;
+      gap: 10px;
+    }
+    .chat-toggle-eyebrow { font-size: 8px; }
+    .chat-toggle-name { font-size: 14px; }
+
+    .chat-panel {
+      top: 0; right: 0; bottom: 0; left: 0;
+      width: 100vw; max-width: none;
+      border-left: 0;
+      transform: translateY(100%);
+      transition: transform 0.34s cubic-bezier(0.2, 0.85, 0.25, 1);
+    }
+    .chat-panel.open { transform: translateY(0); }
+    .chat-backdrop { display: none; }
+
+    .chat-head { padding: 20px 22px 16px; }
+    .chat-title { font-size: 26px; }
+    .chat-keystrip { padding: 14px 22px 16px; }
+    .chat-keystatus { padding: 10px 22px; }
+    .chat-messages { padding: 20px 22px; gap: 16px; }
+    .chat-suggestions { padding: 14px 22px 14px; }
+    .chat-form { padding: 14px 16px 16px; }
+
+    /* Lock body scroll when chat is open on mobile */
+    body.chat-locked { overflow: hidden; }
+  }
+
+  /* Tablet: keep drawer but slightly narrower */
+  @media (min-width: 901px) and (max-width: 1200px) {
+    .chat-panel { width: 400px; }
   }
 </style>
 </head>
@@ -463,6 +825,69 @@
   </footer>
 
 </div>
+
+<!-- ========= CHAT (LLM) — fixed/floating; lives outside .app so it can take over the viewport ========= -->
+<button class="chat-toggle" id="chatToggle" aria-label="Ask Jeeyoung-bot">
+  <span class="chat-toggle-dot" aria-hidden="true"></span>
+  <span class="chat-toggle-text">
+    <span class="chat-toggle-eyebrow">Ask</span>
+    <span class="chat-toggle-name">Jeeyoung-bot</span>
+  </span>
+</button>
+
+<div class="chat-backdrop" id="chatBackdrop" aria-hidden="true"></div>
+
+<aside class="chat-panel" id="chatPanel" aria-hidden="true" role="dialog" aria-labelledby="chatPanelTitle">
+  <header class="chat-head">
+    <div class="chat-head-text">
+      <div class="chat-eyebrow">
+        <span class="chat-status-dot" aria-hidden="true"></span>
+        <span>Agent · Online</span>
+      </div>
+      <div class="chat-title" id="chatPanelTitle">Jeeyoung<span class="chat-title-hyphen">·</span>bot</div>
+      <div class="chat-subtitle ko">NYC 트립 도우미 — 4인, May 28—31</div>
+    </div>
+    <button class="chat-close" id="chatClose" aria-label="Close">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M2 2 L12 12 M12 2 L2 12"/></svg>
+    </button>
+  </header>
+
+  <div class="chat-keystrip" id="chatKeystrip">
+    <div class="chat-keystrip-label">Anthropic API Key</div>
+    <div class="chat-keystrip-row">
+      <input type="password" id="chatKeyInput" placeholder="sk-ant-..." autocomplete="off" spellcheck="false" />
+      <button id="chatKeySet">Set</button>
+    </div>
+    <div class="chat-keystrip-hint ko">키는 메모리에만 — 새로고침하면 사라져요. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">키 만들기 ↗</a></div>
+  </div>
+  <div class="chat-keystatus hidden" id="chatKeystatus">
+    <span class="chat-keystatus-check">✓ Key set</span>
+    <button id="chatKeyChange">Change</button>
+  </div>
+
+  <div class="chat-messages" id="chatMessages"></div>
+
+  <div class="chat-suggestions" id="chatSuggestions">
+    <div class="chat-sugg-label">Try asking</div>
+    <div class="chat-sugg-row">
+      <button class="chat-sugg" data-q="비 오면 토요일 브루클린 다리 대안은?">비 오면 대안?</button>
+      <button class="chat-sugg" data-q="토요일 오후 셋 (Chinatown / Tribeca / Whitney) 중 추천?">토요일 오후 추천?</button>
+      <button class="chat-sugg" data-q="Cho Dang Gol 오픈런 못 가면 K-Town 백업 어디?">K-Town 백업?</button>
+    </div>
+  </div>
+
+  <form class="chat-form" id="chatForm">
+    <textarea id="chatInput" placeholder="질문 입력 · Enter to send · Shift+Enter for new line" rows="1"></textarea>
+    <button type="submit" id="chatSend" aria-label="Send">
+      <span class="chat-send-label">Send</span>
+      <svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"><path d="M1 5 L13 5 M9 1 L13 5 L9 9"/></svg>
+    </button>
+  </form>
+</aside>
+
+<!-- Local config — gitignored. Provides window.TRIP_CONFIG with endpoint + key. -->
+<!-- If absent (e.g., on a public host), the chat falls back to a "paste your key" UI. -->
+<script src="config.local.js" onerror="void 0"></script>
 
 <script>
 const itinerary = [
@@ -566,11 +991,23 @@ const itinerary = [
       { name: 'Black Fox Coffee Co', lat: 40.7068, lng: -74.0073, category: 'Coffee', addr: '70 Pine St · FiDi',         note: '아르데코 로비 1층 카페. 호주 스타일 라떼 + 빵. 바이럴 + 로컬 둘 다 인정.' },
     ]
   },
-  { day: 2, num: 14, time: 'Afternoon', name: 'To be decided',
+  { day: 2, num: 14, time: '1:30 PM', name: 'Afternoon · 셋 중 하나',
     lat: null, lng: null, address: '맨해튼 다운타운 · 점심 + 산책',
-    transit: 'Brooklyn Bridge 도착 후 도보',
-    note: 'Tribeca / SoHo / Chinatown 등 옵션 (Little Island는 금요일에 들렀음). 6시까지 Flatiron 근처로 복귀.',
-    tbd: true },
+    transit: 'Brooklyn Bridge 도착 후 도보 또는 6 train',
+    note: '브루클린 다리 도착 ~1:30PM → Oiji Mi(Flatiron) 7PM. 5시간 비어있음. 셋 중 하나 픽 — 당일 컨디션 보고 결정.',
+    tbd: true,
+    points: [
+      { name: 'A · Chinatown → LES → Union Sq', lat: 40.7158, lng: -73.9970, category: 'Food',
+        addr: '~1:30 Chinatown 점심 → 3:00 LES 산책 → 5:00 Union Sq',
+        note: 'Xi\'an Famous Foods (45 Bayard St) 우육면 + Joe\'s Shanghai 샤오롱바오 옵션. 3PM Russ & Daughters (179 E Houston) 베이글, Economy Candy (108 Rivington) 빈티지 캔디. 도보로 천천히 Union Sq 거쳐 19th St (Oiji Mi).' },
+      { name: 'B · Tribeca + SoHo 슬로우 루프', lat: 40.7195, lng: -74.0072, category: 'Food',
+        addr: '~1:30 Tribeca 점심 → 3:00 SoHo 재방문',
+        note: 'Frenchette Bakery (220 W Broadway) 또는 Bubby\'s Tribeca 브런치. SoHo는 금요일 저녁 시간 없어서 못 본 가게 (Aimé Leon Dore, McNally Jackson) 다시. Union Sq까지 6 train.' },
+      { name: 'C · Whitney + Meatpacking', lat: 40.7396, lng: -74.0089, category: 'Design',
+        addr: '~1:30 Whitney → 3:30 Meatpacking 카페/숍',
+        note: 'Whitney Museum (99 Gansevoort) $30, 2시간. American art 컬렉션 + 옥상 데크 뷰. Hudson Yards 다음 동선이라 Brooklyn Bridge에서 1/2/3 train 환승 멀어 — A/C가 더 자연스러움.' },
+    ]
+  },
   { day: 2, num: 15, time: '7:00 PM', name: 'Oiji Mi',
     lat: 40.7396687, lng: -73.9924795, address: '17 W 19th St · Flatiron',
     transit: '오후 동선에서 6 train 또는 도보로 23 St 방향',
@@ -941,6 +1378,349 @@ window.addEventListener('scroll', recalcMap, { passive: true });
 // Surface real errors (otherwise iOS preview hides them as "Script error.")
 window.addEventListener('error', (e) => {
   console.error('Page error:', e.message, e.filename, e.lineno);
+});
+
+// =========== WEATHER ===========
+const WMO_LABELS = {
+  0: 'Clear', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Cloudy',
+  45: 'Fog', 48: 'Fog',
+  51: 'Drizzle', 53: 'Drizzle', 55: 'Drizzle', 56: 'Drizzle', 57: 'Drizzle',
+  61: 'Rain', 63: 'Rain', 65: 'Heavy rain', 66: 'Freezing rain', 67: 'Freezing rain',
+  71: 'Snow', 73: 'Snow', 75: 'Heavy snow', 77: 'Snow grains',
+  80: 'Showers', 81: 'Showers', 82: 'Heavy showers',
+  85: 'Snow showers', 86: 'Snow showers',
+  95: 'Thunderstorm', 96: 'Thunderstorm', 99: 'Thunderstorm',
+};
+const DAY_DATES = { 1: '2026-05-29', 2: '2026-05-30', 3: '2026-05-31' };
+
+async function loadWeather() {
+  const url = 'https://api.open-meteo.com/v1/forecast'
+    + '?latitude=40.75&longitude=-73.98'
+    + '&daily=temperature_2m_max,temperature_2m_min,weathercode'
+    + '&temperature_unit=fahrenheit&timezone=America/New_York'
+    + `&start_date=${DAY_DATES[1]}&end_date=${DAY_DATES[3]}`;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) return;
+    const data = await r.json();
+    const dailyTimes = data.daily?.time || [];
+    [1, 2, 3].forEach(day => {
+      const idx = dailyTimes.indexOf(DAY_DATES[day]);
+      if (idx === -1) return;
+      const hi = Math.round(data.daily.temperature_2m_max[idx]);
+      const lo = Math.round(data.daily.temperature_2m_min[idx]);
+      const cond = WMO_LABELS[data.daily.weathercode[idx]] || '—';
+      const header = document.querySelector(`.day-section[data-day="${day}"] .day-header`);
+      if (!header) return;
+      const chip = document.createElement('div');
+      chip.className = 'day-weather';
+      chip.innerHTML = `<span class="wx-temp">${hi}° / ${lo}°</span><span class="wx-cond">${cond}</span>`;
+      header.appendChild(chip);
+      requestAnimationFrame(() => chip.classList.add('loaded'));
+    });
+  } catch (_) { /* silent — no network or out of forecast range */ }
+}
+loadWeather();
+
+// =========== CHAT (LLM) ===========
+// Two backends supported:
+//   1. Azure AI Foundry Responses API — auto-configured from window.TRIP_CONFIG (config.local.js)
+//   2. User-supplied Anthropic key — fallback when no config is present
+let apiKey = null;
+const chatHistory = []; // [{role: 'user'|'assistant', content: string}]
+const CFG = window.TRIP_CONFIG || null;
+const PROVIDER = CFG?.provider || 'anthropic'; // 'azure-responses' | 'anthropic'
+const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
+
+const chatToggleEl = document.getElementById('chatToggle');
+const chatPanelEl = document.getElementById('chatPanel');
+const chatBackdropEl = document.getElementById('chatBackdrop');
+const chatCloseEl = document.getElementById('chatClose');
+const chatKeystripEl = document.getElementById('chatKeystrip');
+const chatKeyInputEl = document.getElementById('chatKeyInput');
+const chatKeySetEl = document.getElementById('chatKeySet');
+const chatKeystatusEl = document.getElementById('chatKeystatus');
+const chatKeyChangeEl = document.getElementById('chatKeyChange');
+const chatMessagesEl = document.getElementById('chatMessages');
+const chatSuggestionsEl = document.getElementById('chatSuggestions');
+const chatFormEl = document.getElementById('chatForm');
+const chatInputEl = document.getElementById('chatInput');
+const chatSendEl = document.getElementById('chatSend');
+
+function chatOpen() {
+  chatPanelEl.classList.add('open');
+  chatBackdropEl.classList.add('open');
+  chatToggleEl.classList.add('is-open');
+  chatPanelEl.setAttribute('aria-hidden', 'false');
+  chatBackdropEl.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('chat-locked');
+  if (chatMessagesEl.children.length === 0) {
+    let label = 'Claude';
+    if (PROVIDER === 'azure-responses') label = CFG?.agent?.name ? `Agent · ${CFG.agent.name}` : 'Azure';
+    appendChatMsg('system', `안녕! NYC 트립 관련 뭐든 물어봐요 — 식당 백업, 날씨/일정 조정, 동선 추천 등. (${label})`);
+  }
+  if (!apiKey) setTimeout(() => chatKeyInputEl.focus(), 320);
+  else setTimeout(() => chatInputEl.focus(), 320);
+}
+function chatClose() {
+  chatPanelEl.classList.remove('open');
+  chatBackdropEl.classList.remove('open');
+  chatToggleEl.classList.remove('is-open');
+  chatPanelEl.setAttribute('aria-hidden', 'true');
+  chatBackdropEl.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('chat-locked');
+}
+chatToggleEl.addEventListener('click', chatOpen);
+chatCloseEl.addEventListener('click', chatClose);
+chatBackdropEl.addEventListener('click', chatClose);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && chatPanelEl.classList.contains('open')) chatClose();
+});
+
+function setApiKey(k) {
+  apiKey = k && k.trim() ? k.trim() : null;
+  if (apiKey) {
+    chatKeystripEl.classList.add('hidden');
+    chatKeystatusEl.classList.remove('hidden');
+  } else {
+    chatKeystripEl.classList.remove('hidden');
+    chatKeystatusEl.classList.add('hidden');
+  }
+}
+chatKeySetEl.addEventListener('click', () => {
+  const v = chatKeyInputEl.value;
+  if (!v.trim()) return;
+  setApiKey(v);
+  chatKeyInputEl.value = '';
+  chatInputEl.focus();
+});
+chatKeyInputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); chatKeySetEl.click(); }
+});
+chatKeyChangeEl.addEventListener('click', () => {
+  setApiKey(null);
+  chatKeyInputEl.focus();
+});
+
+// Turn bare URLs and markdown [label](url) into <a target="_blank"> nodes.
+// Uses text nodes + anchor elements (no innerHTML) so it's XSS-safe.
+function renderTextWithLinks(container, text) {
+  const re = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<>"']+[^\s<>().,;:!?"'])/g;
+  let lastIndex = 0;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > lastIndex) {
+      container.appendChild(document.createTextNode(text.slice(lastIndex, m.index)));
+    }
+    const isMd = m[1] && m[2];
+    const href = isMd ? m[2] : m[3];
+    const label = isMd ? m[1] : m[3];
+    const a = document.createElement('a');
+    a.href = href;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = label;
+    a.className = 'chat-link';
+    container.appendChild(a);
+    lastIndex = re.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    container.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
+}
+
+function appendChatMsg(role, text) {
+  const div = document.createElement('div');
+  div.className = `chat-msg ${role} ${role === 'user' ? '' : 'ko'}`.trim();
+  if (role === 'user' || role === 'assistant') {
+    renderTextWithLinks(div, text);
+  } else {
+    div.textContent = text;
+  }
+  chatMessagesEl.appendChild(div);
+  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+  return div;
+}
+function appendTyping() {
+  const div = document.createElement('div');
+  div.className = 'chat-msg assistant typing';
+  div.textContent = '생각 중';
+  chatMessagesEl.appendChild(div);
+  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+  return div;
+}
+
+function buildSystemPrompt() {
+  const today = '2026-05-23';
+  const slim = itinerary.map(s => ({
+    day: s.day, num: s.num, time: s.time, name: s.name, address: s.address,
+    transit: s.transit, note: s.note, tag: s.tag, tbd: s.tbd || false,
+    points: s.points ? s.points.map(p => ({ name: p.name, category: p.category, addr: p.addr, note: p.note })) : undefined,
+  }));
+  return [
+    'You are a concise, practical NYC trip assistant for a 4-person group.',
+    'Trip dates: May 29 (Fri) – May 31 (Sun), 2026. Today is ' + today + '.',
+    'Hotel: InterContinental Barclay (111 E 48th St, Midtown).',
+    'Reply in the user\'s language. The user mixes Korean and English; default to Korean for notes and English for proper nouns.',
+    'Be specific: name places, give cross streets / subway stops, mention timing. Keep answers tight — 3–5 lines unless the user asks for more.',
+    'When suggesting alternatives, prefer places not already in the itinerary unless the user is asking about an existing stop.',
+    'Itinerary JSON follows:',
+    JSON.stringify(slim),
+  ].join('\n');
+}
+
+async function callAnthropic(systemPrompt) {
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 1024,
+      system: systemPrompt,
+      messages: chatHistory,
+    }),
+  });
+  if (!r.ok) {
+    let errMsg = `Error ${r.status}`;
+    try { const j = await r.json(); errMsg = j.error?.message || errMsg; } catch (_) {}
+    return { ok: false, status: r.status, error: errMsg };
+  }
+  const data = await r.json();
+  return { ok: true, text: data.content?.[0]?.text || '(빈 응답)' };
+}
+
+async function callAzureResponses(systemPrompt) {
+  // Azure AI Foundry Responses API.
+  //   - If CFG.agent is set, reference a Foundry Agent (uses its baked-in
+  //     instructions + tools). We still prepend a short context message with
+  //     the itinerary JSON so the agent has access to the current trip data.
+  //   - Otherwise, use CFG.model and our own system prompt.
+  const useAgent = !!CFG.agent;
+  const input = [];
+  if (useAgent) {
+    input.push({
+      role: 'user',
+      content: 'Trip itinerary context (use this as the source of truth for stops, times, addresses):\n' + JSON.stringify(itinerary),
+    });
+    input.push({ role: 'assistant', content: '네, 일정 확인했습니다.' });
+  } else {
+    input.push({ role: 'system', content: systemPrompt });
+  }
+  for (const m of chatHistory) input.push({ role: m.role, content: m.content });
+
+  const body = { input };
+  if (useAgent) {
+    body.agent_reference = { name: CFG.agent.name, version: String(CFG.agent.version), type: 'agent_reference' };
+  } else {
+    body.model = CFG.model || 'gpt-4o-mini';
+  }
+  const r = await fetch(CFG.endpoint, {
+    method: 'POST',
+    headers: {
+      'api-key': apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    let errMsg = `Error ${r.status}`;
+    try {
+      const j = await r.json();
+      errMsg = j.error?.message || j.message || JSON.stringify(j).slice(0, 200);
+    } catch (_) {}
+    return { ok: false, status: r.status, error: errMsg };
+  }
+  const data = await r.json();
+  // Responses API: prefer `output_text`, fall back to walking output[].content[].text,
+  // fall back to chat-completions shape just in case.
+  let text = data.output_text;
+  if (!text && Array.isArray(data.output)) {
+    for (const item of data.output) {
+      if (item.type === 'message' && Array.isArray(item.content)) {
+        for (const c of item.content) {
+          if (c.type === 'output_text' && c.text) { text = c.text; break; }
+          if (c.type === 'text' && c.text) { text = c.text; break; }
+        }
+        if (text) break;
+      }
+    }
+  }
+  if (!text) text = data.choices?.[0]?.message?.content;
+  return { ok: true, text: text || '(빈 응답)' };
+}
+
+async function sendChat(text) {
+  text = text.trim();
+  if (!text) return;
+  if (!apiKey) {
+    appendChatMsg('error', 'API key 먼저 입력해 주세요 ↑');
+    chatKeyInputEl.focus();
+    return;
+  }
+  chatSuggestionsEl.classList.add('hidden');
+  appendChatMsg('user', text);
+  chatHistory.push({ role: 'user', content: text });
+  chatInputEl.value = '';
+  chatInputEl.style.height = 'auto';
+  chatSendEl.disabled = true;
+  const typing = appendTyping();
+  try {
+    const systemPrompt = buildSystemPrompt();
+    const result = PROVIDER === 'azure-responses'
+      ? await callAzureResponses(systemPrompt)
+      : await callAnthropic(systemPrompt);
+    typing.remove();
+    if (!result.ok) {
+      if (result.status === 401 || result.status === 403) {
+        if (PROVIDER === 'anthropic') setApiKey(null);
+        appendChatMsg('error', 'API key가 유효하지 않거나 권한이 없습니다.');
+      } else {
+        appendChatMsg('error', result.error);
+      }
+      chatHistory.pop();
+      return;
+    }
+    chatHistory.push({ role: 'assistant', content: result.text });
+    appendChatMsg('assistant', result.text);
+  } catch (e) {
+    typing.remove();
+    appendChatMsg('error', e.message || 'Network error');
+    chatHistory.pop();
+  } finally {
+    chatSendEl.disabled = false;
+    chatInputEl.focus();
+  }
+}
+
+// If config provides a key, set it on load and skip the key-paste UI entirely
+// (no "Change" affordance — the key comes from config.local.js, so changing it
+// would just mean editing that file and reloading).
+if (CFG?.apiKey) {
+  setApiKey(CFG.apiKey);
+  chatKeystatusEl.classList.add('hidden');
+}
+
+chatFormEl.addEventListener('submit', (e) => {
+  e.preventDefault();
+  sendChat(chatInputEl.value);
+});
+chatInputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChat(chatInputEl.value);
+  }
+});
+chatInputEl.addEventListener('input', () => {
+  chatInputEl.style.height = 'auto';
+  chatInputEl.style.height = Math.min(120, chatInputEl.scrollHeight) + 'px';
+});
+chatSuggestionsEl.querySelectorAll('.chat-sugg').forEach(b => {
+  b.addEventListener('click', () => sendChat(b.dataset.q));
 });
 </script>
 
