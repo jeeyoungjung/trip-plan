@@ -394,10 +394,30 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.06); max-width: 180px;
   }
   .legend-title { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px; }
-  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-2); margin-bottom: 4px; }
-  .legend-item:last-child { margin-bottom: 0; }
+  /* Legend items are now clickable filters. Each toggles its day or
+     category on the map (multi-select for both). */
+  .legend-item {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-2);
+    margin-bottom: 4px; padding: 2px 0;
+    background: none; border: 0; cursor: pointer;
+    text-align: left; width: 100%;
+    transition: opacity 0.18s, color 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .legend-item:hover { color: var(--ink); }
+  .legend-item.off { opacity: 0.32; }
+  .legend-item:last-of-type { margin-bottom: 0; }
   .legend-swatch { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
   .legend-swatch.legend-ring { background: var(--panel); border: 1.5px solid var(--ink-2); width: 10px; height: 10px; }
+  .legend-reset-row { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--rule); }
+  .legend-reset {
+    background: none; border: 0; padding: 0; cursor: pointer;
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-4);
+    transition: color 0.18s;
+  }
+  .legend-reset:hover { color: var(--ink); }
 
   .leaflet-bar a { background: var(--panel) !important; color: var(--ink) !important; border-color: var(--rule) !important; }
   .leaflet-bar a:hover { background: var(--card) !important; }
@@ -938,17 +958,18 @@
 
   <main class="map-wrap">
     <div id="map"></div>
-    <div class="legend">
+    <div class="legend" id="legend">
       <div class="legend-title">Days</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#2C2924"></span> Fri · 금</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#7A7367"></span> Sat · 토</div>
-      <div class="legend-item"><span class="legend-swatch" style="background:#B5AEA1"></span> Sun · 일</div>
+      <button type="button" class="legend-item" data-day="1"><span class="legend-swatch" style="background:#2C2924"></span><span>Fri</span></button>
+      <button type="button" class="legend-item" data-day="2"><span class="legend-swatch" style="background:#7A7367"></span><span>Sat</span></button>
+      <button type="button" class="legend-item" data-day="3"><span class="legend-swatch" style="background:#B5AEA1"></span><span>Sun</span></button>
       <div class="legend-title" style="margin-top:12px">Spots</div>
-      <div class="legend-item"><span class="legend-swatch legend-ring" style="border-color:var(--cat-coffee)"></span> Coffee</div>
-      <div class="legend-item"><span class="legend-swatch legend-ring" style="border-color:var(--cat-food)"></span> Food</div>
-      <div class="legend-item"><span class="legend-swatch legend-ring" style="border-color:var(--cat-shopping)"></span> Shopping</div>
-      <div class="legend-item"><span class="legend-swatch legend-ring" style="border-color:var(--cat-books)"></span> Books</div>
-      <div class="legend-item"><span class="legend-swatch legend-ring" style="border-color:var(--cat-design)"></span> Design</div>
+      <button type="button" class="legend-item" data-cat="Coffee"><span class="legend-swatch legend-ring" style="border-color:var(--cat-coffee)"></span><span>Coffee</span></button>
+      <button type="button" class="legend-item" data-cat="Food"><span class="legend-swatch legend-ring" style="border-color:var(--cat-food)"></span><span>Food</span></button>
+      <button type="button" class="legend-item" data-cat="Shopping"><span class="legend-swatch legend-ring" style="border-color:var(--cat-shopping)"></span><span>Shopping</span></button>
+      <button type="button" class="legend-item" data-cat="Books"><span class="legend-swatch legend-ring" style="border-color:var(--cat-books)"></span><span>Books</span></button>
+      <button type="button" class="legend-item" data-cat="Design"><span class="legend-swatch legend-ring" style="border-color:var(--cat-design)"></span><span>Design</span></button>
+      <div class="legend-reset-row"><button type="button" class="legend-reset" id="legendReset">Reset</button></div>
     </div>
   </main>
 
@@ -1216,6 +1237,27 @@ const itinerary = [
       { name: '★ Mosaic Trail (E 8th)', lat: 40.7295, lng: -73.9912, category: 'Design',
         addr: 'E 8th St & 4th Ave · East Village',
         note: 'Jim Power "Mosaic Man"이 30년간 거리 가로등에 박은 모자이크. Astor Pl ~ Tompkins Sq 사이 80개+. 걷는 동선 자체가 야외 갤러리.' },
+
+      // === Sample sales + designer resale (Spring/Summer season peak) ===
+      // 일정은 자주 바뀌니까 가기 전 현서비한테 "이번 주 sample sale 뭐 있어?" 물어보면 web search로 확인해줘요.
+      { name: '★ 260 Sample Sale', lat: 40.7444, lng: -73.9881, category: 'Shopping',
+        addr: '260 Fifth Ave · NoMad',
+        note: 'NYC 샘플세일의 본진 — Jonathan Simkhai, Khaite, Veronica Beard 같은 컨템퍼러리 브랜드가 50~70% off로 돌아가며 열려요. 보통 5~7일 단위 이벤트. 인스타 @260samplesale 에서 현재 무슨 브랜드인지 확인하고 가기.' },
+      { name: '★ Soiffer Haskin', lat: 40.7530, lng: -73.9942, category: 'Shopping',
+        addr: '317 W 33rd St · Garment District',
+        note: '뉴욕 샘플세일계의 양대 산맥 (260과 함께). Vince, Theory, Tory Burch, Marc Jacobs 등 럭셔리 라인이 자주. Penn Station 바로 위 — 일정 있으면 효율적. 현금/카드 둘 다.' },
+      { name: '★ Beacon\'s Closet (Union Sq)', lat: 40.7353, lng: -73.9957, category: 'Shopping',
+        addr: '10 W 13th St · Union Sq',
+        note: '뉴욕 디자이너 위탁판매의 정석. 큐레이션 빡세서 잡템 거의 없음 — Acne, A.P.C., Comme, Margiela 같은 게 흔함. 가격 $30~150 사이가 많아 한국 가져갈 만함. 주말 오후 가장 회전 빠름.' },
+      { name: '★ Crossroads Trading', lat: 40.7368, lng: -73.9960, category: 'Shopping',
+        addr: '24 W 14th St · Union Sq',
+        note: 'Beacon\'s보다 더 컨템퍼러리 + 캐주얼 — Madewell, J.Crew, Reformation 같은 라인이 많음. 가격 $15~80. Beacon\'s 바로 옆이라 같이 봐도 좋아요.' },
+      { name: '★ The RealReal SoHo', lat: 40.7239, lng: -74.0021, category: 'Shopping',
+        addr: '80 Wooster St · SoHo',
+        note: '럭셔리 위탁의 강자 — Hermès, Chanel, Bottega, Loewe 진품 인증된 중고. 매장에서 직접 만져보고 살 수 있는 게 메리트. 가격대 $200~수천 $. 디자이너 visit으로 좋아요.' },
+      { name: '★ Awoke Vintage SoHo', lat: 40.7244, lng: -73.9990, category: 'Shopping',
+        addr: '116 Mercer St · SoHo',
+        note: 'Brooklyn 본점의 SoHo 분점 — 70s-90s 빈티지 의류 큐레이션. 가격 $40~150. Aimé Leon Dore 인근이라 동선에 끼워넣기.' },
     ]
   },
   { day: 2, num: 15, time: '7:00 PM', name: 'Oiji Mi',
@@ -1555,62 +1597,142 @@ function focusStop(num) {
 }
 
 // =========== DAY FILTER ===========
+// =========== UNIFIED MAP FILTERS ===========
+// Two independent filter axes that combine (intersection):
+//   filters.activeDay      — 'all' | '1' | '2' | '3'  (driven by day tabs / legend day items)
+//   filters.activeCategories — Set of category names  (driven by legend category items)
+// applyMapFilters() reconciles every marker + route line against both.
+const filters = {
+  activeDay: 'all',
+  activeCategories: new Set(['Coffee', 'Food', 'Shopping', 'Books', 'Design']),
+};
+
+function coordsForDay(d) {
+  const c = [];
+  itinerary.forEach(s => {
+    if (s.day !== d) return;
+    if (s.lat !== null && s.lat > 40.70) c.push([s.lat, s.lng]);
+    (s.points || []).forEach(p => {
+      if (p.lat != null && p.lat > 40.70) c.push([p.lat, p.lng]);
+    });
+  });
+  return c;
+}
+
+function applyMapFilters() {
+  const dayMatch = (d) => filters.activeDay === 'all' || String(d) === filters.activeDay;
+
+  // Main stop markers — visible if day matches
+  itinerary.forEach(stop => {
+    const m = markers[stop.num];
+    if (!m) return;
+    const show = dayMatch(stop.day);
+    if (show && !map.hasLayer(m)) m.addTo(map);
+    else if (!show && map.hasLayer(m)) map.removeLayer(m);
+  });
+
+  // Route lines per day
+  [1, 2, 3].forEach(d => {
+    if (!routeLines[d]) return;
+    const show = dayMatch(d);
+    if (show && !map.hasLayer(routeLines[d])) routeLines[d].addTo(map);
+    else if (!show && map.hasLayer(routeLines[d])) map.removeLayer(routeLines[d]);
+  });
+
+  // Sub-markers — visible if both day AND category match
+  [1, 2, 3].forEach(d => {
+    subMarkers[d].forEach(marker => {
+      const el = marker.getElement && marker.getElement();
+      const subEl = el && el.querySelector ? el.querySelector('.sub-marker') : null;
+      const cat = subEl ? subEl.dataset.cat : null;
+      const show = dayMatch(d) && (!cat || filters.activeCategories.has(cat));
+      if (show && !map.hasLayer(marker)) marker.addTo(map);
+      else if (!show && map.hasLayer(marker)) map.removeLayer(marker);
+    });
+  });
+}
+
+function syncLegendUI() {
+  document.querySelectorAll('.legend-item[data-day]').forEach(item => {
+    const d = item.dataset.day;
+    item.classList.toggle('off', filters.activeDay !== 'all' && filters.activeDay !== d);
+  });
+  document.querySelectorAll('.legend-item[data-cat]').forEach(item => {
+    item.classList.toggle('off', !filters.activeCategories.has(item.dataset.cat));
+  });
+}
+
+function fitToActiveView(duration = 0.7) {
+  let coords = [];
+  if (filters.activeDay === 'all') {
+    coords = [...coordsForDay(1), ...coordsForDay(2), ...coordsForDay(3)];
+  } else {
+    coords = coordsForDay(parseInt(filters.activeDay));
+  }
+  if (coords.length > 0 && map) {
+    map.flyToBounds(L.latLngBounds(coords).pad(0.12), { duration });
+  }
+}
+
+// Day tabs → set activeDay + sync list + map
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
-    const day = tab.dataset.day;
+    filters.activeDay = tab.dataset.day;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-
     document.querySelectorAll('.day-section').forEach(s => {
-      if (day === 'all' || s.dataset.day === day) s.classList.remove('hidden');
+      if (filters.activeDay === 'all' || s.dataset.day === filters.activeDay) s.classList.remove('hidden');
       else s.classList.add('hidden');
     });
+    applyMapFilters();
+    syncLegendUI();
+    fitToActiveView();
+  });
+});
 
-    // Helper: collect every NYC coord for a day (stops + sub-points).
-    const coordsForDay = (d) => {
-      const c = [];
-      itinerary.forEach(s => {
-        if (s.day !== d) return;
-        if (s.lat !== null && s.lat > 40.70) c.push([s.lat, s.lng]);
-        (s.points || []).forEach(p => {
-          if (p.lat != null && p.lat > 40.70) c.push([p.lat, p.lng]);
-        });
-      });
-      return c;
-    };
-
-    if (day === 'all') {
-      Object.values(markers).forEach(m => m.addTo(map));
-      Object.values(routeLines).forEach(l => l.addTo(map));
-      [1, 2, 3].forEach(dd => subMarkers[dd].forEach(m => m.addTo(map)));
-      const all = [...coordsForDay(1), ...coordsForDay(2), ...coordsForDay(3)];
-      if (all.length > 0) {
-        map.flyToBounds(L.latLngBounds(all).pad(0.12), { duration: 0.7 });
-      }
+// Legend day items → mirror the day tabs
+document.querySelectorAll('.legend-item[data-day]').forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const d = item.dataset.day;
+    // If already focused on this day, clicking again goes back to All
+    if (filters.activeDay === d) {
+      const allTab = document.querySelector('.tab[data-day="all"]');
+      if (allTab) allTab.click();
     } else {
-      const d = parseInt(day);
-      itinerary.forEach(s => {
-        if (s.lat === null) return;
-        if (s.day === d) markers[s.num].addTo(map);
-        else map.removeLayer(markers[s.num]);
-      });
-      [1, 2, 3].forEach(dd => {
-        if (routeLines[dd]) {
-          if (dd === d) routeLines[dd].addTo(map);
-          else map.removeLayer(routeLines[dd]);
-        }
-        subMarkers[dd].forEach(m => {
-          if (dd === d) m.addTo(map);
-          else map.removeLayer(m);
-        });
-      });
-      const dayAll = coordsForDay(d);
-      if (dayAll.length > 0) {
-        map.flyToBounds(L.latLngBounds(dayAll).pad(0.15), { duration: 0.7 });
-      }
+      const tab = document.querySelector(`.tab[data-day="${d}"]`);
+      if (tab) tab.click();
     }
   });
 });
+
+// Legend category items → toggle category in/out (multi-select)
+document.querySelectorAll('.legend-item[data-cat]').forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const cat = item.dataset.cat;
+    if (filters.activeCategories.has(cat)) filters.activeCategories.delete(cat);
+    else filters.activeCategories.add(cat);
+    // Defensive: if user turns OFF every category, turn them all back on so
+    // we never show an empty map by accident.
+    if (filters.activeCategories.size === 0) {
+      ['Coffee', 'Food', 'Shopping', 'Books', 'Design'].forEach(c => filters.activeCategories.add(c));
+    }
+    applyMapFilters();
+    syncLegendUI();
+  });
+});
+
+// Legend reset → all days + all categories on
+const legendResetBtn = document.getElementById('legendReset');
+if (legendResetBtn) {
+  legendResetBtn.addEventListener('click', () => {
+    filters.activeCategories = new Set(['Coffee', 'Food', 'Shopping', 'Books', 'Design']);
+    const allTab = document.querySelector('.tab[data-day="all"]');
+    if (allTab) allTab.click();  // sets activeDay='all', triggers filter apply
+    syncLegendUI();
+  });
+}
 
 // =========== INITIAL VIEW handled inside setupMarkersAndInteraction ===========
 
