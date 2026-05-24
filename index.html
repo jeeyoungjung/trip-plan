@@ -109,6 +109,9 @@
   /* ========= STOPS LIST ========= */
   .day-section { border-bottom: 1px solid var(--rule-soft); }
   .day-section.hidden { display: none; }
+  /* Category filter hides individual stops + sub-points that don't match. */
+  .stop.hidden { display: none; }
+  .sub-point.hidden { display: none; }
   .day-header { padding: 28px 32px 16px; }
   .day-eyebrow {
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
@@ -1676,6 +1679,53 @@ function syncLegendUI() {
   });
 }
 
+// Filter the sidebar list to match the same { day, categories } state.
+// When a category is isolated, hide stops with no matching sub-point, and
+// hide day sections that end up empty. Day filter alone behaves as before.
+function applyListFilters() {
+  const dayMatch = (d) => filters.activeDay === 'all' || String(d) === filters.activeDay;
+  const catsIsolated = filters.activeCategories.size < 5;
+  const dayHasContent = { 1: false, 2: false, 3: false };
+
+  document.querySelectorAll('.stop').forEach(stopEl => {
+    const num = parseInt(stopEl.dataset.num, 10);
+    const stop = itinerary.find(s => s.num === num);
+    if (!stop) return;
+
+    if (!dayMatch(stop.day)) {
+      stopEl.classList.add('hidden');
+      return;
+    }
+
+    if (!catsIsolated) {
+      // No category filter — show the whole stop and all its sub-points.
+      stopEl.classList.remove('hidden');
+      stopEl.querySelectorAll('.sub-point').forEach(sp => sp.classList.remove('hidden'));
+      dayHasContent[stop.day] = true;
+      return;
+    }
+
+    // Category isolated — sub-points filtered individually, stop shown only
+    // if any sub-point matches. Stops with no sub-points at all (transit /
+    // hotel / arrival rows) are hidden under category filter.
+    let hasMatch = false;
+    stopEl.querySelectorAll('.sub-point').forEach(sp => {
+      const match = filters.activeCategories.has(sp.dataset.cat);
+      sp.classList.toggle('hidden', !match);
+      if (match) hasMatch = true;
+    });
+    stopEl.classList.toggle('hidden', !hasMatch);
+    if (hasMatch) dayHasContent[stop.day] = true;
+  });
+
+  document.querySelectorAll('.day-section').forEach(section => {
+    const d = parseInt(section.dataset.day, 10);
+    const dayOK = dayMatch(d);
+    const hasContent = !catsIsolated || dayHasContent[d];
+    section.classList.toggle('hidden', !(dayOK && hasContent));
+  });
+}
+
 function fitToActiveView(duration = 0.7) {
   let coords = [];
   if (filters.activeDay === 'all') {
@@ -1694,10 +1744,7 @@ document.querySelectorAll('.tab').forEach(tab => {
     filters.activeDay = tab.dataset.day;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    document.querySelectorAll('.day-section').forEach(s => {
-      if (filters.activeDay === 'all' || s.dataset.day === filters.activeDay) s.classList.remove('hidden');
-      else s.classList.add('hidden');
-    });
+    applyListFilters();
     applyMapFilters();
     syncLegendUI();
     fitToActiveView();
@@ -1733,6 +1780,7 @@ document.querySelectorAll('.legend-item[data-cat]').forEach(item => {
     } else {
       filters.activeCategories = new Set([cat]);
     }
+    applyListFilters();
     applyMapFilters();
     syncLegendUI();
   });
