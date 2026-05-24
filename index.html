@@ -391,10 +391,10 @@
 
   /* ========= LEGEND ========= */
   .legend {
-    /* Pinned to the viewport's bottom-left so it stays put regardless of
-       which day-section is scrolled into view. z-index 500 keeps it above
-       the map but below the chat panel (999999) and toggle (999997). */
-    position: fixed; bottom: 24px; left: 24px;
+    /* Anchored to the map's bottom-left (absolute within .map-wrap) so it
+       sits over the dots it describes. z-index 500 keeps it above the map
+       but below the chat panel (999999) and toggle (999997). */
+    position: absolute; bottom: 24px; left: 24px;
     background: var(--panel); border: 1px solid var(--rule);
     padding: 14px 16px; z-index: 500; font-family: var(--mono);
     box-shadow: 0 4px 12px rgba(0,0,0,0.06); max-width: 180px;
