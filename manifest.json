@@ -1,0 +1,19 @@
+{
+  "name": "NYC Trip · May 28—31, 2026",
+  "short_name": "NYC · May 2026",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F2EC",
+  "theme_color": "#F5F2EC",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
