@@ -420,7 +420,7 @@
     .tab span { font-size: 14px; }
   }
 
-  /* ========= CHAT — Jeeyoung 🤖 ========= */
+  /* ========= CHAT — 현서비 🤖 ========= */
   /* Fixed FAB bottom-right · desktop: side drawer · mobile: full-screen takeover */
   .chat-toggle {
     position: fixed; bottom: 28px; right: 28px; z-index: 999997;
@@ -449,10 +449,11 @@
   .chat-toggle:hover .chat-toggle-emoji { transform: rotate(-8deg) scale(1.08); }
 
   .chat-toggle-name {
-    font-family: var(--display); font-variation-settings: 'opsz' 36;
-    font-weight: 400; font-style: italic; font-size: 16px;
-    letter-spacing: -0.015em; color: var(--panel);
-    padding-bottom: 1px; /* optical-balance the italic descender */
+    /* Korean-first: bot name is "현서비". Korean fonts don't carry an italic
+       cut, so the previous serif+italic styling synth-italicized poorly. */
+    font-family: var(--kr);
+    font-weight: 500; font-size: 15px;
+    letter-spacing: -0.02em; color: var(--panel);
   }
 
   .chat-toggle-dot {
@@ -523,15 +524,13 @@
     box-shadow: 0 0 0 2px rgba(123, 135, 87, 0.18);
   }
   .chat-title {
-    font-family: var(--display); font-variation-settings: 'opsz' 60;
-    font-weight: 360; font-style: italic; font-size: 30px; line-height: 1;
-    color: var(--ink); letter-spacing: -0.025em;
+    /* Korean-first: title is "현서비". Use the Korean stack with a slightly
+       heavier weight for editorial presence; italic is dropped (Korean
+       fonts don't have an italic cut). */
+    font-family: var(--kr);
+    font-weight: 600; font-size: 30px; line-height: 1.05;
+    color: var(--ink); letter-spacing: -0.035em;
     margin-bottom: 8px;
-  }
-  .chat-title-hyphen {
-    font-style: normal; font-variation-settings: 'opsz' 144;
-    font-weight: 300; margin: 0 2px; color: var(--ink-3);
-    display: inline-block; transform: translateY(-2px);
   }
   .chat-subtitle {
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
@@ -735,10 +734,14 @@
     flex: 1; min-width: 0;
     height: 44px; min-height: 44px; max-height: 140px;
     resize: none;
-    padding: 11px 14px;
+    padding: 9px 14px;
     border: 1px solid var(--rule); background: var(--panel);
-    font-family: var(--kr); font-size: 14px; color: var(--ink);
-    outline: none; border-radius: 0; line-height: 1.4;
+    font-family: var(--kr);
+    /* 16px keeps iOS Safari from auto-zooming on focus. Anything < 16px
+       triggers zoom-to-input which sticks until rotation. */
+    font-size: 16px;
+    color: var(--ink);
+    outline: none; border-radius: 0; line-height: 1.3;
     transition: border-color 0.18s, box-shadow 0.18s;
   }
   .chat-form textarea:focus {
@@ -875,9 +878,9 @@
 </div>
 
 <!-- ========= CHAT (LLM) — fixed/floating; lives outside .app so it can take over the viewport ========= -->
-<button class="chat-toggle" id="chatToggle" aria-label="Open Jeeyoung chat">
+<button class="chat-toggle" id="chatToggle" aria-label="현서비 챗 열기">
   <span class="chat-toggle-emoji" aria-hidden="true">🤖</span>
-  <span class="chat-toggle-name">Jeeyoung</span>
+  <span class="chat-toggle-name">현서비</span>
   <span class="chat-toggle-dot" aria-hidden="true"></span>
 </button>
 
@@ -890,7 +893,7 @@
         <span class="chat-status-dot" aria-hidden="true"></span>
         <span>Agent · Online</span>
       </div>
-      <div class="chat-title" id="chatPanelTitle">Jeeyoung<span class="chat-title-hyphen">·</span>bot</div>
+      <div class="chat-title" id="chatPanelTitle">현서비</div>
       <div class="chat-subtitle ko">NYC 트립 도우미 — 4인, May 28—31</div>
     </div>
     <button class="chat-close" id="chatClose" aria-label="Close">
@@ -923,7 +926,7 @@
   </div>
 
   <form class="chat-form" id="chatForm">
-    <textarea id="chatInput" placeholder="Ask Jeeyoung…" rows="1"></textarea>
+    <textarea id="chatInput" placeholder="현서비에게 질문…" rows="1"></textarea>
     <button type="submit" id="chatSend" aria-label="Send">
       <span class="chat-send-label">Send</span>
       <svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"><path d="M1 5 L13 5 M9 1 L13 5 L9 9"/></svg>
@@ -1485,7 +1488,8 @@ if (!window.TRIP_CONFIG) {
   window.TRIP_CONFIG = {
     provider: 'proxy',
     endpoint: PROXY_URL,
-    agent: { name: 'jeeyoungbot', version: '2' },
+    // `name` is the agent identifier on Azure; `displayName` is the user-facing label.
+    agent: { name: 'jeeyoungbot', version: '2', displayName: '현서비' },
   };
 }
 let apiKey = null;
@@ -1572,7 +1576,8 @@ function chatOpen() {
   if (chatMessagesEl.children.length === 0) {
     let label = 'Claude';
     if (PROVIDER === 'proxy' || PROVIDER === 'azure-responses') {
-      label = CFG.agent?.name ? `Agent · ${CFG.agent.name}` : (PROVIDER === 'proxy' ? 'Hosted' : 'Azure');
+      const agentLabel = CFG.agent?.displayName || CFG.agent?.name;
+      label = agentLabel ? `Agent · ${agentLabel}` : (PROVIDER === 'proxy' ? 'Hosted' : 'Azure');
     }
     appendChatMsg('system', `안녕! NYC 트립 관련 뭐든 물어봐요 — 식당 백업, 날씨/일정 조정, 동선 추천 등. (${label})`);
   }
