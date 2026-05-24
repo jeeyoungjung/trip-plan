@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F5F2EC">
+<title>New York · May 28—31, 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..600&family=DM+Sans:opsz,wght@9..40,300..600&family=Noto+Sans+KR:wght@300..600&family=JetBrains+Mono:wght@300..500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #F5F2EC;
+    --panel: #FAF8F3;
+    --card: #FFFFFF;
+    --rule: #E0DACB;
+    --rule-soft: #ECE6D6;
+    --ink: #1F1D18;
+    --ink-2: #4A463E;
+    --ink-3: #807A6E;
+    --ink-4: #B5AEA1;
+    --day-1: #2C2924;
+    --day-2: #7A7367;
+    --day-3: #B5AEA1;
+    /* Categorical (muted, editorial) — for sub-points */
+    --cat-coffee:   #8B6B47;  /* espresso brown */
+    --cat-food:     #B5634A;  /* terracotta */
+    --cat-shopping: #7B8757;  /* sage olive */
+    --cat-books:    #5E7896;  /* dusty slate */
+    --cat-design:   #9E6884;  /* rose mauve */
+    --display: 'Fraunces', 'Noto Sans KR', serif;
+    --sans: 'DM Sans', 'Noto Sans KR', system-ui, sans-serif;
+    --kr: 'Noto Sans KR', sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --sidebar-w: 440px;
+    --tabs-h: 56px;
+    --map-mobile-h: 50vh;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.005em;
+  }
+  :lang(ko), .ko { font-family: var(--kr); letter-spacing: -0.015em; }
+
+  /* ========= DESKTOP LAYOUT (grid areas) ========= */
+  .app {
+    display: grid;
+    grid-template-columns: var(--sidebar-w) 1fr;
+    grid-template-rows: auto auto 1fr auto;
+    grid-template-areas:
+      "hero map"
+      "tabs map"
+      "list map"
+      "info map";
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  .hero       { grid-area: hero; background: var(--panel); border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 32px 32px 24px; }
+  .tabs       { grid-area: tabs; background: var(--panel); border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); height: var(--tabs-h); }
+  .list       { grid-area: list; background: var(--panel); border-right: 1px solid var(--rule); overflow-y: auto; min-height: 0; scrollbar-width: thin; scrollbar-color: var(--ink-4) transparent; }
+  .info       { grid-area: info; background: var(--panel); border-right: 1px solid var(--rule); border-top: 1px solid var(--rule); padding: 18px 32px 24px; }
+  .map-wrap   { grid-area: map; position: relative; background: #E8E4D9; }
+
+  .list::-webkit-scrollbar { width: 6px; }
+  .list::-webkit-scrollbar-thumb { background: var(--ink-4); border-radius: 3px; }
+
+  /* ========= HERO ========= */
+  .meta-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 16px;
+  }
+  .title {
+    font-family: var(--display); font-variation-settings: 'opsz' 144;
+    font-weight: 350; font-size: 44px; line-height: 0.95;
+    letter-spacing: -0.025em; color: var(--ink); margin-bottom: 6px;
+  }
+  .subtitle {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 20px;
+  }
+  .stats { display: flex; gap: 24px; padding-top: 16px; border-top: 1px dashed var(--rule); }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-num { font-family: var(--display); font-variation-settings: 'opsz' 60; font-weight: 380; font-size: 22px; line-height: 1; color: var(--ink); }
+  .stat-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+
+  /* ========= TABS ========= */
+  .tabs { display: flex; padding: 0 32px; }
+  .tab {
+    flex: 1; padding: 14px 0; background: none; border: 0;
+    border-bottom: 2px solid transparent; font-family: var(--mono);
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-3); cursor: pointer; transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+  .tab span {
+    display: block; font-family: var(--display); font-variation-settings: 'opsz' 36;
+    font-size: 16px; font-weight: 380; text-transform: none;
+    letter-spacing: -0.01em; color: inherit; margin-top: 2px;
+  }
+
+  /* ========= STOPS LIST ========= */
+  .day-section { border-bottom: 1px solid var(--rule-soft); }
+  .day-section.hidden { display: none; }
+  .day-header { padding: 28px 32px 16px; }
+  .day-eyebrow {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .day-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+  .day-1-dot { background: var(--day-1); }
+  .day-2-dot { background: var(--day-2); }
+  .day-3-dot { background: var(--day-3); border: 1px solid var(--ink-4); }
+  .day-name {
+    font-family: var(--display); font-variation-settings: 'opsz' 60;
+    font-weight: 350; font-size: 26px; line-height: 1.1;
+    color: var(--ink); margin-bottom: 4px; letter-spacing: -0.02em;
+  }
+  .day-date { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
+
+  .stop {
+    display: grid; grid-template-columns: 56px 1fr; gap: 16px;
+    padding: 16px 32px; cursor: pointer;
+    transition: background 0.2s, opacity 0.3s ease;
+    border-bottom: 1px solid var(--rule-soft); position: relative;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .stop:last-child { border-bottom: 0; }
+  .stop:hover { background: rgba(0, 0, 0, 0.025); }
+  .stop:active { background: rgba(0, 0, 0, 0.05); }
+  .stop.active { background: var(--card); box-shadow: inset 3px 0 0 var(--ink); }
+  .stop.past { opacity: 0.4; }
+  .stop.past:hover { opacity: 0.7; }
+
+  .stop-marker-col { display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 2px; }
+  .stop-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    color: white; transition: transform 0.2s;
+  }
+  .stop:hover .stop-num { transform: scale(1.1); }
+  .stop.day-1 .stop-num { background: var(--day-1); }
+  .stop.day-2 .stop-num { background: var(--day-2); }
+  .stop.day-3 .stop-num { background: var(--day-3); color: var(--ink); }
+  .stop.tbd .stop-num { background: transparent; border: 1px dashed var(--ink-4); color: var(--ink-4); }
+  .stop-time {
+    font-family: var(--mono); font-size: 9px; color: var(--ink-3);
+    letter-spacing: 0.04em; text-align: center; line-height: 1.2;
+  }
+  .stop-content { min-width: 0; }
+  .stop-name {
+    font-family: var(--display); font-variation-settings: 'opsz' 24;
+    font-size: 17px; font-weight: 400; line-height: 1.25;
+    color: var(--ink); margin-bottom: 4px; letter-spacing: -0.01em;
+  }
+  .stop.tbd .stop-name { color: var(--ink-4); font-style: italic; }
+  .stop-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .stop-address { font-family: var(--mono); font-size: 9px; letter-spacing: 0.04em; color: var(--ink-3); text-transform: uppercase; }
+  .tag {
+    font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 2px 6px; border-radius: 2px;
+    color: var(--ink-2); background: var(--rule-soft);
+  }
+  .tag.featured { background: var(--ink); color: var(--panel); }
+  .stop-transit {
+    font-family: var(--kr); font-size: 11px; line-height: 1.45;
+    color: var(--ink-3); margin-top: 4px; margin-bottom: 4px;
+    padding-left: 14px; position: relative;
+  }
+  .stop-transit::before {
+    content: '→'; position: absolute; left: 0; top: 0;
+    color: var(--ink-4); font-family: var(--mono); font-size: 11px;
+  }
+  .stop-note { font-family: var(--kr); font-size: 12px; line-height: 1.6; color: var(--ink-2); margin-top: 4px; }
+
+  .sub-points {
+    margin-top: 12px; padding-top: 10px;
+    border-top: 1px dashed var(--rule);
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .sub-point {
+    display: grid; grid-template-columns: 12px 1fr auto; gap: 10px;
+    align-items: start; cursor: pointer; padding: 2px 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .sub-point-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    border: 1.5px solid var(--ink-2); background: var(--panel);
+    margin-top: 6px; transition: background 0.2s, border-color 0.2s;
+  }
+  .sub-point[data-cat="Coffee"]   .sub-point-dot { border-color: var(--cat-coffee); }
+  .sub-point[data-cat="Food"]     .sub-point-dot { border-color: var(--cat-food); }
+  .sub-point[data-cat="Shopping"] .sub-point-dot { border-color: var(--cat-shopping); }
+  .sub-point[data-cat="Books"]    .sub-point-dot { border-color: var(--cat-books); }
+  .sub-point[data-cat="Design"]   .sub-point-dot { border-color: var(--cat-design); }
+  .sub-point[data-cat="Coffee"]:hover   .sub-point-dot { background: var(--cat-coffee); }
+  .sub-point[data-cat="Food"]:hover     .sub-point-dot { background: var(--cat-food); }
+  .sub-point[data-cat="Shopping"]:hover .sub-point-dot { background: var(--cat-shopping); }
+  .sub-point[data-cat="Books"]:hover    .sub-point-dot { background: var(--cat-books); }
+  .sub-point[data-cat="Design"]:hover   .sub-point-dot { background: var(--cat-design); }
+  .sub-point-body { min-width: 0; }
+  .sub-point-name {
+    font-family: var(--display); font-variation-settings: 'opsz' 18;
+    font-size: 13px; font-weight: 420; color: var(--ink); letter-spacing: -0.005em;
+  }
+  .sub-point-note { font-family: var(--kr); font-size: 11px; line-height: 1.45; color: var(--ink-3); margin-top: 1px; }
+  .sub-point-cat {
+    font-family: var(--mono); font-size: 8px; letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 2px 5px; border: 1px solid var(--rule);
+    border-radius: 2px; white-space: nowrap; margin-top: 4px;
+    color: var(--ink-3);
+  }
+  .sub-point-cat[data-cat="Coffee"]   { color: var(--cat-coffee);   border-color: var(--cat-coffee); }
+  .sub-point-cat[data-cat="Food"]     { color: var(--cat-food);     border-color: var(--cat-food); }
+  .sub-point-cat[data-cat="Shopping"] { color: var(--cat-shopping); border-color: var(--cat-shopping); }
+  .sub-point-cat[data-cat="Books"]    { color: var(--cat-books);    border-color: var(--cat-books); }
+  .sub-point-cat[data-cat="Design"]   { color: var(--cat-design);   border-color: var(--cat-design); }
+
+  /* ========= INFO FOOTER ========= */
+  .info .row {
+    display: flex; justify-content: space-between; margin-bottom: 4px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em;
+  }
+  .info .row span:first-child { color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; }
+  .info .row span:last-child { color: var(--ink); }
+
+  /* ========= MAP ========= */
+  #map { width: 100%; height: 100%; background: #E8E4D9; }
+
+  .custom-marker { background: transparent !important; border: 0 !important; }
+  .marker-pin {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-family: var(--mono); font-size: 12px; font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15), 0 0 0 3px var(--panel);
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.3s ease;
+    position: relative;
+  }
+  .marker-pin:hover { transform: scale(1.15); opacity: 1; }
+  .marker-pin.day-1 { background: var(--day-1); }
+  .marker-pin.day-2 { background: var(--day-2); }
+  .marker-pin.day-3 { background: var(--day-3); color: var(--ink); }
+  .marker-pin.active { transform: scale(1.2); box-shadow: 0 4px 12px rgba(0,0,0,0.25), 0 0 0 4px var(--panel); }
+  .marker-pin.past { opacity: 0.3; }
+
+  /* Secondary "sub" markers — shopping/sights inside a main stop area */
+  .sub-marker {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--panel); border: 1.5px solid var(--ink-2);
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s, border-color 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .sub-marker:hover { transform: scale(1.5); }
+  .sub-marker[data-cat="Coffee"]   { border-color: var(--cat-coffee); }
+  .sub-marker[data-cat="Food"]     { border-color: var(--cat-food); }
+  .sub-marker[data-cat="Shopping"] { border-color: var(--cat-shopping); }
+  .sub-marker[data-cat="Books"]    { border-color: var(--cat-books); }
+  .sub-marker[data-cat="Design"]   { border-color: var(--cat-design); }
+  .sub-marker[data-cat="Coffee"]:hover   { background: var(--cat-coffee); }
+  .sub-marker[data-cat="Food"]:hover     { background: var(--cat-food); }
+  .sub-marker[data-cat="Shopping"]:hover { background: var(--cat-shopping); }
+  .sub-marker[data-cat="Books"]:hover    { background: var(--cat-books); }
+  .sub-marker[data-cat="Design"]:hover   { background: var(--cat-design); }
+
+  .leaflet-popup-content-wrapper {
+    background: var(--panel); border-radius: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    border: 1px solid var(--rule); padding: 0;
+  }
+  .leaflet-popup-content {
+    margin: 0 !important; padding: 16px 32px 16px 18px;
+    width: 240px !important; font-family: var(--sans);
+  }
+  .leaflet-popup-tip { background: var(--panel); border: 1px solid var(--rule); }
+  .leaflet-popup-close-button { color: var(--ink-3) !important; font-size: 18px !important; padding: 6px 8px !important; }
+  .popup-eyebrow { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px; }
+  .popup-title { font-family: var(--display); font-variation-settings: 'opsz' 24; font-size: 18px; font-weight: 420; line-height: 1.2; color: var(--ink); margin-bottom: 6px; letter-spacing: -0.01em; }
+  .popup-address { font-family: var(--mono); font-size: 9px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
+  .popup-transit {
+    font-family: var(--kr); font-size: 10.5px; line-height: 1.45;
+    color: var(--ink-3); margin-bottom: 8px;
+    padding-left: 14px; position: relative;
+  }
+  .popup-transit::before {
+    content: '→'; position: absolute; left: 0; top: 0;
+    color: var(--ink-4); font-family: var(--mono); font-size: 11px;
+  }
+  .popup-note { font-family: var(--kr); font-size: 11.5px; line-height: 1.55; color: var(--ink-2); margin-bottom: 10px; }
+  .popup-link {
+    display: inline-block; font-family: var(--mono); font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink);
+    border-bottom: 1px solid var(--ink); text-decoration: none; padding-bottom: 1px;
+  }
+  .popup-link:hover { color: var(--ink-3); border-color: var(--ink-3); }
+
+  /* ========= LEGEND ========= */
+  .legend {
+    position: absolute; bottom: 24px; right: 24px;
+    background: var(--panel); border: 1px solid var(--rule);
+    padding: 14px 16px; z-index: 500; font-family: var(--mono);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06); max-width: 180px;
+  }
+  .legend-title { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ink-2); margin-bottom: 4px; }
+  .legend-item:last-child { margin-bottom: 0; }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .legend-swatch.legend-ring { background: var(--panel); border: 1.5px solid var(--ink-2); width: 10px; height: 10px; }
+
+  .leaflet-bar a { background: var(--panel) !important; color: var(--ink) !important; border-color: var(--rule) !important; }
+  .leaflet-bar a:hover { background: var(--card) !important; }
+  .leaflet-control-attribution {
+    background: rgba(250, 248, 243, 0.8) !important;
+    font-family: var(--mono); font-size: 9px !important; color: var(--ink-3) !important;
+  }
+
+  /* ========= MOBILE LAYOUT ========= */
+  @media (max-width: 900px) {
+    .app {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto auto auto;
+      grid-template-areas:
+        "hero"
+        "tabs"
+        "map"
+        "list"
+        "info";
+      height: auto;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    .hero {
+      border-right: 0;
+      padding: 24px 22px 20px;
+    }
+    .title { font-size: 38px; }
+    .stats { gap: 18px; }
+
+    .tabs {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      border-right: 0;
+      padding: 0 22px;
+      box-shadow: 0 1px 0 var(--rule);
+    }
+
+    .map-wrap {
+      position: sticky;
+      top: var(--tabs-h);
+      z-index: 99;
+      height: var(--map-mobile-h);
+    }
+
+    .list {
+      overflow-y: visible;
+      border-right: 0;
+      min-height: 50vh;
+    }
+
+    /* Anchor offset so scrolled-to stops appear below sticky map+tabs */
+    .stop { scroll-margin-top: calc(var(--tabs-h) + var(--map-mobile-h) + 8px); }
+
+    .day-header { padding: 24px 22px 12px; }
+    .stop { padding: 14px 22px; grid-template-columns: 48px 1fr; gap: 12px; }
+    .stop-num { width: 22px; height: 22px; font-size: 10px; }
+
+    .info {
+      border-right: 0;
+      padding: 16px 22px 28px;
+    }
+
+    .legend {
+      bottom: 12px;
+      right: 12px;
+      padding: 10px 12px;
+      max-width: 140px;
+    }
+    .legend-item { font-size: 10px; margin-bottom: 3px; }
+    .legend-swatch { width: 10px; height: 10px; }
+
+    /* Smaller popup on mobile */
+    .leaflet-popup-content { padding: 14px 30px 14px 16px; width: 220px !important; }
+    .popup-title { font-size: 16px; }
+    .popup-note { font-size: 11px; }
+  }
+
+  /* Very small screens */
+  @media (max-width: 380px) {
+    .stats { gap: 12px; }
+    .stat-num { font-size: 18px; }
+    .title { font-size: 32px; }
+    .tab span { font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <section class="hero">
+    <div class="meta-row">
+      <span>An Itinerary</span>
+      <span>May 28—31, 2026</span>
+    </div>
+    <h1 class="title">New York.</h1>
+    <div class="subtitle ko">2박 3일 · 친구들과 함께</div>
+    <div class="stats">
+      <div class="stat"><div class="stat-num">3</div><div class="stat-label">Days</div></div>
+      <div class="stat"><div class="stat-num">20</div><div class="stat-label">Stops</div></div>
+      <div class="stat"><div class="stat-num">2</div><div class="stat-label">Reserved</div></div>
+      <div class="stat"><div class="stat-num">4</div><div class="stat-label">Guests</div></div>
+    </div>
+  </section>
+
+  <nav class="tabs">
+    <button class="tab active" data-day="all">All<span>전체</span></button>
+    <button class="tab" data-day="1">Fri<span>금</span></button>
+    <button class="tab" data-day="2">Sat<span>토</span></button>
+    <button class="tab" data-day="3">Sun<span>일</span></button>
+  </nav>
+
+  <main class="map-wrap">
+    <div id="map"></div>
+    <div class="legend">
+      <div class="legend-title">Days</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#2C2924"></span> Fri · 금</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#7A7367"></span> Sat · 토</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#B5AEA1"></span> Sun · 일</div>
+      <div class="legend-title" style="margin-top:12px">Spots</div>
+      <div class="legend-item"><span class="legend-swatch legend-ring" style="border-color:var(--cat-coffee)"></span> Coffee</div>
+      <div class="legend-item"><span class="legend-swatch legend-ring" style="border-color:var(--cat-food)"></span> Food</div>
+      <div class="legend-item"><span class="legend-swatch legend-ring" style="border-color:var(--cat-shopping)"></span> Shopping</div>
+      <div class="legend-item"><span class="legend-swatch legend-ring" style="border-color:var(--cat-books)"></span> Books</div>
+      <div class="legend-item"><span class="legend-swatch legend-ring" style="border-color:var(--cat-design)"></span> Design</div>
+    </div>
+  </main>
+
+  <div class="list" id="itinerary"></div>
+
+  <footer class="info">
+    <div class="row"><span>Hotel</span><span>InterContinental Barclay</span></div>
+    <div class="row"><span>Outbound</span><span>B6 816 · Thu 11:47 PM → JFK 8:34 AM</span></div>
+    <div class="row"><span>Return</span><span>B6 615 · Sun 6:29 PM → SFO 10:19 PM</span></div>
+    <div class="row"><span>Ref</span><span>MNQATC</span></div>
+  </footer>
+
+</div>
+
+<script>
+const itinerary = [
+  { day: 1, num: 1, time: '8:34 AM', name: 'JFK Airport · 도착',
+    lat: 40.6446161, lng: -73.7797222, address: 'Queens, NY 11430',
+    transit: 'B6 816 SFO → JFK',
+    note: '입국 + 짐 30~45분. 4명이라 Uber XL 추천 — 호텔까지 약 45~60분, $100~120 예상. 트래픽 심하면 AirTrain+LIRR (약 50분, 1인 $20)도 백업.',
+    gmaps: 'https://maps.google.com/?q=JFK+Airport+Terminal+5' },
+  { day: 1, num: 2, time: '10:30 AM', name: 'InterContinental Barclay',
+    lat: 40.7556629, lng: -73.9735276, address: '111 E 48th St',
+    transit: 'JFK → Midtown · Uber XL ~50분',
+    note: '체크인은 3PM이라 짐만 드롭. 짐 맡기고 아래 카페 두 곳 들렸다가 K-Town Cho Dang Gol으로.',
+    gmaps: 'https://maps.google.com/?q=InterContinental+New+York+Barclay',
+    points: [
+      { name: 'dae day coffee',   lat: 40.7544, lng: -73.9748, category: 'Coffee', addr: '485 Lexington Ave · Midtown East', note: '호텔 도보 2분. 호주 스타일 스페셜티. Joe Coffee 라인업 (현지 로컬 협업). 모닝 라떼 픽업 딱.' },
+      { name: 'Blue Dove Coffee', lat: 40.7372, lng: -73.9907, category: 'Coffee', addr: '33 Union Square W · Union Sq',     note: '※ "Dove Street" 못 찾아서 Blue Dove로 추정. Union Sq 바로 옆 작은 시그니처 카페. K-Town 가는 길에 6 train으로 한 정거장 위.' },
+    ]
+  },
+  { day: 1, num: 3, time: '12:00 PM', name: 'Cho Dang Gol',
+    lat: 40.7501625, lng: -73.9863713, address: '55 W 35th St · K-Town',
+    transit: '호텔 → K-Town · 도보 15분 (1.1mi)',
+    note: '12시 오픈런 — 안 그러면 웨이팅 한 시간+. 오징어순두부 + 해물파전.',
+    gmaps: 'https://maps.google.com/?q=Cho+Dang+Gol+New+York' },
+  { day: 1, num: 4, time: '1:45 PM', name: 'The High Line',
+    lat: 40.7479925, lng: -74.0047649, address: '34th St → Gansevoort St',
+    transit: 'K-Town → Hudson Yards · 도보 12분 또는 7 train 1정거장',
+    note: '북쪽 Hudson Yards 입구에서 남쪽으로 약 45분. Little Island 들를 거니까 너무 천천히 X. 16번가 부근에서 Chelsea Market 잠깐 옵션.',
+    gmaps: 'https://maps.google.com/?q=The+High+Line',
+    points: [
+      { name: 'Chelsea Market',     lat: 40.7424, lng: -74.0062, category: 'Food',   addr: '75 9th Ave',           note: '실내 푸드홀. High Line 16번가에서 잠깐 내려와서. 점심 안 먹었으면 픽.' },
+      { name: 'Los Tacos No. 1',    lat: 40.7423, lng: -74.0061, category: 'Food',   addr: 'Chelsea Market 안',     note: '뉴욕 최고 타코 후보. 진짜 바이럴 + 진짜 맛. 줄 빨라요.' },
+    ]
+  },
+  { day: 1, num: 5, time: '2:45 PM', name: 'Little Island',
+    lat: 40.7423, lng: -74.0099, address: 'Pier 55 · 13th St & Hudson River',
+    transit: 'High Line 남쪽 끝(Gansevoort)에서 도보 5분',
+    note: 'Heatherwick 디자인 튤립 모양 인공섬. 30~40분이면 충분. 전망 좋은 The Play(원형 광장)에서 사진 + Whitney 미술관도 바로 옆이라 외관만 슥.',
+    gmaps: 'https://maps.google.com/?q=Little+Island+Pier+55' },
+  { day: 1, num: 6, time: '3:45 PM', name: 'SoHo',
+    lat: 40.7245908, lng: -74.0019174, address: 'Spring St · Prince St',
+    transit: 'Little Island → SoHo · 1 train 14 St → Houston St (~10분) 또는 도보 25분',
+    note: '5:30 Raku 예약 있으니 산책하듯이. 아래 작은 점들 보고 끌리는 곳 두세 곳 들리기.',
+    gmaps: 'https://maps.google.com/?q=SoHo+New+York',
+    points: [
+      { name: 'Aesop',                    lat: 40.7240, lng: -74.0001, category: 'Design',   addr: '161 Mercer St',           note: '향수 + 핸드워시. 매장 인테리어 자체가 갤러리.' },
+      { name: 'MoMA Design Store',        lat: 40.7228, lng: -73.9982, category: 'Design',   addr: '81 Spring St',            note: '디자인 굿즈/선물용. 작은 사이즈는 캐리어에도 OK.' },
+      { name: 'McNally Jackson Books',    lat: 40.7253, lng: -73.9974, category: 'Books',    addr: '134 Prince St',           note: '인디 서점. 페이퍼/문구/아트북 섹션이 진짜 좋음.' },
+      { name: 'Housing Works Bookstore',  lat: 40.7233, lng: -73.9967, category: 'Books',    addr: '126 Crosby St',           note: '빈티지 책 + 작은 카페. 수익은 자선단체로.' },
+      { name: 'Saturdays NYC',            lat: 40.7203, lng: -73.9994, category: 'Shopping', addr: '31 Crosby St',            note: '서핑 + 라이프스타일 브랜드. 뒷마당 에스프레소 바.' },
+      { name: 'Aimé Leon Dore',           lat: 40.7220, lng: -73.9962, category: 'Shopping', addr: '214 Mulberry St · NoLita', note: '뉴욕 출신 멘즈웨어. 매장 안 에스프레소 바도 핫. 바이럴 + 진짜 로컬 픽.' },
+      { name: 'Maman SoHo',               lat: 40.7194, lng: -73.9974, category: 'Coffee',   addr: '239 Centre St',           note: '잠깐 쉴 때. 라떼 + 쿠키 한 입.' },
+      { name: 'Cafe Integral',            lat: 40.7211, lng: -73.9956, category: 'Coffee',   addr: '149 Elizabeth St · NoLita', note: '니카라과 산지 직배송. 작고 조용한 로컬 시크릿 카페. 광고 1도 안 해요.' },
+      { name: 'Prince Street Pizza',      lat: 40.7228, lng: -73.9947, category: 'Food',     addr: '27 Prince St · NoLita',     note: '바이럴 페퍼로니 스퀘어 슬라이스의 본진. 광고 없이 입소문만으로 줄 섬. 회전 빠름.' },
+      { name: "L'Industrie Pizzeria",     lat: 40.7297, lng: -74.0033, category: 'Food',     addr: '254 Bleecker St · West Village', note: '현재 뉴욕 NO.1 슬라이스 후보. 부라타 슬라이스 시그니처. 점심 피크는 줄 진짜 김.' },
+    ]
+  },
+  { day: 1, num: 7, time: '5:30 PM', name: 'Raku Soho',
+    lat: 40.7272479, lng: -74.0025495, address: '48 MacDougal St',
+    transit: 'SoHo 내 · 도보 5분',
+    note: '예약 확정 · 4명. 우동 + 사이드 빠르게. 6:30엔 출발해야 7시 쇼 가능.',
+    gmaps: 'https://maps.google.com/?q=Raku+SoHo+48+MacDougal',
+    featured: true, tag: 'Reserved' },
+  { day: 1, num: 8, time: '7:00 PM', name: 'Belasco Theatre',
+    lat: 40.7566389, lng: -73.9838861, address: '111 W 44th St · Broadway',
+    transit: 'SoHo → Midtown · Uber 15~20분 ($25) 또는 6 train Bleecker → Grand Central + 도보 10분',
+    note: 'Maybe Happy Ending · 약 1시간 40분, 인터미션 없음. 7PM 시작 → 8:40PM 종료. 6:45까지 입장 권장.',
+    gmaps: 'https://maps.google.com/?q=Belasco+Theatre',
+    featured: true, tag: 'Ticket' },
+  { day: 1, num: 9, time: '9:00 PM', name: 'InterContinental Barclay · 도착',
+    lat: 40.7556629, lng: -73.9735276, address: '111 E 48th St',
+    transit: 'Belasco → 호텔 · 도보 12분 (0.6mi, 44th & Broadway → 48th & Park)',
+    note: '첫날 마무리. 시차로 피곤할 테니 일찍 쉬기. 출출하면 호텔 근처 24시 델리.',
+    gmaps: 'https://maps.google.com/?q=InterContinental+New+York+Barclay' },
+  { day: 2, num: 10, time: '9:00 AM', name: 'InterContinental Barclay · 출발',
+    lat: 40.7556629, lng: -73.9735276, address: '111 E 48th St',
+    transit: '호텔에서 출발',
+    note: '간단히 출발 (커피는 DUMBO에서). F train 타러 Rockefeller Center역까지 도보 8분.',
+    gmaps: 'https://maps.google.com/?q=InterContinental+New+York+Barclay' },
+  { day: 2, num: 11, time: '9:45 AM', name: 'Devoción · DUMBO',
+    lat: 40.7022, lng: -73.9867, address: '105 York St · DUMBO',
+    transit: 'F train Rockefeller Ctr → York St (~25분) — 역 바로 옆',
+    note: '콜롬비아 산지 직배송 로스터. 라떼/필터 + 페스트리. 30~45분 여유 있게 마시고 Flea로 이동.',
+    gmaps: 'https://maps.google.com/?q=Devocion+105+York+St+Brooklyn' },
+  { day: 2, num: 12, time: '10:45 AM', name: 'Brooklyn Flea · DUMBO',
+    lat: 40.7035, lng: -73.9889, address: '80 Pearl St · Manhattan Bridge Archway',
+    transit: 'Devoción에서 도보 3분',
+    note: '토요일 10AM–5PM 오픈. 빈티지/굿즈/푸드. 1~1.5시간 둘러보고 Washington St 포토 스팟 들렀다 다리로.',
+    gmaps: 'https://maps.google.com/?q=Brooklyn+Flea+DUMBO',
+    points: [
+      { name: 'Crowley Vintage',  lat: 40.7029, lng: -73.9872, category: 'Shopping', addr: '68 Jay St, Suite 303 (3F)', note: '4.4★ 빈티지 의류. 토요일 12PM 오픈 — Flea 한 바퀴 돌고 다리 가기 전에 들리면 타이밍 딱.' },
+      { name: 'Time Out Market NY', lat: 40.7028, lng: -73.9899, category: 'Food',   addr: '55 Water St · DUMBO',     note: '뉴욕 인기 셰프 24+ 부스 모인 푸드홀. 다리 건너기 전 점심 옵션. 옥상 뷰도.' },
+    ]
+  },
+  { day: 2, num: 13, time: '12:30 PM', name: 'Brooklyn Bridge · 도보',
+    lat: 40.7061, lng: -73.9969, address: 'Brooklyn → Manhattan · 1.1mi',
+    transit: 'DUMBO에서 도보 10분 — Washington St → Cadman Plaza → 다리 입구',
+    note: '브루클린에서 맨해튼 방향 (북쪽)으로 약 30~40분. 보행자 전용 레인 따라 천천히. 끝나면 City Hall / Tribeca 쪽 도착 — 아래 점들 참고.',
+    gmaps: 'https://maps.google.com/?q=Brooklyn+Bridge+pedestrian+walkway',
+    points: [
+      { name: 'Frenchette Bakery',   lat: 40.7186, lng: -74.0080, category: 'Food',   addr: '220 W Broadway · Tribeca', note: '뉴욕 베이커리 신 정점. 크루아상/타르트 미쳤음. 다리 건너고 Tribeca 도착하면 픽업.' },
+      { name: 'Black Fox Coffee Co', lat: 40.7068, lng: -74.0073, category: 'Coffee', addr: '70 Pine St · FiDi',         note: '아르데코 로비 1층 카페. 호주 스타일 라떼 + 빵. 바이럴 + 로컬 둘 다 인정.' },
+    ]
+  },
+  { day: 2, num: 14, time: 'Afternoon', name: 'To be decided',
+    lat: null, lng: null, address: '맨해튼 다운타운 · 점심 + 산책',
+    transit: 'Brooklyn Bridge 도착 후 도보',
+    note: 'Tribeca / SoHo / Chinatown 등 옵션 (Little Island는 금요일에 들렀음). 6시까지 Flatiron 근처로 복귀.',
+    tbd: true },
+  { day: 2, num: 15, time: '7:00 PM', name: 'Oiji Mi',
+    lat: 40.7396687, lng: -73.9924795, address: '17 W 19th St · Flatiron',
+    transit: '오후 동선에서 6 train 또는 도보로 23 St 방향',
+    note: '미슐랭 ★ 모던 코리안. 테이스팅 메뉴 추천. 식사 후 호텔까지 Uber 10분 또는 6 train 한 번.',
+    gmaps: 'https://maps.google.com/?q=Oiji+Mi+New+York',
+    featured: true, tag: '★ Reserved' },
+  { day: 3, num: 16, time: '9:00 AM', name: 'InterContinental Barclay · 출발',
+    lat: 40.7556629, lng: -73.9735276, address: '111 E 48th St',
+    transit: '체크아웃 · 짐 벨홉에 맡기고 출발',
+    note: '오후 3시쯤 짐 픽업하러 복귀. 6 train으로 UES 방향.',
+    gmaps: 'https://maps.google.com/?q=InterContinental+New+York+Barclay' },
+  { day: 3, num: 17, time: '9:30 AM', name: 'Sant Ambroeus · UES',
+    lat: 40.7748, lng: -73.9636, address: '1000 Madison Ave · 78th St',
+    transit: '6 train Grand Central → 77 St (~8분) + 도보 4분',
+    note: '클래식 밀라네제 카페. 카푸치노 + 코르네토 to-go. 리뷰 4.5+. 30분 정도 마시거나 들고 출발.',
+    gmaps: 'https://maps.google.com/?q=Sant+Ambroeus+Madison+Ave' },
+  { day: 3, num: 18, time: '10:30 AM', name: 'Museum of Natural History',
+    lat: 40.7813, lng: -73.9740, address: 'Central Park West & 79th St',
+    transit: 'Central Park 가로질러 도보 15~20분 (79th St 입구 → Great Lawn → CPW 출구)',
+    note: '10AM 오픈. 일반 입장 $28, Space Show 포함 $34. 추천: African Mammals / Ocean Life / Rose Center 우주관. 2~2.5시간 관람 + 점심 (아래 픽 참고). 3시쯤 호텔로 복귀.',
+    gmaps: 'https://maps.google.com/?q=American+Museum+of+Natural+History',
+    featured: true, tag: 'Museum',
+    points: [
+      { name: 'Levain Bakery',             lat: 40.7795, lng: -73.9808, category: 'Food',   addr: '167 W 74th St',  note: '전설의 6oz 청키 쿠키. UWS 본점. 박물관 후 디저트로 픽. 줄 서지만 회전 빨라요.' },
+      { name: 'Variety Coffee Roasters',   lat: 40.7770, lng: -73.9805, category: 'Coffee', addr: '162 W 72nd St',  note: '브루클린 출신 로컬 로스터의 UWS 점. 조용하고 진하게. 광고 없는 진짜 로컬 사랑.' },
+    ]
+  },
+  { day: 3, num: 19, time: '3:00 PM', name: 'InterContinental Barclay · 짐 픽업',
+    lat: 40.7556629, lng: -73.9735276, address: '111 E 48th St',
+    transit: 'AMNH → Midtown · B train 81 St → Rockefeller Ctr (~12분) + 도보 8분, 또는 Uber 20분',
+    note: '벨홉에서 짐 찾고 화장실 + 정리. 30~45분 여유. Uber XL 호출 (JFK까지 ~$100~120).',
+    gmaps: 'https://maps.google.com/?q=InterContinental+New+York+Barclay' },
+  { day: 3, num: 20, time: '4:00 PM', name: 'Hotel → JFK',
+    lat: 40.6446161, lng: -73.7797222, address: 'B6 615 · 6:29 PM 출발',
+    transit: 'Midtown → JFK · Uber XL 4:15 출발 (~50~70분 $100~120)',
+    note: '러시아워라 일찍 출발. 트래픽 심하면 LIRR (Grand Central → Jamaica → AirTrain) 백업. JFK 5:15 PM 도착 목표. 10:19 PM SFO 도착.',
+    gmaps: 'https://maps.google.com/?q=JFK+Airport' },
+];
+
+const dayLabels = {
+  1: { name: 'Arrival to Broadway', date: 'Friday · May 29' },
+  2: { name: 'A whole day, then a feast', date: 'Saturday · May 30' },
+  3: { name: 'A half day, then home', date: 'Sunday · May 31' },
+};
+
+const isMobile = () => window.innerWidth <= 900;
+
+// =========== RENDER SIDEBAR LIST ===========
+const itineraryEl = document.getElementById('itinerary');
+[1, 2, 3].forEach(d => {
+  const section = document.createElement('section');
+  section.className = 'day-section';
+  section.dataset.day = d;
+  section.innerHTML = `
+    <div class="day-header">
+      <div class="day-eyebrow"><span class="day-dot day-${d}-dot"></span>Day ${d.toString().padStart(2,'0')} · ${d === 1 ? '첫째' : d === 2 ? '둘째' : '셋째'} 날</div>
+      <div class="day-name">${dayLabels[d].name}</div>
+      <div class="day-date">${dayLabels[d].date} · 2026</div>
+    </div>
+    <div class="stops"></div>
+  `;
+  const stopsEl = section.querySelector('.stops');
+  itinerary.filter(s => s.day === d).forEach(stop => {
+    const el = document.createElement('div');
+    el.className = `stop day-${d} ${stop.tbd ? 'tbd' : ''}`;
+    el.dataset.num = stop.num;
+    el.innerHTML = `
+      <div class="stop-marker-col">
+        <div class="stop-num">${stop.num}</div>
+        <div class="stop-time">${stop.time}</div>
+      </div>
+      <div class="stop-content">
+        <div class="stop-name">${stop.name}</div>
+        <div class="stop-meta">
+          <span class="stop-address">${stop.address}</span>
+          ${stop.tag ? `<span class="tag ${stop.featured ? 'featured' : ''}">${stop.tag}</span>` : ''}
+        </div>
+        ${stop.transit ? `<div class="stop-transit ko">${stop.transit}</div>` : ''}
+        <div class="stop-note ko">${stop.note}</div>
+        ${stop.points ? `
+          <div class="sub-points">
+            ${stop.points.map((p, i) => `
+              <div class="sub-point" data-sub="${stop.num}-${i}" data-cat="${p.category}">
+                <div class="sub-point-dot"></div>
+                <div class="sub-point-body">
+                  <div class="sub-point-name">${p.name}</div>
+                  <div class="sub-point-note ko">${p.note}</div>
+                </div>
+                <div class="sub-point-cat" data-cat="${p.category}">${p.category}</div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+    el.addEventListener('click', (e) => {
+      // Don't trigger main stop focus if a sub-point was clicked
+      if (e.target.closest('.sub-point')) return;
+      focusStop(stop.num);
+    });
+    // Wire sub-point clicks to focus the corresponding sub-marker
+    if (stop.points) {
+      el.querySelectorAll('.sub-point').forEach((subEl) => {
+        subEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          focusSubPoint(subEl.dataset.sub);
+        });
+      });
+    }
+    stopsEl.appendChild(el);
+  });
+  itineraryEl.appendChild(section);
+});
+
+// =========== MAP ===========
+let map;
+function initMap() {
+  try {
+    if (typeof L === 'undefined') {
+      throw new Error('Leaflet failed to load');
+    }
+
+    map = L.map('map', { zoomControl: false, attributionControl: false })
+      .setView([40.745, -73.985], 12);
+
+    L.control.zoom({ position: 'topright' }).addTo(map);
+    L.control.attribution({ position: 'bottomleft', prefix: false })
+      .addAttribution('© OpenStreetMap · CARTO').addTo(map);
+
+    // Primary tile: CARTO Positron (neutral). Fall back to OSM if it fails.
+    const cartoLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      subdomains: 'abcd',
+    });
+
+    let cartoErrors = 0;
+    let fellBack = false;
+    cartoLayer.on('tileerror', () => {
+      cartoErrors++;
+      if (cartoErrors >= 3 && !fellBack) {
+        fellBack = true;
+        map.removeLayer(cartoLayer);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+        }).addTo(map);
+      }
+    });
+    cartoLayer.addTo(map);
+
+    // Add markers, routes, and wire interaction (defined below)
+    setupMarkersAndInteraction();
+
+    // Force size recalc — sticky containers can mis-measure on initial paint
+    setTimeout(() => map.invalidateSize(), 100);
+    setTimeout(() => map.invalidateSize(), 500);
+    setTimeout(() => map.invalidateSize(), 1500);
+  } catch (e) {
+    document.getElementById('map').innerHTML =
+      '<div style="padding:24px;font-family:monospace;font-size:12px;color:#666;line-height:1.6">' +
+      'Map failed to load.<br>' + (e && e.message ? e.message : 'Unknown error') +
+      '<br><br>Try opening in Safari or Chrome directly.</div>';
+  }
+}
+
+const markers = {};
+const routeLines = {};
+const subMarkers = { 1: [], 2: [], 3: [] };
+
+function setupMarkersAndInteraction() {
+  itinerary.filter(s => s.lat !== null).forEach(stop => {
+    const featured = stop.featured ? 'featured' : '';
+    const icon = L.divIcon({
+      className: 'custom-marker',
+      html: `<div class="marker-pin day-${stop.day} ${featured}" data-num="${stop.num}">${stop.num}</div>`,
+      iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
+    });
+    const marker = L.marker([stop.lat, stop.lng], { icon }).addTo(map);
+    const popupHtml = `
+      <div class="popup-eyebrow">Day ${stop.day} · ${stop.time}</div>
+      <div class="popup-title">${stop.name}</div>
+      <div class="popup-address">${stop.address}</div>
+      ${stop.transit ? `<div class="popup-transit ko">${stop.transit}</div>` : ''}
+      <div class="popup-note ko">${stop.note}</div>
+      ${stop.gmaps ? `<a class="popup-link" href="${stop.gmaps}" target="_blank">Google Maps →</a>` : ''}
+    `;
+    marker.bindPopup(popupHtml, { closeButton: true, autoPan: true });
+    marker.on('click', () => {
+      setActiveStop(stop.num);
+      if (!isMobile()) scrollListToStop(stop.num);
+    });
+    markers[stop.num] = marker;
+
+    // Sub-markers for sights/shopping within this stop
+    if (stop.points && stop.points.length) {
+      stop.points.forEach((p, i) => {
+        const subIcon = L.divIcon({
+          className: 'custom-marker',
+          html: `<div class="sub-marker" data-sub="${stop.num}-${i}" data-cat="${p.category}" title="${p.name}"></div>`,
+          iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -8],
+        });
+        const subMarker = L.marker([p.lat, p.lng], { icon: subIcon }).addTo(map);
+        subMarker.bindPopup(`
+          <div class="popup-eyebrow">${p.category} · ${stop.name}</div>
+          <div class="popup-title">${p.name}</div>
+          <div class="popup-address">${p.addr}</div>
+          <div class="popup-note ko">${p.note}</div>
+          <a class="popup-link" href="https://maps.google.com/?q=${encodeURIComponent(p.name + ' ' + p.addr)}" target="_blank">Google Maps →</a>
+        `, { closeButton: true, autoPan: true });
+        subMarkers[stop.day].push(subMarker);
+      });
+    }
+  });
+
+  const dayCoords = { 1: [], 2: [], 3: [] };
+  itinerary.filter(s => s.lat !== null).forEach(s => dayCoords[s.day].push([s.lat, s.lng]));
+  const routeStyles = {
+    1: { color: '#2C2924', weight: 1.5, opacity: 0.5, dashArray: '4 6' },
+    2: { color: '#7A7367', weight: 1.5, opacity: 0.5, dashArray: '4 6' },
+    3: { color: '#B5AEA1', weight: 1.5, opacity: 0.5, dashArray: '4 6' },
+  };
+  [1, 2, 3].forEach(d => {
+    if (dayCoords[d].length > 1) routeLines[d] = L.polyline(dayCoords[d], routeStyles[d]).addTo(map);
+  });
+
+  // Initial bounds
+  const nycStops = itinerary.filter(s => s.lat !== null && s.lat > 40.70);
+  if (nycStops.length > 0) {
+    map.fitBounds(L.latLngBounds(nycStops.map(s => [s.lat, s.lng])).pad(0.15));
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initMap);
+} else {
+  initMap();
+}
+
+// =========== INTERACTION ===========
+function setActiveStop(num) {
+  const activeNum = parseInt(num);
+  document.querySelectorAll('.stop').forEach(el => {
+    el.classList.remove('active');
+    const stopNum = parseInt(el.dataset.num);
+    el.classList.toggle('past', stopNum < activeNum);
+  });
+  document.querySelectorAll('.marker-pin').forEach(el => {
+    el.classList.remove('active');
+    const stopNum = parseInt(el.dataset.num);
+    el.classList.toggle('past', stopNum < activeNum);
+  });
+  const stopEl = document.querySelector(`.stop[data-num="${activeNum}"]`);
+  if (stopEl) { stopEl.classList.add('active'); stopEl.classList.remove('past'); }
+  const markerEl = document.querySelector(`.marker-pin[data-num="${activeNum}"]`);
+  if (markerEl) { markerEl.classList.add('active'); markerEl.classList.remove('past'); }
+}
+
+function scrollListToStop(num) {
+  const stopEl = document.querySelector(`.stop[data-num="${num}"]`);
+  if (!stopEl) return;
+  stopEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function focusSubPoint(subId) {
+  // subId format: "parentNum-index"
+  const [parentNumStr, idxStr] = subId.split('-');
+  const parentNum = parseInt(parentNumStr);
+  const idx = parseInt(idxStr);
+  const parent = itinerary.find(s => s.num === parentNum);
+  if (!parent || !parent.points || !parent.points[idx]) return;
+  const pt = parent.points[idx];
+  // Find the matching Leaflet sub-marker
+  const sub = subMarkers[parent.day].find(m => {
+    const el = m.getElement && m.getElement();
+    return el && el.querySelector(`[data-sub="${subId}"]`);
+  });
+  if (!sub) return;
+  if (isMobile()) {
+    document.querySelector('.map-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => {
+      map.invalidateSize();
+      map.flyTo([pt.lat, pt.lng], 17, { duration: 0.7 });
+      setTimeout(() => sub.openPopup(), 700);
+    }, 350);
+  } else {
+    map.flyTo([pt.lat, pt.lng], 17, { duration: 0.7 });
+    setTimeout(() => sub.openPopup(), 600);
+  }
+}
+
+function focusStop(num) {
+  const stop = itinerary.find(s => s.num === num);
+  setActiveStop(num);
+  if (stop.lat === null) return;
+
+  // On mobile, scroll page so sticky map+tabs are visible at top first.
+  // Then fly map, then open popup with extra delay so user sees the motion.
+  if (isMobile()) {
+    document.querySelector('.map-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => {
+      map.invalidateSize();
+      map.flyTo([stop.lat, stop.lng], 15, { duration: 0.7 });
+      setTimeout(() => markers[num].openPopup(), 700);
+    }, 350);
+  } else {
+    map.flyTo([stop.lat, stop.lng], 15, { duration: 0.8 });
+    setTimeout(() => markers[num].openPopup(), 600);
+  }
+}
+
+// =========== DAY FILTER ===========
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const day = tab.dataset.day;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+
+    document.querySelectorAll('.day-section').forEach(s => {
+      if (day === 'all' || s.dataset.day === day) s.classList.remove('hidden');
+      else s.classList.add('hidden');
+    });
+
+    if (day === 'all') {
+      Object.values(markers).forEach(m => m.addTo(map));
+      Object.values(routeLines).forEach(l => l.addTo(map));
+      [1, 2, 3].forEach(dd => subMarkers[dd].forEach(m => m.addTo(map)));
+      const nycStops = itinerary.filter(s => s.lat !== null && s.lat > 40.70);
+      if (nycStops.length > 0) {
+        map.flyToBounds(L.latLngBounds(nycStops.map(s => [s.lat, s.lng])).pad(0.15), { duration: 0.7 });
+      }
+    } else {
+      const d = parseInt(day);
+      itinerary.forEach(s => {
+        if (s.lat === null) return;
+        if (s.day === d) markers[s.num].addTo(map);
+        else map.removeLayer(markers[s.num]);
+      });
+      [1, 2, 3].forEach(dd => {
+        if (routeLines[dd]) {
+          if (dd === d) routeLines[dd].addTo(map);
+          else map.removeLayer(routeLines[dd]);
+        }
+        subMarkers[dd].forEach(m => {
+          if (dd === d) m.addTo(map);
+          else map.removeLayer(m);
+        });
+      });
+      const dayStops = itinerary.filter(s => s.day === d && s.lat !== null && s.lat > 40.70);
+      if (dayStops.length > 0) {
+        map.flyToBounds(L.latLngBounds(dayStops.map(s => [s.lat, s.lng])).pad(0.2), { duration: 0.7 });
+      }
+    }
+  });
+});
+
+// =========== INITIAL VIEW handled inside setupMarkersAndInteraction ===========
+
+// =========== HANDLE VIEWPORT CHANGES ===========
+// When mobile address bar shows/hides, viewport size changes — recalc map size
+let resizeTimer;
+function recalcMap() {
+  if (!map) return;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => map.invalidateSize(), 200);
+}
+window.addEventListener('resize', recalcMap);
+window.addEventListener('scroll', recalcMap, { passive: true });
+
+// Surface real errors (otherwise iOS preview hides them as "Script error.")
+window.addEventListener('error', (e) => {
+  console.error('Page error:', e.message, e.filename, e.lineno);
+});
+</script>
+
+</body>
+</html>
