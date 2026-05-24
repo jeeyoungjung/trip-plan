@@ -938,10 +938,30 @@
     .chat-panel.open { transform: translateY(0); }
     .chat-backdrop { display: none; }
 
-    .chat-head {
-      padding: 18px 22px 14px;
-      padding-top: calc(18px + env(safe-area-inset-top, 0px));
+    /* Grab handle pill at the top of the panel — visual cue that the user
+       can swipe the header down to dismiss. */
+    .chat-panel::before {
+      content: '';
+      position: absolute;
+      top: calc(8px + env(safe-area-inset-top, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 4px;
+      border-radius: 999px;
+      background: var(--ink-4);
+      opacity: 0.45;
+      pointer-events: none;
+      z-index: 1;
     }
+    /* Header gets a slightly larger top pad so the handle has breathing room. */
+    .chat-head {
+      padding: 22px 22px 14px;
+      padding-top: calc(22px + env(safe-area-inset-top, 0px));
+      touch-action: none;  /* allow our touchmove to track without browser scrolling */
+      cursor: grab;
+    }
+    .chat-head.dragging { cursor: grabbing; }
     .chat-title { font-size: 26px; }
     .chat-keystrip { padding: 14px 22px 16px; }
     .chat-keystatus { padding: 10px 22px; }
@@ -2218,6 +2238,77 @@ chatBackdropEl.addEventListener('click', chatClose);
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && chatPanelEl.classList.contains('open')) chatClose();
 });
+
+// === Swipe-down-to-dismiss (mobile only) ===
+// Drag the chat header downward to close the panel. Tracks vertical
+// distance + velocity; either >100px or fast-flick closes, otherwise
+// snaps back. Desktop falls through to the existing X-button / Esc path.
+(function setupChatSwipeDismiss() {
+  const head = chatPanelEl.querySelector('.chat-head');
+  if (!head) return;
+  let startY = 0, startT = 0, dragY = 0;
+  let dragging = false;
+
+  head.addEventListener('touchstart', (e) => {
+    if (window.innerWidth > 900) return;
+    if (!chatPanelEl.classList.contains('open')) return;
+    if (e.touches.length !== 1) return;
+    // Don't start a drag if the touch is on the X button (let it click).
+    if (e.target.closest('.chat-close')) return;
+    startY = e.touches[0].clientY;
+    startT = Date.now();
+    dragY = 0;
+    dragging = true;
+    head.classList.add('dragging');
+    // Disable CSS transition while the finger drives the position.
+    chatPanelEl.style.transition = 'none';
+  }, { passive: true });
+
+  head.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy <= 0) {
+      // Ignore upward drags — keep panel pinned at 0.
+      chatPanelEl.style.transform = 'translateY(0)';
+      dragY = 0;
+      return;
+    }
+    dragY = dy;
+    chatPanelEl.style.transform = 'translateY(' + dy + 'px)';
+  }, { passive: true });
+
+  function endDrag() {
+    if (!dragging) return;
+    dragging = false;
+    head.classList.remove('dragging');
+    const dt = Date.now() - startT;
+    const velocity = dragY / Math.max(1, dt);  // px/ms
+    // Restore CSS transition before triggering the final motion.
+    chatPanelEl.style.transition = '';
+    if (dragY > 100 || velocity > 0.5) {
+      // Animate the rest of the way down (translateY 100%), then close
+      // when the transition lands so backdrop/body-lock cleanup is in sync.
+      chatPanelEl.style.transform = 'translateY(100%)';
+      let cleaned = false;
+      const finish = () => {
+        if (cleaned) return;
+        cleaned = true;
+        chatPanelEl.removeEventListener('transitionend', finish);
+        chatPanelEl.style.transform = '';
+        chatClose();
+      };
+      chatPanelEl.addEventListener('transitionend', finish);
+      // Safety net if transitionend doesn't fire (interrupted).
+      setTimeout(finish, 380);
+    } else {
+      // Snap back to translateY(0) — clearing inline transform reveals
+      // the .open rule, and the restored transition animates it.
+      chatPanelEl.style.transform = '';
+    }
+  }
+  head.addEventListener('touchend', endDrag, { passive: true });
+  head.addEventListener('touchcancel', endDrag, { passive: true });
+})();
 
 function setApiKey(k) {
   apiKey = k && k.trim() ? k.trim() : null;
