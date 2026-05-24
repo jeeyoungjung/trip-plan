@@ -1277,32 +1277,40 @@ const routeLines = {};
 const subMarkers = { 1: [], 2: [], 3: [] };
 
 function setupMarkersAndInteraction() {
-  itinerary.filter(s => s.lat !== null).forEach(stop => {
-    const featured = stop.featured ? 'featured' : '';
-    const icon = L.divIcon({
-      className: 'custom-marker',
-      html: `<div class="marker-pin day-${stop.day} ${featured}" data-num="${stop.num}">${stop.num}</div>`,
-      iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
-    });
-    const marker = L.marker([stop.lat, stop.lng], { icon }).addTo(map);
-    const popupHtml = `
-      <div class="popup-eyebrow">Day ${stop.day} · ${stop.time}</div>
-      <div class="popup-title">${stop.name}</div>
-      <div class="popup-address">${stop.address}</div>
-      ${stop.transit ? `<div class="popup-transit ko">${stop.transit}</div>` : ''}
-      <div class="popup-note ko">${stop.note}</div>
-      ${stop.gmaps ? `<a class="popup-link" href="${stop.gmaps}" target="_blank">Google Maps →</a>` : ''}
-    `;
-    marker.bindPopup(popupHtml, { closeButton: true, autoPan: true });
-    marker.on('click', () => {
-      setActiveStop(stop.num);
-      if (!isMobile()) scrollListToStop(stop.num);
-    });
-    markers[stop.num] = marker;
+  itinerary.forEach(stop => {
+    // Main marker — only if the stop itself has coords. (TBD stops like #14
+    // have lat: null and render no numbered pin, but their sub-points still
+    // need to appear on the map — that's handled below.)
+    if (stop.lat !== null) {
+      const featured = stop.featured ? 'featured' : '';
+      const icon = L.divIcon({
+        className: 'custom-marker',
+        html: `<div class="marker-pin day-${stop.day} ${featured}" data-num="${stop.num}">${stop.num}</div>`,
+        iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
+      });
+      const marker = L.marker([stop.lat, stop.lng], { icon }).addTo(map);
+      const popupHtml = `
+        <div class="popup-eyebrow">Day ${stop.day} · ${stop.time}</div>
+        <div class="popup-title">${stop.name}</div>
+        <div class="popup-address">${stop.address}</div>
+        ${stop.transit ? `<div class="popup-transit ko">${stop.transit}</div>` : ''}
+        <div class="popup-note ko">${stop.note}</div>
+        ${stop.gmaps ? `<a class="popup-link" href="${stop.gmaps}" target="_blank">Google Maps →</a>` : ''}
+      `;
+      marker.bindPopup(popupHtml, { closeButton: true, autoPan: true });
+      marker.on('click', () => {
+        setActiveStop(stop.num);
+        if (!isMobile()) scrollListToStop(stop.num);
+      });
+      markers[stop.num] = marker;
+    }
 
-    // Sub-markers for sights/shopping within this stop
+    // Sub-markers for sights/shopping within this stop — render regardless
+    // of whether the parent stop has coords, so TBD stops still show their
+    // sub-points on the map.
     if (stop.points && stop.points.length) {
       stop.points.forEach((p, i) => {
+        if (p.lat == null || p.lng == null) return;
         const subIcon = L.divIcon({
           className: 'custom-marker',
           html: `<div class="sub-marker" data-sub="${stop.num}-${i}" data-cat="${p.category}" title="${p.name}"></div>`,
@@ -1332,10 +1340,17 @@ function setupMarkersAndInteraction() {
     if (dayCoords[d].length > 1) routeLines[d] = L.polyline(dayCoords[d], routeStyles[d]).addTo(map);
   });
 
-  // Initial bounds
-  const nycStops = itinerary.filter(s => s.lat !== null && s.lat > 40.70);
-  if (nycStops.length > 0) {
-    map.fitBounds(L.latLngBounds(nycStops.map(s => [s.lat, s.lng])).pad(0.15));
+  // Initial bounds — include sub-points so all dots fit in view
+  // (`lat > 40.70` filters out the JFK / SFO airport stops).
+  const allNycCoords = [];
+  itinerary.forEach(s => {
+    if (s.lat !== null && s.lat > 40.70) allNycCoords.push([s.lat, s.lng]);
+    (s.points || []).forEach(p => {
+      if (p.lat != null && p.lat > 40.70) allNycCoords.push([p.lat, p.lng]);
+    });
+  });
+  if (allNycCoords.length > 0) {
+    map.fitBounds(L.latLngBounds(allNycCoords).pad(0.12));
   }
 }
 
@@ -1429,13 +1444,26 @@ document.querySelectorAll('.tab').forEach(tab => {
       else s.classList.add('hidden');
     });
 
+    // Helper: collect every NYC coord for a day (stops + sub-points).
+    const coordsForDay = (d) => {
+      const c = [];
+      itinerary.forEach(s => {
+        if (s.day !== d) return;
+        if (s.lat !== null && s.lat > 40.70) c.push([s.lat, s.lng]);
+        (s.points || []).forEach(p => {
+          if (p.lat != null && p.lat > 40.70) c.push([p.lat, p.lng]);
+        });
+      });
+      return c;
+    };
+
     if (day === 'all') {
       Object.values(markers).forEach(m => m.addTo(map));
       Object.values(routeLines).forEach(l => l.addTo(map));
       [1, 2, 3].forEach(dd => subMarkers[dd].forEach(m => m.addTo(map)));
-      const nycStops = itinerary.filter(s => s.lat !== null && s.lat > 40.70);
-      if (nycStops.length > 0) {
-        map.flyToBounds(L.latLngBounds(nycStops.map(s => [s.lat, s.lng])).pad(0.15), { duration: 0.7 });
+      const all = [...coordsForDay(1), ...coordsForDay(2), ...coordsForDay(3)];
+      if (all.length > 0) {
+        map.flyToBounds(L.latLngBounds(all).pad(0.12), { duration: 0.7 });
       }
     } else {
       const d = parseInt(day);
@@ -1454,9 +1482,9 @@ document.querySelectorAll('.tab').forEach(tab => {
           else map.removeLayer(m);
         });
       });
-      const dayStops = itinerary.filter(s => s.day === d && s.lat !== null && s.lat > 40.70);
-      if (dayStops.length > 0) {
-        map.flyToBounds(L.latLngBounds(dayStops.map(s => [s.lat, s.lng])).pad(0.2), { duration: 0.7 });
+      const dayAll = coordsForDay(d);
+      if (dayAll.length > 0) {
+        map.flyToBounds(L.latLngBounds(dayAll).pad(0.15), { duration: 0.7 });
       }
     }
   });
