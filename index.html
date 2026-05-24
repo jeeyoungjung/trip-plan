@@ -420,18 +420,19 @@
     .tab span { font-size: 14px; }
   }
 
-  /* ========= CHAT — Ask Jeeyoung-bot ========= */
+  /* ========= CHAT — Jeeyoung 🤖 ========= */
   /* Fixed FAB bottom-right · desktop: side drawer · mobile: full-screen takeover */
   .chat-toggle {
-    position: fixed; bottom: 28px; right: 28px; z-index: 800;
+    position: fixed; bottom: 28px; right: 28px; z-index: 999997;
     background: var(--ink); color: var(--panel);
-    border: 0; padding: 14px 18px 14px 16px; cursor: pointer;
+    border: 0; padding: 11px 16px 11px 14px; cursor: pointer;
     box-shadow: 0 6px 20px rgba(31, 29, 24, 0.22), 0 0 0 1px rgba(31, 29, 24, 0.08);
-    display: inline-flex; align-items: center; gap: 12px;
+    display: inline-flex; align-items: center; gap: 9px;
     transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
                 box-shadow 0.25s, background 0.25s, opacity 0.2s;
     -webkit-tap-highlight-color: transparent;
     border-radius: 999px;
+    line-height: 1;
   }
   .chat-toggle:hover {
     transform: translateY(-3px);
@@ -440,52 +441,59 @@
   .chat-toggle:active { transform: translateY(-1px); }
   .chat-toggle.is-open { opacity: 0; pointer-events: none; transform: translateY(6px); }
 
-  .chat-toggle-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: #B5634A; /* terracotta — only accent in the whole site, used as an "online" cue */
-    box-shadow: 0 0 0 4px rgba(181, 99, 74, 0.18);
-    animation: chatPulse 2.2s ease-in-out infinite;
+  .chat-toggle-emoji {
+    font-size: 18px; line-height: 1;
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  @keyframes chatPulse {
-    0%, 100% { box-shadow: 0 0 0 4px rgba(181, 99, 74, 0.18); }
-    50%      { box-shadow: 0 0 0 7px rgba(181, 99, 74, 0.06); }
-  }
+  .chat-toggle:hover .chat-toggle-emoji { transform: rotate(-8deg) scale(1.08); }
 
-  .chat-toggle-text { display: flex; flex-direction: column; align-items: flex-start; line-height: 1; }
-  .chat-toggle-eyebrow {
-    font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.18em;
-    text-transform: uppercase; color: var(--ink-4);
-    margin-bottom: 4px;
-  }
   .chat-toggle-name {
     font-family: var(--display); font-variation-settings: 'opsz' 36;
-    font-weight: 400; font-style: italic; font-size: 15px;
+    font-weight: 400; font-style: italic; font-size: 16px;
     letter-spacing: -0.015em; color: var(--panel);
+    padding-bottom: 1px; /* optical-balance the italic descender */
+  }
+
+  .chat-toggle-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #B5634A;
+    box-shadow: 0 0 0 3px rgba(181, 99, 74, 0.22);
+    animation: chatPulse 2.2s ease-in-out infinite;
+    margin-left: 2px;
+  }
+  @keyframes chatPulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(181, 99, 74, 0.22); }
+    50%      { box-shadow: 0 0 0 6px rgba(181, 99, 74, 0.06); }
   }
 
   /* Backdrop */
   .chat-backdrop {
-    position: fixed; inset: 0; z-index: 850;
-    background: rgba(31, 29, 24, 0.32);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    position: fixed; inset: 0; z-index: 999998;
+    background: rgba(31, 29, 24, 0.38);
+    backdrop-filter: blur(6px) saturate(0.85);
+    -webkit-backdrop-filter: blur(6px) saturate(0.85);
     opacity: 0; pointer-events: none;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.32s ease;
   }
   .chat-backdrop.open { opacity: 1; pointer-events: auto; }
 
   /* Panel — DESKTOP DEFAULT: right-side drawer */
+  /* --chat-h is set by JS to match window.visualViewport.height on mobile so
+     the panel resizes when the keyboard opens. Defaults to 100dvh otherwise. */
   .chat-panel {
     position: fixed;
     top: 0; right: 0; bottom: 0;
     width: 440px; max-width: 100vw;
-    z-index: 900;
+    height: var(--chat-h, 100dvh);
+    z-index: 999999;
     background: var(--panel);
     border-left: 1px solid var(--rule);
-    box-shadow: -20px 0 50px rgba(31, 29, 24, 0.18);
+    box-shadow: -20px 0 60px rgba(31, 29, 24, 0.16), -1px 0 0 rgba(31, 29, 24, 0.04);
     display: flex; flex-direction: column;
+    overflow: hidden;
     transform: translateX(100%);
-    transition: transform 0.32s cubic-bezier(0.2, 0.85, 0.25, 1);
+    transition: transform 0.34s cubic-bezier(0.2, 0.85, 0.25, 1);
     will-change: transform;
   }
   .chat-panel.open { transform: translateX(0); }
@@ -593,9 +601,13 @@
 
   /* Messages */
   .chat-messages {
-    flex: 1; overflow-y: auto;
+    flex: 1 1 0;
+    min-height: 0;            /* allow flex shrink so the composer stays pinned */
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     padding: 24px 28px;
-    display: flex; flex-direction: column; gap: 18px;
+    display: flex; flex-direction: column; gap: 22px;
     scrollbar-width: thin; scrollbar-color: var(--ink-4) transparent;
   }
   .chat-messages::-webkit-scrollbar { width: 5px; }
@@ -603,9 +615,10 @@
   .chat-messages::-webkit-scrollbar-track { background: transparent; }
 
   .chat-msg {
-    max-width: 92%;
-    font-family: var(--kr); font-size: 13.5px; line-height: 1.65;
-    animation: msgIn 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    max-width: 88%;
+    font-family: var(--kr); font-size: 13.5px; line-height: 1.7;
+    animation: msgIn 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    word-wrap: break-word; overflow-wrap: break-word;
   }
   @keyframes msgIn {
     from { opacity: 0; transform: translateY(6px); }
@@ -613,22 +626,24 @@
   }
   .chat-msg.user {
     align-self: flex-end;
-    color: var(--ink); padding: 0 14px 0 0;
+    color: var(--ink);
+    padding: 10px 14px 10px 16px;
+    background: rgba(31, 29, 24, 0.04);
     border-right: 2px solid var(--ink);
-    text-align: right;
     letter-spacing: -0.005em;
   }
   .chat-msg.assistant {
     align-self: flex-start;
-    color: var(--ink-2); padding: 0 0 0 14px;
+    color: var(--ink-2);
+    padding: 2px 0 2px 16px;
     border-left: 2px solid var(--day-2);
     letter-spacing: -0.005em;
     position: relative;
   }
   .chat-msg.assistant::before {
     content: 'JB';
-    position: absolute; left: -14px; top: -16px;
-    font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.16em;
+    position: absolute; left: -2px; top: -18px;
+    font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.18em;
     color: var(--ink-4);
   }
   .chat-msg.system {
@@ -680,54 +695,65 @@
 
   /* Suggestions */
   .chat-suggestions {
-    padding: 0 28px 16px;
+    flex-shrink: 0;
+    padding: 16px 28px 18px;
     border-top: 1px dashed var(--rule);
-    padding-top: 16px;
+    background: var(--panel);
   }
   .chat-suggestions.hidden { display: none; }
   .chat-sugg-label {
-    font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.18em;
+    font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.2em;
     text-transform: uppercase; color: var(--ink-4); margin-bottom: 10px;
   }
   .chat-sugg-row { display: flex; flex-wrap: wrap; gap: 6px; }
   .chat-sugg {
-    padding: 7px 11px; background: transparent;
+    padding: 8px 12px; background: var(--card);
     border: 1px solid var(--rule);
     cursor: pointer;
     font-family: var(--kr); font-size: 11.5px; color: var(--ink-2);
-    letter-spacing: -0.005em;
+    letter-spacing: -0.005em; line-height: 1.3;
     transition: background 0.18s, color 0.18s, border-color 0.18s, transform 0.15s;
     -webkit-tap-highlight-color: transparent;
   }
-  .chat-sugg:hover {
+  .chat-sugg:hover, .chat-sugg:focus-visible {
     background: var(--ink); color: var(--panel); border-color: var(--ink);
     transform: translateY(-1px);
+    outline: none;
   }
 
-  /* Composer */
+  /* Composer — pinned to the bottom of the panel; never scrolls away.
+     Textarea and Send button share an exact 44px height when single-line,
+     and align at flex-end so the button stays anchored as the textarea grows. */
   .chat-form {
+    flex-shrink: 0;
     border-top: 1px solid var(--rule);
-    padding: 16px 20px 18px;
+    padding: 14px 20px calc(16px + env(safe-area-inset-bottom, 0px));
     display: flex; gap: 10px; align-items: flex-end;
     background: var(--card);
   }
   .chat-form textarea {
-    flex: 1; min-height: 38px; max-height: 140px; resize: none;
-    padding: 10px 12px;
+    flex: 1; min-width: 0;
+    height: 44px; min-height: 44px; max-height: 140px;
+    resize: none;
+    padding: 11px 14px;
     border: 1px solid var(--rule); background: var(--panel);
-    font-family: var(--kr); font-size: 13px; color: var(--ink);
-    outline: none; border-radius: 0; line-height: 1.5;
-    transition: border-color 0.2s;
+    font-family: var(--kr); font-size: 14px; color: var(--ink);
+    outline: none; border-radius: 0; line-height: 1.4;
+    transition: border-color 0.18s, box-shadow 0.18s;
   }
-  .chat-form textarea:focus { border-color: var(--ink); }
+  .chat-form textarea:focus {
+    border-color: var(--ink);
+    box-shadow: inset 0 -1px 0 var(--ink);
+  }
   .chat-form textarea::placeholder { color: var(--ink-4); }
   .chat-form button {
-    height: 38px; padding: 0 14px;
+    flex-shrink: 0;
+    height: 44px; min-width: 44px; padding: 0 16px;
     border: 0; background: var(--ink); color: var(--panel);
     cursor: pointer;
-    font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.18em;
     text-transform: uppercase;
-    display: inline-flex; align-items: center; gap: 8px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
     transition: background 0.2s, opacity 0.2s;
     -webkit-tap-highlight-color: transparent;
   }
@@ -738,7 +764,8 @@
   /* MOBILE: full-screen takeover */
   @media (max-width: 900px) {
     .chat-toggle {
-      bottom: 20px; right: 20px;
+      bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+      right: 20px;
       padding: 12px 16px 12px 14px;
       gap: 10px;
     }
@@ -746,25 +773,38 @@
     .chat-toggle-name { font-size: 14px; }
 
     .chat-panel {
-      top: 0; right: 0; bottom: 0; left: 0;
+      top: 0; right: 0; left: 0;
+      bottom: auto;
       width: 100vw; max-width: none;
+      /* JS sets --chat-h to visualViewport.height while open so keyboard
+         pushes the panel rather than hiding the composer. */
+      height: var(--chat-h, 100dvh);
       border-left: 0;
+      box-shadow: none;
       transform: translateY(100%);
       transition: transform 0.34s cubic-bezier(0.2, 0.85, 0.25, 1);
     }
     .chat-panel.open { transform: translateY(0); }
     .chat-backdrop { display: none; }
 
-    .chat-head { padding: 20px 22px 16px; }
+    .chat-head {
+      padding: 18px 22px 14px;
+      padding-top: calc(18px + env(safe-area-inset-top, 0px));
+    }
     .chat-title { font-size: 26px; }
     .chat-keystrip { padding: 14px 22px 16px; }
     .chat-keystatus { padding: 10px 22px; }
-    .chat-messages { padding: 20px 22px; gap: 16px; }
-    .chat-suggestions { padding: 14px 22px 14px; }
-    .chat-form { padding: 14px 16px 16px; }
+    .chat-messages { padding: 18px 22px; gap: 18px; }
+    .chat-suggestions { padding: 14px 22px; }
+    .chat-form {
+      padding: 12px 16px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    }
+    .chat-msg { font-size: 14px; max-width: 90%; }
 
     /* Lock body scroll when chat is open on mobile */
     body.chat-locked { overflow: hidden; }
+    body.chat-locked .app { overflow: hidden; }
   }
 
   /* Tablet: keep drawer but slightly narrower */
@@ -827,12 +867,10 @@
 </div>
 
 <!-- ========= CHAT (LLM) — fixed/floating; lives outside .app so it can take over the viewport ========= -->
-<button class="chat-toggle" id="chatToggle" aria-label="Ask Jeeyoung-bot">
+<button class="chat-toggle" id="chatToggle" aria-label="Open Jeeyoung chat">
+  <span class="chat-toggle-emoji" aria-hidden="true">🤖</span>
+  <span class="chat-toggle-name">Jeeyoung</span>
   <span class="chat-toggle-dot" aria-hidden="true"></span>
-  <span class="chat-toggle-text">
-    <span class="chat-toggle-eyebrow">Ask</span>
-    <span class="chat-toggle-name">Jeeyoung-bot</span>
-  </span>
 </button>
 
 <div class="chat-backdrop" id="chatBackdrop" aria-hidden="true"></div>
@@ -877,7 +915,7 @@
   </div>
 
   <form class="chat-form" id="chatForm">
-    <textarea id="chatInput" placeholder="질문 입력 · Enter to send · Shift+Enter for new line" rows="1"></textarea>
+    <textarea id="chatInput" placeholder="Ask Jeeyoung…" rows="1"></textarea>
     <button type="submit" id="chatSend" aria-label="Send">
       <span class="chat-send-label">Send</span>
       <svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square"><path d="M1 5 L13 5 M9 1 L13 5 L9 9"/></svg>
@@ -1458,6 +1496,30 @@ const chatFormEl = document.getElementById('chatForm');
 const chatInputEl = document.getElementById('chatInput');
 const chatSendEl = document.getElementById('chatSend');
 
+// When the mobile soft keyboard opens, the visual viewport shrinks but a
+// `bottom: 0` element would normally extend underneath it. We track
+// visualViewport.height and set --chat-h on the panel so the composer
+// stays visible. Only applied on narrow screens; desktop uses dvh.
+function syncChatHeight() {
+  if (!window.visualViewport) return;
+  if (window.innerWidth > 900) {
+    chatPanelEl.style.removeProperty('--chat-h');
+    return;
+  }
+  chatPanelEl.style.setProperty('--chat-h', window.visualViewport.height + 'px');
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    if (chatPanelEl.classList.contains('open')) syncChatHeight();
+  });
+  window.visualViewport.addEventListener('scroll', () => {
+    if (chatPanelEl.classList.contains('open')) syncChatHeight();
+  });
+}
+window.addEventListener('resize', () => {
+  if (chatPanelEl.classList.contains('open')) syncChatHeight();
+});
+
 function chatOpen() {
   chatPanelEl.classList.add('open');
   chatBackdropEl.classList.add('open');
@@ -1465,6 +1527,7 @@ function chatOpen() {
   chatPanelEl.setAttribute('aria-hidden', 'false');
   chatBackdropEl.setAttribute('aria-hidden', 'false');
   document.body.classList.add('chat-locked');
+  syncChatHeight();
   if (chatMessagesEl.children.length === 0) {
     let label = 'Claude';
     if (PROVIDER === 'proxy' || PROVIDER === 'azure-responses') {
@@ -1472,8 +1535,8 @@ function chatOpen() {
     }
     appendChatMsg('system', `안녕! NYC 트립 관련 뭐든 물어봐요 — 식당 백업, 날씨/일정 조정, 동선 추천 등. (${label})`);
   }
-  if (NEEDS_BROWSER_KEY && !apiKey) setTimeout(() => chatKeyInputEl.focus(), 320);
-  else setTimeout(() => chatInputEl.focus(), 320);
+  if (NEEDS_BROWSER_KEY && !apiKey) setTimeout(() => chatKeyInputEl.focus(), 340);
+  else setTimeout(() => chatInputEl.focus(), 340);
 }
 function chatClose() {
   chatPanelEl.classList.remove('open');
@@ -1482,6 +1545,10 @@ function chatClose() {
   chatPanelEl.setAttribute('aria-hidden', 'true');
   chatBackdropEl.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('chat-locked');
+  // Drop the inline height so the panel doesn't keep a stale value when re-opened.
+  chatPanelEl.style.removeProperty('--chat-h');
+  // Blur the textarea so the keyboard dismisses on iOS when the user closes the drawer.
+  if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
 }
 chatToggleEl.addEventListener('click', chatOpen);
 chatCloseEl.addEventListener('click', chatClose);
@@ -1737,7 +1804,7 @@ chatInputEl.addEventListener('keydown', (e) => {
 });
 chatInputEl.addEventListener('input', () => {
   chatInputEl.style.height = 'auto';
-  chatInputEl.style.height = Math.min(120, chatInputEl.scrollHeight) + 'px';
+  chatInputEl.style.height = Math.max(44, Math.min(140, chatInputEl.scrollHeight)) + 'px';
 });
 chatSuggestionsEl.querySelectorAll('.chat-sugg').forEach(b => {
   b.addEventListener('click', () => sendChat(b.dataset.q));
