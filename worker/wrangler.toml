@@ -1,0 +1,4 @@
+name = "jeeyoungbot-proxy"
+main = "src/index.js"
+compatibility_date = "2025-01-15"
+# Workers Free tier (~100k requests/day) is plenty for a personal trip site.

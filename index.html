@@ -1470,15 +1470,21 @@ loadWeather();
 
 // =========== CHAT (LLM) ===========
 // Three backends supported:
-//   1. proxy           — POST to /api/chat (serverless function holds the Azure key).
-//                        Default when deployed; no api-key needed in the browser.
+//   1. proxy           — POST to a Cloudflare Worker that holds the Azure key
+//                        server-side. Default on the deployed site (GitHub Pages
+//                        is static-only, so the chat needs to live elsewhere).
+//                        After `wrangler deploy`, replace PROXY_URL below.
 //   2. azure-responses — direct Azure call with api-key in the browser.
-//                        Set via config.local.js for LOCAL DEV ONLY — never deploy this.
-//   3. anthropic       — user pastes an Anthropic key in the UI. Manual opt-in fallback.
+//                        Set via config.local.js for LOCAL DEV ONLY.
+//   3. anthropic       — user pastes an Anthropic key in the UI. Manual fallback.
+//
+// PROXY_URL — replace with the URL `wrangler deploy` printed in worker/.
+const PROXY_URL = 'https://jeeyoungbot-proxy.jeeyoungjung.workers.dev';
+
 if (!window.TRIP_CONFIG) {
   window.TRIP_CONFIG = {
     provider: 'proxy',
-    endpoint: '/api/chat',
+    endpoint: PROXY_URL,
     agent: { name: 'jeeyoungbot', version: '2' },
   };
 }
@@ -1800,11 +1806,13 @@ async function sendChat(text) {
         if (PROVIDER === 'anthropic') setApiKey(null);
         appendChatMsg('error', 'API key가 유효하지 않거나 권한이 없습니다.');
       } else if (result.status === 405 && PROVIDER === 'proxy') {
-        // The most common cause: opened via `python3 -m http.server` which
-        // returns 405 for POST. Direct the user toward the right setup.
-        appendChatMsg('error', '/api/chat 프록시를 찾을 수 없어요. 로컬에서는 config.local.js로 바로 Azure 호출하거나, 배포된 Vercel URL에서 열어주세요.');
+        // 405 from a static host (GitHub Pages, python http.server, etc.) means
+        // the request isn't reaching a Worker. Two likely causes:
+        //   - Worker not deployed yet → see worker/README.md
+        //   - PROXY_URL in index.html still points at the placeholder
+        appendChatMsg('error', 'Chat 프록시(Worker)를 찾을 수 없어요. worker/README.md를 보고 Cloudflare Worker 배포 후 index.html의 PROXY_URL을 업데이트해 주세요.');
       } else if (result.status === 405) {
-        appendChatMsg('error', 'Method 405 — 엔드포인트가 POST를 받지 않아요. URL과 배포 상태를 확인해 주세요.');
+        appendChatMsg('error', 'Method 405 — 엔드포인트가 POST를 받지 않아요. PROXY_URL이 Cloudflare Worker URL인지 확인해 주세요.');
       } else {
         appendChatMsg('error', result.error);
       }

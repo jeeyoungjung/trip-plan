@@ -59,27 +59,39 @@ Neutral palette in `:root`:
 - `--day-1` / `--day-2` / `--day-3` — dark / medium / light gray for day differentiation
 - `--rule` / `--rule-soft` — borders
 
-## Deploy (Vercel)
+## Deploy
 
-The chat ("Ask Jeeyoung-bot") needs the Azure key to live server-side so visitors don't have to paste a key (and the key never ships in the browser). `api/chat.js` is a Vercel-style serverless function that holds the key and forwards to Azure.
+The static site lives on **GitHub Pages**. The chat needs a separate server-side proxy so visitors don't have to paste an API key — GitHub Pages can't run server code, so the proxy lives on a free **Cloudflare Worker**.
 
-1. Push the repo to GitHub.
-2. Import the repo on [vercel.com](https://vercel.com/new) — no build step, framework preset "Other".
-3. In **Settings → Environment Variables**, add:
-   - `AZURE_ENDPOINT` — full URL, e.g. `https://travel-planning-bot-resource.services.ai.azure.com/api/projects/travel-planning-bot/openai/v1/responses`
-   - `AZURE_KEY` — the api-key from Azure AI Foundry
-   - `AGENT_NAME` — `jeeyoungbot`
-   - `AGENT_VERSION` — `2`
-   - `ALLOWED_ORIGIN` — once you know the prod URL, set this to it (e.g. `https://trip-plan.vercel.app`). Defaults to `*` if unset, which is open to anyone.
-4. Deploy. The site loads at the Vercel URL; chat hits `/api/chat` automatically.
+### 1. Static site → GitHub Pages
+
+Settings → Pages → Deploy from a branch → `main` / root. The site lands at `https://<you>.github.io/trip-plan/`.
+
+### 2. Chat proxy → Cloudflare Worker
+
+Full instructions in [`worker/README.md`](worker/README.md). Short version:
+
+```bash
+npm install -g wrangler
+wrangler login
+cd worker
+wrangler secret put AZURE_ENDPOINT  # paste full URL
+wrangler secret put AZURE_KEY       # paste Azure api-key
+wrangler secret put AGENT_NAME      # paste: jeeyoungbot
+wrangler secret put AGENT_VERSION   # paste: 2
+wrangler secret put ALLOWED_ORIGIN  # paste your GitHub Pages origin
+wrangler deploy
+```
+
+`wrangler deploy` prints a URL. Open `index.html`, find the `PROXY_URL` constant, paste the URL, commit, push. The Pages site picks up the new URL on its next deploy. Visit the Worker URL in a browser (`GET`) to confirm it returns `{"ok":true,"configured":true}`.
 
 ### Rotate the Azure key
 
-Generate a new key in the Azure portal, update `AZURE_KEY` in Vercel, redeploy. The old key can then be deleted. The browser bundle never references the key, so rotations don't require a code change.
+Generate a new key in the Azure portal → `wrangler secret put AZURE_KEY` again. Secrets update live; no redeploy needed. The browser bundle never references the key, so rotations don't require a code change.
 
 ### Local development
 
-For local iteration, drop a `config.local.js` (gitignored) at the repo root to short-circuit the proxy and call Azure directly from the browser:
+For local iteration without the Worker, drop a `config.local.js` (gitignored) at the repo root to short-circuit the proxy and call Azure directly from the browser:
 
 ```js
 window.TRIP_CONFIG = {
