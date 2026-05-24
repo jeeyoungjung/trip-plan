@@ -433,10 +433,8 @@
   @media (max-width: 900px) {
     .app {
       grid-template-columns: 1fr;
-      grid-template-rows: auto auto auto auto;
+      grid-template-rows: auto auto;
       grid-template-areas:
-        "hero"
-        "tabs"
         "map"
         "list";
       height: auto;
@@ -444,24 +442,29 @@
       min-height: 100dvh;
     }
 
-    .hero {
-      border-right: 0;
-      padding: 24px 22px 20px;
-    }
-    .title { font-size: 38px; }
+    /* Hero is desktop-only — saves vertical real estate for the map + list. */
+    .hero { display: none; }
 
+    /* Tabs dock to the bottom of the viewport so the thumb can reach them.
+       Sit above the system bottom inset; chat toggle is bumped above this. */
     .tabs {
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 200;
+      grid-area: unset;
       border-right: 0;
+      border-bottom: 0;
+      border-top: 1px solid var(--rule);
       padding: 0 22px;
-      box-shadow: 0 1px 0 var(--rule);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      box-shadow: 0 -2px 8px rgba(31, 29, 24, 0.06);
+      background: var(--panel);
+      height: calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px));
     }
 
     .map-wrap {
       position: sticky;
-      top: var(--tabs-h);
+      top: 0;
       z-index: 99;
       height: var(--map-mobile-h);
     }
@@ -470,10 +473,12 @@
       overflow-y: visible;
       border-right: 0;
       min-height: 50vh;
+      /* Reserve space at the bottom for the docked tabs + system inset. */
+      padding-bottom: calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px) + 16px);
     }
 
-    /* Anchor offset so scrolled-to stops appear below sticky map+tabs */
-    .stop { scroll-margin-top: calc(var(--tabs-h) + var(--map-mobile-h) + 8px); }
+    /* Anchor offset so scrolled-to stops appear below the sticky map. */
+    .stop { scroll-margin-top: calc(var(--map-mobile-h) + 8px); }
     .stop-pill { top: 12px; right: 14px; font-size: 8.5px; padding: 2px 6px; letter-spacing: 0.16em; }
 
     .day-header { padding: 24px 22px 12px; }
@@ -907,8 +912,9 @@
 
   /* MOBILE: full-screen takeover */
   @media (max-width: 900px) {
+    /* Sit above the docked tab bar (tabs-h + safe-area). */
     .chat-toggle {
-      bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+      bottom: calc(20px + var(--tabs-h) + env(safe-area-inset-bottom, 0px));
       right: 20px;
       padding: 12px 16px 12px 14px;
       gap: 10px;
@@ -2599,6 +2605,51 @@ chatInputEl.addEventListener('input', (e) => {
 chatSuggestionsEl.querySelectorAll('.chat-sugg').forEach(b => {
   b.addEventListener('click', () => sendChat(b.dataset.q));
 });
+
+// =========== SWIPE TO CHANGE DAY (mobile) ===========
+// Horizontal drag on the sidebar cycles through tabs: All → Fri → Sat → Sun → All.
+// Triggered only when the swipe is short, fast, and clearly horizontal (so it
+// doesn't fight with the list's vertical scroll). The map area is excluded so
+// Leaflet's pan gesture isn't fought.
+(function setupSwipeDayNav() {
+  const listEl = document.querySelector('.list');
+  if (!listEl) return;
+  const DAYS = ['all', '1', '2', '3'];
+  const MIN_DX = 60;            // px — minimum horizontal distance
+  const MAX_DT = 600;           // ms — must complete within this window
+  const VERT_RATIO = 0.7;       // |dy| < |dx| * 0.7 → counts as horizontal
+  let startX = 0, startY = 0, startT = 0, active = false;
+
+  listEl.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    // Skip if the touch began inside the chat panel (don't fight drawer interactions).
+    if (e.target.closest('.chat-panel')) { active = false; return; }
+    const t = e.touches[0];
+    startX = t.clientX;
+    startY = t.clientY;
+    startT = Date.now();
+    active = true;
+  }, { passive: true });
+
+  listEl.addEventListener('touchend', (e) => {
+    if (!active) return;
+    active = false;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    const dt = Date.now() - startT;
+    if (dt > MAX_DT) return;
+    if (Math.abs(dx) < MIN_DX) return;
+    if (Math.abs(dy) > Math.abs(dx) * VERT_RATIO) return;
+
+    const idx = DAYS.indexOf(filters.activeDay);
+    if (idx === -1) return;
+    // Swipe LEFT (dx < 0) → next day; RIGHT → previous day.
+    const next = (idx + (dx < 0 ? 1 : -1) + DAYS.length) % DAYS.length;
+    const tab = document.querySelector(`.tab[data-day="${DAYS[next]}"]`);
+    if (tab) tab.click();
+  }, { passive: true });
+})();
 
 // =========== VOICE INPUT (Web Speech API) ===========
 // Mic button next to Send — taps a browser-side STT engine, streams the
