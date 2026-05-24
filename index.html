@@ -61,12 +61,11 @@
   .app {
     display: grid;
     grid-template-columns: var(--sidebar-w) 1fr;
-    grid-template-rows: auto auto 1fr auto;
+    grid-template-rows: auto auto 1fr;
     grid-template-areas:
       "hero map"
       "tabs map"
-      "list map"
-      "info map";
+      "list map";
     height: 100vh;
     height: 100dvh;
   }
@@ -74,7 +73,6 @@
   .hero       { grid-area: hero; background: var(--panel); border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 32px 32px 24px; }
   .tabs       { grid-area: tabs; background: var(--panel); border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); height: var(--tabs-h); }
   .list       { grid-area: list; background: var(--panel); border-right: 1px solid var(--rule); overflow-y: auto; min-height: 0; scrollbar-width: thin; scrollbar-color: var(--ink-4) transparent; }
-  .info       { grid-area: info; background: var(--panel); border-right: 1px solid var(--rule); border-top: 1px solid var(--rule); padding: 18px 32px 24px; }
   .map-wrap   { grid-area: map; position: relative; background: #E8E4D9; }
 
   .list::-webkit-scrollbar { width: 6px; }
@@ -93,29 +91,20 @@
   }
   .subtitle {
     font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--ink-3); margin-bottom: 20px;
+    text-transform: uppercase; color: var(--ink-3);
   }
-  .stats { display: flex; gap: 24px; padding-top: 16px; border-top: 1px dashed var(--rule); }
-  .stat { display: flex; flex-direction: column; gap: 2px; }
-  .stat-num { font-family: var(--display); font-variation-settings: 'opsz' 60; font-weight: 380; font-size: 22px; line-height: 1; color: var(--ink); }
-  .stat-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
 
   /* ========= TABS ========= */
   .tabs { display: flex; padding: 0 32px; }
   .tab {
     flex: 1; padding: 14px 0; background: none; border: 0;
     border-bottom: 2px solid transparent; font-family: var(--mono);
-    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
     color: var(--ink-3); cursor: pointer; transition: all 0.2s;
     -webkit-tap-highlight-color: transparent;
   }
   .tab:hover { color: var(--ink); }
   .tab.active { color: var(--ink); border-bottom-color: var(--ink); }
-  .tab span {
-    display: block; font-family: var(--display); font-variation-settings: 'opsz' 36;
-    font-size: 16px; font-weight: 380; text-transform: none;
-    letter-spacing: -0.01em; color: inherit; margin-top: 2px;
-  }
 
   /* ========= STOPS LIST ========= */
   .day-section { border-bottom: 1px solid var(--rule-soft); }
@@ -288,25 +277,6 @@
     box-shadow: 0 0 0 2px var(--panel), 0 1px 3px rgba(0,0,0,0.15);
   }
 
-  /* ========= INFO FOOTER ========= */
-  .info .row {
-    display: flex; justify-content: space-between; margin-bottom: 4px;
-    font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em;
-  }
-  .info .row span:first-child { color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.1em; }
-  .info .row span:last-child { color: var(--ink); }
-  .info-actions { display: flex; gap: 8px; margin-top: 14px; }
-  .info-action {
-    flex: 1; min-width: 0; padding: 10px 8px;
-    background: var(--card); border: 1px solid var(--rule);
-    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.12em;
-    text-transform: uppercase; color: var(--ink);
-    cursor: pointer; border-radius: 0;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .info-action:hover { background: var(--ink); color: var(--panel); border-color: var(--ink); }
-  .info-action.copied { background: #7B8757; color: var(--panel); border-color: #7B8757; }
 
   /* ========= MAP ========= */
   #map { width: 100%; height: 100%; background: #E8E4D9; }
@@ -428,13 +398,12 @@
   @media (max-width: 900px) {
     .app {
       grid-template-columns: 1fr;
-      grid-template-rows: auto auto auto auto auto;
+      grid-template-rows: auto auto auto auto;
       grid-template-areas:
         "hero"
         "tabs"
         "map"
-        "list"
-        "info";
+        "list";
       height: auto;
       min-height: 100vh;
       min-height: 100dvh;
@@ -445,7 +414,6 @@
       padding: 24px 22px 20px;
     }
     .title { font-size: 38px; }
-    .stats { gap: 18px; }
 
     .tabs {
       position: sticky;
@@ -477,11 +445,6 @@
     .stop { padding: 14px 22px; grid-template-columns: 48px 1fr; gap: 12px; }
     .stop-num { width: 22px; height: 22px; font-size: 10px; }
 
-    .info {
-      border-right: 0;
-      padding: 16px 22px 28px;
-    }
-
     .legend {
       bottom: 12px;
       left: 12px;
@@ -500,10 +463,8 @@
 
   /* Very small screens */
   @media (max-width: 380px) {
-    .stats { gap: 12px; }
-    .stat-num { font-size: 18px; }
     .title { font-size: 32px; }
-    .tab span { font-size: 14px; }
+    .tab { font-size: 11px; letter-spacing: 0.14em; }
   }
 
   /* ========= CHAT — 현서비 🤖 ========= */
@@ -921,19 +882,13 @@
     </div>
     <h1 class="title">New York.</h1>
     <div class="subtitle ko">2박 3일 · 친구들과 함께</div>
-    <div class="stats">
-      <div class="stat"><div class="stat-num">3</div><div class="stat-label">Days</div></div>
-      <div class="stat"><div class="stat-num">20</div><div class="stat-label">Stops</div></div>
-      <div class="stat"><div class="stat-num">2</div><div class="stat-label">Reserved</div></div>
-      <div class="stat"><div class="stat-num">4</div><div class="stat-label">Guests</div></div>
-    </div>
   </section>
 
   <nav class="tabs">
-    <button class="tab active" data-day="all">All<span>All Days</span></button>
-    <button class="tab" data-day="1">Fri<span>Friday</span></button>
-    <button class="tab" data-day="2">Sat<span>Saturday</span></button>
-    <button class="tab" data-day="3">Sun<span>Sunday</span></button>
+    <button class="tab active" data-day="all">All</button>
+    <button class="tab" data-day="1">Fri</button>
+    <button class="tab" data-day="2">Sat</button>
+    <button class="tab" data-day="3">Sun</button>
   </nav>
 
   <main class="map-wrap">
@@ -954,16 +909,6 @@
 
   <div class="list" id="itinerary"></div>
 
-  <footer class="info">
-    <div class="row"><span>Hotel</span><span>InterContinental Barclay</span></div>
-    <div class="row"><span>Outbound</span><span>B6 816 · Thu 11:47 PM → JFK 8:34 AM</span></div>
-    <div class="row"><span>Return</span><span>B6 615 · Sun 6:29 PM → SFO 10:19 PM</span></div>
-    <div class="row"><span>Ref</span><span>MNQATC</span></div>
-    <div class="info-actions">
-      <button class="info-action" id="icsDownload" type="button">↓ Save to Calendar (.ics)</button>
-      <button class="info-action" id="shareLink" type="button">↗ Copy share link</button>
-    </div>
-  </footer>
 
 </div>
 
@@ -1830,117 +1775,6 @@ function applyHashStateFromUrl(isInitial) {
     }
   }, 900);
 })();
-
-// =========== ICS CALENDAR EXPORT ===========
-// Builds a standards-compliant .ics file from the itinerary so phones can
-// add the whole trip — including 30-min reminders for reservations — to
-// their native Calendar app. No backend; everything runs in the browser.
-function icsEscape(s) {
-  return String(s || '')
-    .replace(/\\/g, '\\\\')
-    .replace(/;/g, '\\;')
-    .replace(/,/g, '\\,')
-    .replace(/\n/g, '\\n');
-}
-
-function icsDate(ms) {
-  return new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-}
-
-function buildICS() {
-  const dtstamp = icsDate(Date.now());
-  const stops = itinerary
-    .map(s => ({ stop: s, ts: stopTimestamp(s) }))
-    .filter(x => x.ts != null);
-
-  const lines = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//NYC Trip//jeeyoungjung//EN',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    'X-WR-CALNAME:NYC Trip · May 28—31, 2026',
-  ];
-
-  stops.forEach((cur, i) => {
-    const stop = cur.stop;
-    const startTs = cur.ts;
-    const nextTs = stops[i + 1]?.ts;
-    // Default duration: 1hr, or up to the next stop's start, capped at 4hr.
-    const defaultEnd = startTs + 60 * 60 * 1000;
-    const endTs = Math.min(nextTs || defaultEnd, startTs + 4 * 60 * 60 * 1000);
-
-    const desc = [
-      stop.note,
-      stop.transit ? '→ ' + stop.transit : '',
-      stop.gmaps ? stop.gmaps : '',
-    ].filter(Boolean).join('\n\n');
-
-    lines.push('BEGIN:VEVENT');
-    lines.push(`UID:stop-${stop.num}-2026@trip-plan`);
-    lines.push(`DTSTAMP:${dtstamp}`);
-    lines.push(`DTSTART:${icsDate(startTs)}`);
-    lines.push(`DTEND:${icsDate(endTs)}`);
-    lines.push(`SUMMARY:${icsEscape(stop.name)}`);
-    if (stop.address) lines.push(`LOCATION:${icsEscape(stop.address)}`);
-    if (desc) lines.push(`DESCRIPTION:${icsEscape(desc)}`);
-    if (stop.gmaps) lines.push(`URL:${stop.gmaps}`);
-
-    // 30-min reminder for hard reservations + ticketed shows
-    if (stop.tag && /reserved|ticket|museum/i.test(stop.tag)) {
-      lines.push('BEGIN:VALARM');
-      lines.push('TRIGGER:-PT30M');
-      lines.push('ACTION:DISPLAY');
-      lines.push(`DESCRIPTION:${icsEscape(stop.name + ' in 30 min')}`);
-      lines.push('END:VALARM');
-    }
-    lines.push('END:VEVENT');
-  });
-
-  lines.push('END:VCALENDAR');
-  return lines.join('\r\n');
-}
-
-function downloadICS() {
-  const ics = buildICS();
-  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'nyc-trip-may-2026.ics';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-const icsBtn = document.getElementById('icsDownload');
-if (icsBtn) icsBtn.addEventListener('click', downloadICS);
-
-// =========== SHARE LINK ===========
-const shareBtn = document.getElementById('shareLink');
-if (shareBtn) {
-  shareBtn.addEventListener('click', async () => {
-    const url = location.href;
-    try {
-      if (navigator.share && /Mobi|Android|iPhone/i.test(navigator.userAgent)) {
-        await navigator.share({ title: 'NYC Trip · May 2026', url });
-        return;
-      }
-      await navigator.clipboard.writeText(url);
-      const orig = shareBtn.textContent;
-      shareBtn.textContent = '✓ Link copied';
-      shareBtn.classList.add('copied');
-      setTimeout(() => {
-        shareBtn.textContent = orig;
-        shareBtn.classList.remove('copied');
-      }, 1600);
-    } catch (e) {
-      // Final fallback: select the URL so the user can copy manually
-      window.prompt('Copy this URL:', url);
-    }
-  });
-}
 
 // =========== WEATHER ===========
 const WMO_LABELS = {
