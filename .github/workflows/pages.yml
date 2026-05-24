@@ -1,0 +1,56 @@
+name: Deploy site to GitHub Pages
+
+# Replaces the default "branch deploy" so we can stamp the service worker
+# cache version with each commit's SHA. The SW's activate handler purges
+# any cache that doesn't match VERSION, so a fresh stamp = automatic
+# invalidation of stale clients on next visit. No more "site looks the
+# same after deploy" issues.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deploy at a time; queue but don't cancel in-progress runs.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stamp service worker with commit SHA
+        run: |
+          set -euo pipefail
+          SHA="${GITHUB_SHA::7}"
+          STAMP="trip-plan-${SHA}"
+          if grep -q "const VERSION = '" service-worker.js; then
+            sed -i.bak "s|const VERSION = '[^']*';|const VERSION = '${STAMP}';|" service-worker.js
+            rm service-worker.js.bak
+            echo "Stamped: $(grep 'const VERSION' service-worker.js)"
+          else
+            echo "::warning::Could not find VERSION constant in service-worker.js — SW version not stamped"
+          fi
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
