@@ -773,11 +773,12 @@
     .chat-toggle-name { font-size: 14px; }
 
     .chat-panel {
-      top: 0; right: 0; left: 0;
+      top: var(--chat-top, 0); right: 0; left: 0;
       bottom: auto;
       width: 100vw; max-width: none;
-      /* JS sets --chat-h to visualViewport.height while open so keyboard
-         pushes the panel rather than hiding the composer. */
+      /* JS sets --chat-h to visualViewport.height and --chat-top to its
+         offsetTop while open, so the panel follows the visible area when
+         the soft keyboard opens. */
       height: var(--chat-h, 100dvh);
       border-left: 0;
       box-shadow: none;
@@ -802,9 +803,16 @@
     }
     .chat-msg { font-size: 14px; max-width: 90%; }
 
-    /* Lock body scroll when chat is open on mobile */
-    body.chat-locked { overflow: hidden; }
-    body.chat-locked .app { overflow: hidden; }
+    /* Lock body scroll when chat is open on mobile.
+       Combined with JS-saved scrollY (via `top: -savedY`), this prevents
+       iOS Safari from scrolling the page underneath when the soft keyboard
+       opens — which is what caused the chat panel to appear to drift away. */
+    body.chat-locked {
+      position: fixed;
+      left: 0; right: 0;
+      width: 100%;
+      overflow: hidden;
+    }
   }
 
   /* Tablet: keep drawer but slightly narrower */
@@ -1500,25 +1508,52 @@ const chatSendEl = document.getElementById('chatSend');
 // `bottom: 0` element would normally extend underneath it. We track
 // visualViewport.height and set --chat-h on the panel so the composer
 // stays visible. Only applied on narrow screens; desktop uses dvh.
+// Mobile keyboard fit:
+//   - syncChatHeight pulls visualViewport (height + offsetTop) into CSS vars
+//     so the panel sizes to the visible area and tracks any iOS offset shift.
+//   - lockBody/unlockBody pin the body in place (saving + restoring scroll)
+//     so iOS Safari can't scroll behind the panel while the keyboard is up,
+//     which is what makes the chat appear to "disappear" otherwise.
 function syncChatHeight() {
-  if (!window.visualViewport) return;
   if (window.innerWidth > 900) {
     chatPanelEl.style.removeProperty('--chat-h');
+    chatPanelEl.style.removeProperty('--chat-top');
     return;
   }
-  chatPanelEl.style.setProperty('--chat-h', window.visualViewport.height + 'px');
+  if (window.visualViewport) {
+    chatPanelEl.style.setProperty('--chat-h', window.visualViewport.height + 'px');
+    chatPanelEl.style.setProperty('--chat-top', window.visualViewport.offsetTop + 'px');
+  }
 }
 if (window.visualViewport) {
-  window.visualViewport.addEventListener('resize', () => {
-    if (chatPanelEl.classList.contains('open')) syncChatHeight();
-  });
-  window.visualViewport.addEventListener('scroll', () => {
-    if (chatPanelEl.classList.contains('open')) syncChatHeight();
-  });
+  const onVvChange = () => { if (chatPanelEl.classList.contains('open')) syncChatHeight(); };
+  window.visualViewport.addEventListener('resize', onVvChange);
+  window.visualViewport.addEventListener('scroll', onVvChange);
 }
 window.addEventListener('resize', () => {
   if (chatPanelEl.classList.contains('open')) syncChatHeight();
 });
+
+let savedScrollY = 0;
+let isMobileLocked = false;
+function lockBody() {
+  if (window.innerWidth > 900) {
+    document.body.classList.add('chat-locked');
+    return;
+  }
+  savedScrollY = window.scrollY || window.pageYOffset || 0;
+  document.body.classList.add('chat-locked');
+  document.body.style.top = '-' + savedScrollY + 'px';
+  isMobileLocked = true;
+}
+function unlockBody() {
+  document.body.classList.remove('chat-locked');
+  document.body.style.top = '';
+  if (isMobileLocked) {
+    window.scrollTo(0, savedScrollY);
+    isMobileLocked = false;
+  }
+}
 
 function chatOpen() {
   chatPanelEl.classList.add('open');
@@ -1526,7 +1561,7 @@ function chatOpen() {
   chatToggleEl.classList.add('is-open');
   chatPanelEl.setAttribute('aria-hidden', 'false');
   chatBackdropEl.setAttribute('aria-hidden', 'false');
-  document.body.classList.add('chat-locked');
+  lockBody();
   syncChatHeight();
   if (chatMessagesEl.children.length === 0) {
     let label = 'Claude';
@@ -1539,16 +1574,16 @@ function chatOpen() {
   else setTimeout(() => chatInputEl.focus(), 340);
 }
 function chatClose() {
+  // Blur first so iOS dismisses the keyboard before we restore body scroll.
+  if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
   chatPanelEl.classList.remove('open');
   chatBackdropEl.classList.remove('open');
   chatToggleEl.classList.remove('is-open');
   chatPanelEl.setAttribute('aria-hidden', 'true');
   chatBackdropEl.setAttribute('aria-hidden', 'true');
-  document.body.classList.remove('chat-locked');
-  // Drop the inline height so the panel doesn't keep a stale value when re-opened.
+  unlockBody();
   chatPanelEl.style.removeProperty('--chat-h');
-  // Blur the textarea so the keyboard dismisses on iOS when the user closes the drawer.
-  if (document.activeElement && typeof document.activeElement.blur === 'function') document.activeElement.blur();
+  chatPanelEl.style.removeProperty('--chat-top');
 }
 chatToggleEl.addEventListener('click', chatOpen);
 chatCloseEl.addEventListener('click', chatClose);
@@ -1764,6 +1799,12 @@ async function sendChat(text) {
       if (result.status === 401 || result.status === 403) {
         if (PROVIDER === 'anthropic') setApiKey(null);
         appendChatMsg('error', 'API key가 유효하지 않거나 권한이 없습니다.');
+      } else if (result.status === 405 && PROVIDER === 'proxy') {
+        // The most common cause: opened via `python3 -m http.server` which
+        // returns 405 for POST. Direct the user toward the right setup.
+        appendChatMsg('error', '/api/chat 프록시를 찾을 수 없어요. 로컬에서는 config.local.js로 바로 Azure 호출하거나, 배포된 Vercel URL에서 열어주세요.');
+      } else if (result.status === 405) {
+        appendChatMsg('error', 'Method 405 — 엔드포인트가 POST를 받지 않아요. URL과 배포 상태를 확인해 주세요.');
       } else {
         appendChatMsg('error', result.error);
       }

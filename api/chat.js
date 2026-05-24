@@ -17,20 +17,30 @@ function corsHeaders(origin, allowed) {
   const allowOrigin = allowed === '*' ? '*' : (origin === allowed ? origin : allowed);
   return {
     'Access-Control-Allow-Origin': allowOrigin,
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Vary': 'Origin',
   };
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   const allowed = process.env.ALLOWED_ORIGIN || '*';
   const origin = req.headers.origin || '';
   const headers = corsHeaders(origin, allowed);
   for (const [k, v] of Object.entries(headers)) res.setHeader(k, v);
 
   if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'POST') return res.status(405).json({ error: { message: 'Method not allowed' } });
+
+  // Health check — `GET /api/chat` returns {ok: true, configured: bool}.
+  // Lets the client probe whether the proxy is reachable before sending.
+  if (req.method === 'GET') {
+    const missing = REQUIRED_ENVS.filter(k => !process.env[k]);
+    return res.status(200).json({ ok: true, configured: missing.length === 0, missing });
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: { message: 'Method not allowed. Use POST.' } });
+  }
 
   if (allowed !== '*' && origin && origin !== allowed) {
     return res.status(403).json({ error: { message: 'Origin not allowed' } });
@@ -72,4 +82,4 @@ module.exports = async function handler(req, res) {
   } catch (e) {
     return res.status(502).json({ error: { message: e.message || 'Upstream error' } });
   }
-};
+}
