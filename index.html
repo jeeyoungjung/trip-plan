@@ -484,6 +484,11 @@
       height: calc(var(--tabs-h) + env(safe-area-inset-bottom, 0px));
     }
 
+    /* Tabs are docked at the bottom on mobile, so the active indicator sits
+       on TOP of the tab (facing the list above) instead of the bottom edge. */
+    .tab { border-bottom: 0; border-top: 2px solid transparent; }
+    .tab.active { border-bottom-color: transparent; border-top-color: var(--ink); }
+
     /* List scrolls internally now (map isn't sticky above it), so a small
        margin is enough for scrolled-to stops. */
     .stop { scroll-margin-top: 8px; }
