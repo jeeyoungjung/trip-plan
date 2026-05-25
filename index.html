@@ -448,6 +448,9 @@
   .leaflet-bar a:last-child { border-bottom: 0 !important; }
   .leaflet-bar a:hover { background: var(--ink) !important; color: var(--panel) !important; }
   .leaflet-bar a.leaflet-disabled { background: var(--panel) !important; color: var(--ink-4) !important; }
+  /* Match the zoom control's inset to the legend (top: 24 / left: 24) so the
+     two boxes line up across the top edge. Leaflet's default margin is 10px. */
+  .leaflet-control-zoom { margin-top: 24px !important; margin-right: 24px !important; }
   .leaflet-control-attribution {
     background: rgba(250, 248, 243, 0.8) !important;
     font-family: var(--mono); font-size: 9px !important; color: var(--ink-3) !important;
@@ -531,6 +534,9 @@
     }
     .legend-item { font-size: 10px; margin-bottom: 3px; }
     .legend-swatch { width: 10px; height: 10px; }
+
+    /* Keep the zoom control inset matching the legend (12px) on mobile too. */
+    .leaflet-control-zoom { margin-top: 12px !important; margin-right: 12px !important; }
 
     /* Smaller popup on mobile */
     .leaflet-popup-content { padding: 18px 38px 14px 16px; width: 220px !important; }
