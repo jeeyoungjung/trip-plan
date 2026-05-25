@@ -427,8 +427,27 @@
   }
   .legend-reset:hover { color: var(--ink); }
 
-  .leaflet-bar a { background: var(--panel) !important; color: var(--ink) !important; border-color: var(--rule) !important; }
-  .leaflet-bar a:hover { background: var(--card) !important; }
+  /* Zoom controls — match the legend box: square corners, --rule border,
+     --panel fill, the same soft shadow, mono +/−, and the ink-invert hover
+     used across the site's interactive chrome. */
+  .leaflet-bar {
+    border: 1px solid var(--rule) !important;
+    border-radius: 0 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06) !important;
+    overflow: hidden;
+  }
+  .leaflet-bar a {
+    width: 32px !important; height: 32px !important; line-height: 32px !important;
+    background: var(--panel) !important;
+    color: var(--ink) !important;
+    border-bottom: 1px solid var(--rule) !important;
+    border-radius: 0 !important;
+    font-family: var(--mono) !important; font-size: 15px !important; font-weight: 400 !important;
+    transition: background 0.18s, color 0.18s;
+  }
+  .leaflet-bar a:last-child { border-bottom: 0 !important; }
+  .leaflet-bar a:hover { background: var(--ink) !important; color: var(--panel) !important; }
+  .leaflet-bar a.leaflet-disabled { background: var(--panel) !important; color: var(--ink-4) !important; }
   .leaflet-control-attribution {
     background: rgba(250, 248, 243, 0.8) !important;
     font-family: var(--mono); font-size: 9px !important; color: var(--ink-3) !important;
