@@ -186,6 +186,12 @@
   .stop.day-2 .stop-num { background: var(--day-2); }
   .stop.day-3 .stop-num { background: var(--day-3); color: var(--ink); }
   .stop.tbd .stop-num { background: transparent; border: 1px dashed var(--ink-4); color: var(--ink-4); }
+  .stop .stop-num.stop-num-hotel,
+  .stop.day-1 .stop-num-hotel,
+  .stop.day-2 .stop-num-hotel,
+  .stop.day-3 .stop-num-hotel {
+    background: var(--panel); border: 1px solid var(--rule); font-size: 13px;
+  }
   .stop-time {
     font-family: var(--mono); font-size: 9px; color: var(--ink-3);
     letter-spacing: 0.04em; text-align: center; line-height: 1.2;
@@ -344,6 +350,13 @@
   .marker-pin.day-3 { background: var(--day-3); color: var(--ink); }
   .marker-pin.active { transform: scale(1.2); box-shadow: 0 4px 12px rgba(0,0,0,0.25), 0 0 0 4px var(--panel); }
   .marker-pin.past { opacity: 0.3; }
+  .marker-pin.marker-pin-hotel,
+  .marker-pin.day-1.marker-pin-hotel,
+  .marker-pin.day-2.marker-pin-hotel,
+  .marker-pin.day-3.marker-pin-hotel {
+    background: var(--panel); font-size: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.18), 0 0 0 3px var(--panel), inset 0 0 0 1px var(--rule);
+  }
 
   /* Secondary "sub" markers — shopping/sights inside a main stop area */
   .sub-marker {
@@ -1591,6 +1604,7 @@ const dayLabels = {
 };
 
 const isMobile = () => window.innerWidth <= 900;
+const isHotelStop = (s) => s.address === '111 E 48th St';
 
 // =========== RENDER SIDEBAR LIST ===========
 const itineraryEl = document.getElementById('itinerary');
@@ -1620,7 +1634,7 @@ function renderList() {
     el.dataset.num = stop.num;
     el.innerHTML = `
       <div class="stop-marker-col">
-        <div class="stop-num">${stop.num}</div>
+        <div class="stop-num${isHotelStop(stop) ? ' stop-num-hotel' : ''}">${isHotelStop(stop) ? '🏨' : stop.num}</div>
         <div class="stop-time">${tr(stop.time)}</div>
       </div>
       <div class="stop-content">
@@ -1750,7 +1764,7 @@ function setupMarkersAndInteraction(opts) {
       const featured = stop.featured ? 'featured' : '';
       const icon = L.divIcon({
         className: 'custom-marker',
-        html: `<div class="marker-pin day-${stop.day} ${featured}" data-num="${stop.num}">${stop.num}</div>`,
+        html: `<div class="marker-pin day-${stop.day} ${featured}${isHotelStop(stop) ? ' marker-pin-hotel' : ''}" data-num="${stop.num}">${isHotelStop(stop) ? '🏨' : stop.num}</div>`,
         iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
       });
       const marker = L.marker([stop.lat, stop.lng], { icon }).addTo(map);
