@@ -2804,6 +2804,9 @@ async function callAzureResponses(systemPrompt) {
   const useAgent = !!CFG.agent;
   const input = [];
   if (useAgent) {
+    const langDirective = LANG === 'en'
+      ? `\n\nLANGUAGE — IMPORTANT: The user has set the app to English. Reply ONLY in English, no matter what language the question is in. Proper nouns (place names, dish names) may stay in their original form.`
+      : `\n\nLANGUAGE — IMPORTANT: 사용자가 앱을 한국어 모드로 설정했습니다. 항상 한국어로 답해주세요. (고유명사는 원어 그대로 사용 가능.)`;
     input.push({
       role: 'user',
       content: `Trip itinerary context (source of truth for stops, times, addresses):
@@ -2819,9 +2822,12 @@ Rules:
 - Multiple places → multiple marker lines, each on its own line.
 - For places already in the itinerary, the marker is optional (the user can click the stop card). But for any NEW place not in the itinerary, ALWAYS include the marker so the user can add it to their map.
 - The marker does NOT replace your natural-language reply — it's appended after it. Keep your normal prose unchanged.
-- Use precise decimal coordinates (4+ decimals). Use the place's English name in NAME.`,
+- Use precise decimal coordinates (4+ decimals). Use the place's English name in NAME.${langDirective}`,
     });
-    input.push({ role: 'assistant', content: '네, 일정 확인했습니다. 새로운 장소를 추천할 때는 [map:위도,경도,이름] 마커도 같이 붙일게요.' });
+    input.push({ role: 'assistant', content: loc(
+      '네, 일정 확인했습니다. 새로운 장소를 추천할 때는 [map:위도,경도,이름] 마커도 같이 붙일게요.',
+      'Got it — I\'ve reviewed the itinerary. When I suggest a new place I\'ll append a [map:lat,lng,name] marker, and I\'ll reply in English.'
+    ) });
   } else {
     input.push({ role: 'system', content: systemPrompt });
   }
