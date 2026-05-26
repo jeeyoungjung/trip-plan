@@ -480,9 +480,29 @@
   .leaflet-bar a:last-child { border-bottom: 0 !important; }
   .leaflet-bar a:hover { background: var(--ink) !important; color: var(--panel) !important; }
   .leaflet-bar a.leaflet-disabled { background: var(--panel) !important; color: var(--ink-4) !important; }
-  /* Match the zoom control's inset to the legend (top: 24 / left: 24) so the
-     two boxes line up across the top edge. Leaflet's default margin is 10px. */
-  .leaflet-control-zoom { margin-top: 24px !important; margin-right: 24px !important; }
+  /* Zoom control sits below the language toggle (which is top-right at 24px,
+     ~32px tall). 24 + 32 + 8 = 64px top margin. */
+  .leaflet-control-zoom { margin-top: 64px !important; margin-right: 24px !important; }
+
+  /* Language toggle — top-right, above the zoom +/−. Matches the zoom/legend
+     editorial style. The active language is inked; the other is muted. */
+  .lang-toggle {
+    position: absolute; top: 24px; right: 24px; z-index: 500;
+    display: inline-flex; align-items: center; gap: 4px;
+    height: 32px; padding: 0 10px;
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em;
+    color: var(--ink-3); cursor: pointer;
+    transition: background 0.18s, color 0.18s, border-color 0.18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .lang-toggle:hover { border-color: var(--ink-3); }
+  .lang-toggle .lang-sep { color: var(--ink-4); }
+  .lang-toggle .lang-ko, .lang-toggle .lang-en { color: var(--ink-4); transition: color 0.18s; }
+  /* Active language highlighted based on <html lang> / body class. */
+  body[data-lang="ko"] .lang-toggle .lang-ko { color: var(--ink); font-weight: 500; }
+  body[data-lang="en"] .lang-toggle .lang-en { color: var(--ink); font-weight: 500; }
   .leaflet-control-attribution {
     background: rgba(250, 248, 243, 0.8) !important;
     font-family: var(--mono); font-size: 9px !important; color: var(--ink-3) !important;
@@ -1104,6 +1124,7 @@
 
   <main class="map-wrap">
     <div id="map"></div>
+    <button type="button" class="lang-toggle" id="langToggle" aria-label="Switch language"><span class="lang-ko">한</span><span class="lang-sep">/</span><span class="lang-en">EN</span></button>
     <div class="legend" id="legend">
       <div class="legend-title">Days</div>
       <button type="button" class="legend-item" data-day="1"><span class="legend-swatch" style="background:#2C2924"></span><span>Fri</span></button>
@@ -1198,354 +1219,368 @@
 // Transport mode glyphs for the per-stop "How to get here" route options.
 const MODE_ICON = { walk: '🚶', subway: '🚇', uber: '🚗', bike: '🚲', ferry: '⛴️' };
 
+// =========== i18n ===========
+// Korean is the default. Any translatable text can be either a plain string
+// (shown as-is in both languages) or a { ko, en } object (switches with LANG).
+// tr() is forgiving so content can be translated field-by-field.
+let LANG = (location.hash.match(/(?:^|&)lang=(en|ko)/) || [])[1] || 'ko';
+function tr(v) {
+  if (v == null) return '';
+  if (typeof v === 'object') return v[LANG] != null ? v[LANG] : (v.ko != null ? v.ko : (v.en || ''));
+  return v;
+}
+// Convenience for inline UI strings.
+function loc(ko, en) { return LANG === 'en' ? en : ko; }
+
 const itinerary = [
-  { day: 1, num: 1, time: '8:34 AM', name: 'JFK Airport · 도착',
+  { day: 1, num: 1, time: '8:34 AM', name: { ko: 'JFK Airport · 도착', en: 'JFK Airport · Arrival' },
     lat: 40.6446161, lng: -73.7797222, address: 'Queens, NY 11430',
     transit: 'B6 816 SFO → JFK',
-    note: '입국 + 짐 30~45분. 호텔까지 3가지 옵션:\n① Uber XL (4명) — 가장 편함, ~45~60분, $100~120. 트래픽 변수.\n② 익스프레스(train): AirTrain($8.50) → Jamaica → LIRR → Grand Central Madison (~35분, 1인 ~$11 peak). 호텔이 Grand Central에서 도보 7분 — train 중 최적 도착지.\n③ 로컬: AirTrain($8.50) → Jamaica → E train → Midtown (~50~60분, 1인 $2.90 OMNY). 가장 저렴, 짐 많으면 좀 빡셈.',
+    note: { ko: '입국 + 짐 30~45분. 호텔까지 3가지 옵션:\n① Uber XL (4명) — 가장 편함, ~45~60분, $100~120. 트래픽 변수.\n② 익스프레스(train): AirTrain($8.50) → Jamaica → LIRR → Grand Central Madison (~35분, 1인 ~$11 peak). 호텔이 Grand Central에서 도보 7분 — train 중 최적 도착지.\n③ 로컬: AirTrain($8.50) → Jamaica → E train → Midtown (~50~60분, 1인 $2.90 OMNY). 가장 저렴, 짐 많으면 좀 빡셈.',
+      en: 'Immigration + bags 30–45 min. Three ways to the hotel:\n① Uber XL (4 people) — easiest, ~45–60 min, $100–120. Traffic varies.\n② Express (train): AirTrain ($8.50) → Jamaica → LIRR → Grand Central Madison (~35 min, ~$11/person peak). Hotel is a 7-min walk from Grand Central — best train arrival point.\n③ Local: AirTrain ($8.50) → Jamaica → E train → Midtown (~50–60 min, $2.90/person OMNY). Cheapest; a bit much with heavy bags.' },
     gmaps: 'https://maps.google.com/?q=JFK+Airport+Terminal+5' },
   { day: 1, num: 2, time: '10:30 AM', name: 'InterContinental Barclay',
     lat: 40.7556629, lng: -73.9735276, address: '111 E 48th St',
-    transit: 'JFK → Midtown · Uber XL ~50분',
-    note: '체크인은 3PM이라 짐만 드롭. 짐 맡기고 아래 카페 두 곳 들렸다가 K-Town Cho Dang Gol으로.',
+    transit: { ko: 'JFK → Midtown · Uber XL ~50분', en: 'JFK → Midtown · Uber XL ~50 min' },
+    note: { ko: '체크인은 3PM이라 짐만 드롭. 짐 맡기고 아래 카페 두 곳 들렸다가 K-Town Cho Dang Gol으로.', en: 'Check-in is 3PM, so just drop bags. Leave luggage, hit the two cafés below, then head to Cho Dang Gol in K-Town.' },
     gmaps: 'https://maps.google.com/?q=InterContinental+New+York+Barclay',
     points: [
-      { name: 'dae day coffee',   lat: 40.7544, lng: -73.9748, category: 'Coffee', addr: '485 Lexington Ave · Midtown East', note: '호텔 도보 2분. 호주 스타일 스페셜티. Joe Coffee 라인업 (현지 로컬 협업). 모닝 라떼 픽업 딱.' },
+      { name: 'dae day coffee',   lat: 40.7544, lng: -73.9748, category: 'Coffee', addr: '485 Lexington Ave · Midtown East', note: { ko: '호텔 도보 2분. 호주 스타일 스페셜티. Joe Coffee 라인업 (현지 로컬 협업). 모닝 라떼 픽업 딱.', en: '2-min walk from the hotel. Australian-style specialty; Joe Coffee beans (local collab). Perfect morning latte pickup.' } },
       { name: '★ Grand Central Terminal', lat: 40.7527, lng: -73.9772, category: 'Design', addr: '89 E 42nd St · Midtown East',
-        note: '기차(LIRR/지하철)로 도착하면 여기 통과 — 호텔에서 도보 7분이라 train 옵션의 도착지. LIRR Grand Central Madison이 지하. Beaux-Arts 랜드마크: Main Concourse 천장 별자리 벽화, Whispering Gallery, Vanderbilt Hall. 들어온 김에 5분 구경.' },
+        note: { ko: '기차(LIRR/지하철)로 도착하면 여기 통과 — 호텔에서 도보 7분이라 train 옵션의 도착지. LIRR Grand Central Madison이 지하. Beaux-Arts 랜드마크: Main Concourse 천장 별자리 벽화, Whispering Gallery, Vanderbilt Hall. 들어온 김에 5분 구경.', en: 'Where the train option (LIRR/subway) lands — 7-min walk to the hotel. LIRR Grand Central Madison is below. Beaux-Arts landmark: Main Concourse celestial ceiling, Whispering Gallery, Vanderbilt Hall. Worth a 5-min look.' } },
     ]
   },
   { day: 1, num: 3, time: '12:00 PM', name: 'Cho Dang Gol',
     lat: 40.7501625, lng: -73.9863713, address: '55 W 35th St · K-Town',
-    transit: '호텔(48th) → K-Town(35th) · 약 1.1mi 남쪽',
+    transit: { ko: '호텔(48th) → K-Town(35th) · 약 1.1mi 남쪽', en: 'Hotel (48th) → K-Town (35th) · ~1.1mi south' },
     routeOptions: [
-      { mode: 'walk', label: '도보', time: '15분', cost: '무료', best: true,
-        detail: '5th Ave 따라 남쪽으로 13블록. 12시 오픈런 맞추려면 11:40 출발. 짐 없으니 가볍게.' },
-      { mode: 'subway', label: '지하철', time: '8분', cost: '$2.90',
-        detail: '6 train 51 St → 33 St + 도보 4분. 비 오거나 시차로 지치면. 환승 없음.' },
-      { mode: 'uber', label: 'Uber', time: '7분', cost: '$10~14',
-        detail: '4명 나눠서 1인 $3. 시간 빠듯하면 가장 확실. 점심 트래픽 보통.' },
+      { mode: 'walk', label: { ko: '도보', en: 'Walk' }, time: { ko: '15분', en: '15 min' }, cost: { ko: '무료', en: 'Free' }, best: true,
+        detail: { ko: '5th Ave 따라 남쪽으로 13블록. 12시 오픈런 맞추려면 11:40 출발. 짐 없으니 가볍게.', en: 'Down 5th Ave, 13 blocks south. Leave by 11:40 to make the noon opening. Light without luggage.' } },
+      { mode: 'subway', label: { ko: '지하철', en: 'Subway' }, time: { ko: '8분', en: '8 min' }, cost: '$2.90',
+        detail: { ko: '6 train 51 St → 33 St + 도보 4분. 비 오거나 시차로 지치면. 환승 없음.', en: '6 train 51 St → 33 St + 4-min walk. For rain or jet lag. No transfer.' } },
+      { mode: 'uber', label: 'Uber', time: { ko: '7분', en: '7 min' }, cost: '$10~14',
+        detail: { ko: '4명 나눠서 1인 $3. 시간 빠듯하면 가장 확실. 점심 트래픽 보통.', en: 'Split 4 ways = ~$3 each. Surest when time is tight. Lunch traffic moderate.' } },
     ],
-    note: '12시 오픈런 — 안 그러면 웨이팅 한 시간+. 오징어순두부 + 해물파전.',
+    note: { ko: '12시 오픈런 — 안 그러면 웨이팅 한 시간+. 오징어순두부 + 해물파전.', en: 'Be there at noon opening — otherwise an hour+ wait. Squid soft-tofu stew + seafood pajeon.' },
     gmaps: 'https://maps.google.com/?q=Cho+Dang+Gol+New+York' },
   { day: 1, num: 4, time: '1:45 PM', name: 'The High Line',
     lat: 40.7479925, lng: -74.0047649, address: '34th St → Gansevoort St',
-    transit: 'K-Town(35th) → Hudson Yards 입구(34th & 10th) · 약 0.6mi 서쪽',
+    transit: { ko: 'K-Town(35th) → Hudson Yards 입구(34th & 10th) · 약 0.6mi 서쪽', en: 'K-Town (35th) → Hudson Yards entrance (34th & 10th) · ~0.6mi west' },
     routeOptions: [
-      { mode: 'walk', label: '도보', time: '12분', cost: '무료', best: true,
-        detail: '34th St 따라 서쪽으로 쭉. 어차피 High Line 걸을 거라 워밍업. 평지.' },
-      { mode: 'subway', label: '지하철', time: '10분', cost: '$2.90',
-        detail: '7 train (Times Sq or 5 Av) → 34 St-Hudson Yards 종점, 입구 바로 옆. 역까지 걷는 시간 포함하면 도보랑 비슷.' },
-      { mode: 'uber', label: 'Uber', time: '7분', cost: '$9~12',
-        detail: '점심 든든히 먹고 빨리 이동하고 싶으면. 4명 1인 $3.' },
+      { mode: 'walk', label: { ko: '도보', en: 'Walk' }, time: { ko: '12분', en: '12 min' }, cost: { ko: '무료', en: 'Free' }, best: true,
+        detail: { ko: '34th St 따라 서쪽으로 쭉. 어차피 High Line 걸을 거라 워밍업. 평지.', en: 'Straight west on 34th St. A warm-up since you\'re about to walk the High Line. Flat.' } },
+      { mode: 'subway', label: { ko: '지하철', en: 'Subway' }, time: { ko: '10분', en: '10 min' }, cost: '$2.90',
+        detail: { ko: '7 train (Times Sq or 5 Av) → 34 St-Hudson Yards 종점, 입구 바로 옆. 역까지 걷는 시간 포함하면 도보랑 비슷.', en: '7 train (Times Sq or 5 Av) → 34 St-Hudson Yards terminus, right by the entrance. About the same as walking once you count getting to the station.' } },
+      { mode: 'uber', label: 'Uber', time: { ko: '7분', en: '7 min' }, cost: '$9~12',
+        detail: { ko: '점심 든든히 먹고 빨리 이동하고 싶으면. 4명 1인 $3.', en: 'If you want to move fast after a big lunch. ~$3/person for 4.' } },
     ],
-    note: '북쪽 Hudson Yards 입구에서 남쪽으로 약 45분. Little Island 들를 거니까 너무 천천히 X. 16번가 부근에서 Chelsea Market 잠깐 옵션.',
+    note: { ko: '북쪽 Hudson Yards 입구에서 남쪽으로 약 45분. Little Island 들를 거니까 너무 천천히 X. 16번가 부근에서 Chelsea Market 잠깐 옵션.', en: 'Walk south from the north (Hudson Yards) entrance, ~45 min. Don\'t dawdle — Little Island is next. Optional quick stop at Chelsea Market around 16th St.' },
     gmaps: 'https://maps.google.com/?q=The+High+Line',
     points: [
-      { name: 'Chelsea Market',     lat: 40.7424, lng: -74.0062, category: 'Food',   addr: '75 9th Ave',           note: '실내 푸드홀. High Line 16번가에서 잠깐 내려와서. 점심 안 먹었으면 픽.' },
-      { name: 'Los Tacos No. 1',    lat: 40.7423, lng: -74.0061, category: 'Food',   addr: 'Chelsea Market 안',     note: '뉴욕 최고 타코 후보. 진짜 바이럴 + 진짜 맛. 줄 빨라요.' },
+      { name: 'Chelsea Market',     lat: 40.7424, lng: -74.0062, category: 'Food',   addr: '75 9th Ave',           note: { ko: '실내 푸드홀. High Line 16번가에서 잠깐 내려와서. 점심 안 먹었으면 픽.', en: 'Indoor food hall. Hop off the High Line around 16th St. A pick if you skipped lunch.' } },
+      { name: 'Los Tacos No. 1',    lat: 40.7423, lng: -74.0061, category: 'Food',   addr: { ko: 'Chelsea Market 안', en: 'inside Chelsea Market' },     note: { ko: '뉴욕 최고 타코 후보. 진짜 바이럴 + 진짜 맛. 줄 빨라요.', en: 'A contender for NYC\'s best tacos. Genuinely viral AND genuinely good. Line moves fast.' } },
     ]
   },
   { day: 1, num: 5, time: '2:45 PM', name: 'Little Island',
     lat: 40.7423, lng: -74.0099, address: 'Pier 55 · 13th St & Hudson River',
-    transit: 'High Line 남쪽 끝(Gansevoort)에서 도보 5분',
-    note: 'Heatherwick 디자인 튤립 모양 인공섬. 30~40분이면 충분. 전망 좋은 The Play(원형 광장)에서 사진 + Whitney 미술관도 바로 옆이라 외관만 슥.',
+    transit: { ko: 'High Line 남쪽 끝(Gansevoort)에서 도보 5분', en: '5-min walk from the High Line\'s south end (Gansevoort)' },
+    note: { ko: 'Heatherwick 디자인 튤립 모양 인공섬. 30~40분이면 충분. 전망 좋은 The Play(원형 광장)에서 사진 + Whitney 미술관도 바로 옆이라 외관만 슥.', en: 'Heatherwick-designed tulip-shaped artificial island. 30–40 min is plenty. Photos at The Play (the amphitheater) for the view; the Whitney is right next door for a quick exterior look.' },
     gmaps: 'https://maps.google.com/?q=Little+Island+Pier+55' },
   { day: 1, num: 6, time: '3:45 PM', name: 'SoHo',
     lat: 40.7245908, lng: -74.0019174, address: 'Spring St · Prince St',
-    transit: 'Little Island → SoHo · 약 1.2mi 남동쪽',
+    transit: { ko: 'Little Island → SoHo · 약 1.2mi 남동쪽', en: 'Little Island → SoHo · ~1.2mi southeast' },
     routeOptions: [
-      { mode: 'walk', label: '도보', time: '25분', cost: '무료', best: true,
-        detail: 'Hudson St 따라 남동쪽 1.2mi. West Village 골목 + Hudson Square 통과 — 산책 자체가 볼거리. 5:30 Raku까지 여유 있으니 추천.' },
-      { mode: 'bike', label: 'Citi Bike', time: '12분', cost: '$4.79',
-        detail: 'Hudson River Greenway 남쪽 → Houston St에서 동쪽. 평지 + 강변 뷰. 데이패스 있으면 $0 추가. 빠르고 시원함.' },
-      { mode: 'uber', label: 'Uber', time: '10분', cost: '$13~18',
-        detail: '피곤하거나 비 오면. 4명이면 1인 $4 정도. SoHo 좁은 길이라 Spring/Prince 코너에 내려달라고.' },
+      { mode: 'walk', label: { ko: '도보', en: 'Walk' }, time: { ko: '25분', en: '25 min' }, cost: { ko: '무료', en: 'Free' }, best: true,
+        detail: { ko: 'Hudson St 따라 남동쪽 1.2mi. West Village 골목 + Hudson Square 통과 — 산책 자체가 볼거리. 5:30 Raku까지 여유 있으니 추천.', en: 'Southeast 1.2mi down Hudson St, through West Village + Hudson Square — the walk itself is the sight. Recommended; you have time before the 5:30 Raku booking.' } },
+      { mode: 'bike', label: 'Citi Bike', time: { ko: '12분', en: '12 min' }, cost: '$4.79',
+        detail: { ko: 'Hudson River Greenway 남쪽 → Houston St에서 동쪽. 평지 + 강변 뷰. 데이패스 있으면 $0 추가. 빠르고 시원함.', en: 'South on the Hudson River Greenway → east at Houston St. Flat, riverside views. $0 extra with a day pass. Fast and breezy.' } },
+      { mode: 'uber', label: 'Uber', time: { ko: '10분', en: '10 min' }, cost: '$13~18',
+        detail: { ko: '피곤하거나 비 오면. 4명이면 1인 $4 정도. SoHo 좁은 길이라 Spring/Prince 코너에 내려달라고.', en: 'If tired or raining. ~$4/person for 4. SoHo streets are narrow — ask to be dropped at the Spring/Prince corner.' } },
     ],
-    note: '5:30 Raku 예약 있으니 산책하듯이. 아래 작은 점들 보고 끌리는 곳 두세 곳 들리기.',
+    note: { ko: '5:30 Raku 예약 있으니 산책하듯이. 아래 작은 점들 보고 끌리는 곳 두세 곳 들리기.', en: 'Stroll mode — you have the 5:30 Raku booking. Browse the dots below and pop into two or three that catch your eye.' },
     gmaps: 'https://maps.google.com/?q=SoHo+New+York',
     points: [
-      { name: 'Aesop',                    lat: 40.7240, lng: -74.0001, category: 'Design',   addr: '161 Mercer St',           note: '향수 + 핸드워시. 매장 인테리어 자체가 갤러리.' },
-      { name: 'MoMA Design Store',        lat: 40.7228, lng: -73.9982, category: 'Design',   addr: '81 Spring St',            note: '디자인 굿즈/선물용. 작은 사이즈는 캐리어에도 OK.' },
-      { name: 'McNally Jackson Books',    lat: 40.7253, lng: -73.9974, category: 'Books',    addr: '134 Prince St',           note: '인디 서점. 페이퍼/문구/아트북 섹션이 진짜 좋음.' },
-      { name: 'Housing Works Bookstore',  lat: 40.7233, lng: -73.9967, category: 'Books',    addr: '126 Crosby St',           note: '빈티지 책 + 작은 카페. 수익은 자선단체로.' },
-      { name: 'Saturdays NYC',            lat: 40.7203, lng: -73.9994, category: 'Shopping', addr: '31 Crosby St',            note: '서핑 + 라이프스타일 브랜드. 뒷마당 에스프레소 바.' },
-      { name: 'Aimé Leon Dore',           lat: 40.7220, lng: -73.9962, category: 'Shopping', addr: '214 Mulberry St · NoLita', note: '뉴욕 출신 멘즈웨어. 매장 안 에스프레소 바도 핫. 바이럴 + 진짜 로컬 픽.' },
-      { name: 'Maman SoHo',               lat: 40.7194, lng: -73.9974, category: 'Coffee',   addr: '239 Centre St',           note: '잠깐 쉴 때. 라떼 + 쿠키 한 입.' },
-      { name: 'Cafe Integral',            lat: 40.7211, lng: -73.9956, category: 'Coffee',   addr: '149 Elizabeth St · NoLita', note: '니카라과 산지 직배송. 작고 조용한 로컬 시크릿 카페. 광고 1도 안 해요.' },
-      { name: 'Prince Street Pizza',      lat: 40.7228, lng: -73.9947, category: 'Food',     addr: '27 Prince St · NoLita',     note: '바이럴 페퍼로니 스퀘어 슬라이스의 본진. 광고 없이 입소문만으로 줄 섬. 회전 빠름.' },
-      { name: "L'Industrie Pizzeria",     lat: 40.7297, lng: -74.0033, category: 'Food',     addr: '254 Bleecker St · West Village', note: '현재 뉴욕 NO.1 슬라이스 후보. 부라타 슬라이스 시그니처. 점심 피크는 줄 진짜 김.' },
+      { name: 'Aesop',                    lat: 40.7240, lng: -74.0001, category: 'Design',   addr: '161 Mercer St',           note: { ko: '향수 + 핸드워시. 매장 인테리어 자체가 갤러리.', en: 'Fragrance + hand wash. The store interior is a gallery in itself.' } },
+      { name: 'MoMA Design Store',        lat: 40.7228, lng: -73.9982, category: 'Design',   addr: '81 Spring St',            note: { ko: '디자인 굿즈/선물용. 작은 사이즈는 캐리어에도 OK.', en: 'Design goods / gifts. Small items fit in a carry-on.' } },
+      { name: 'McNally Jackson Books',    lat: 40.7253, lng: -73.9974, category: 'Books',    addr: '134 Prince St',           note: { ko: '인디 서점. 페이퍼/문구/아트북 섹션이 진짜 좋음.', en: 'Indie bookstore. The paper/stationery/art-book sections are genuinely great.' } },
+      { name: 'Housing Works Bookstore',  lat: 40.7233, lng: -73.9967, category: 'Books',    addr: '126 Crosby St',           note: { ko: '빈티지 책 + 작은 카페. 수익은 자선단체로.', en: 'Vintage books + a small café. Proceeds go to charity.' } },
+      { name: 'Saturdays NYC',            lat: 40.7203, lng: -73.9994, category: 'Shopping', addr: '31 Crosby St',            note: { ko: '서핑 + 라이프스타일 브랜드. 뒷마당 에스프레소 바.', en: 'Surf + lifestyle brand. Espresso bar in the back garden.' } },
+      { name: 'Aimé Leon Dore',           lat: 40.7220, lng: -73.9962, category: 'Shopping', addr: '214 Mulberry St · NoLita', note: { ko: '뉴욕 출신 멘즈웨어. 매장 안 에스프레소 바도 핫. 바이럴 + 진짜 로컬 픽.', en: 'NYC-born menswear. The in-store espresso bar is a scene too. Viral AND a real local pick.' } },
+      { name: 'Maman SoHo',               lat: 40.7194, lng: -73.9974, category: 'Coffee',   addr: '239 Centre St',           note: { ko: '잠깐 쉴 때. 라떼 + 쿠키 한 입.', en: 'For a quick break. Latte + a bite of their cookie.' } },
+      { name: 'Cafe Integral',            lat: 40.7211, lng: -73.9956, category: 'Coffee',   addr: '149 Elizabeth St · NoLita', note: { ko: '니카라과 산지 직배송. 작고 조용한 로컬 시크릿 카페. 광고 1도 안 해요.', en: 'Nicaragua direct-trade beans. Tiny, quiet local secret. Zero marketing.' } },
+      { name: 'Prince Street Pizza',      lat: 40.7228, lng: -73.9947, category: 'Food',     addr: '27 Prince St · NoLita',     note: { ko: '바이럴 페퍼로니 스퀘어 슬라이스의 본진. 광고 없이 입소문만으로 줄 섬. 회전 빠름.', en: 'Home of the viral pepperoni square slice. Lines form on word of mouth alone. Fast turnover.' } },
+      { name: "L'Industrie Pizzeria",     lat: 40.7297, lng: -74.0033, category: 'Food',     addr: '254 Bleecker St · West Village', note: { ko: '현재 뉴욕 NO.1 슬라이스 후보. 부라타 슬라이스 시그니처. 점심 피크는 줄 진짜 김.', en: 'Current contender for NYC\'s #1 slice. Burrata slice is the signature. Lunch-peak line is real.' } },
       // === Designer picks (photo + inspiration) ===
-      { name: '★ Dashwood Books',         lat: 40.7257, lng: -73.9938, category: 'Books',    addr: '33 Bond St · NoHo',       note: '사진집의 메카 — David Strettell 큐레이션. Wolfgang Tillmans, Ari Marcopoulos, 1990s Japanese 사진집까지. 작은 지하 매장이지만 한 권 사면 평생. 디자이너라면 절대.' },
-      { name: '★ Greene Street SoHo',     lat: 40.7233, lng: -74.0011, category: 'Design',   addr: 'Greene St · Houston→Canal', note: '세계에서 가장 잘 보존된 cast-iron 건물 거리 (1850s). 250 Greene 등 파사드 디테일이 산업디자인 레퍼런스. 늦은 오후 광선이 베스트 — 카메라/폰 들고 천천히.' },
-      { name: '★ MZ Wallace SoHo',        lat: 40.7233, lng: -73.9988, category: 'Shopping', addr: '93 Crosby St',            note: '뉴욕 출신 퀼팅 토트. 매장 디스플레이 자체가 제품 디자인 케이스 스터디. 한국에서도 슬슬 알려진 브랜드.' },
+      { name: '★ Dashwood Books',         lat: 40.7257, lng: -73.9938, category: 'Books',    addr: '33 Bond St · NoHo',       note: { ko: '사진집의 메카 — David Strettell 큐레이션. Wolfgang Tillmans, Ari Marcopoulos, 1990s Japanese 사진집까지. 작은 지하 매장이지만 한 권 사면 평생. 디자이너라면 절대.', en: 'Mecca for photo books — David Strettell\'s curation. Wolfgang Tillmans, Ari Marcopoulos, 1990s Japanese photo books. Tiny basement shop but a keeper for life. A must for designers.' } },
+      { name: '★ Greene Street SoHo',     lat: 40.7233, lng: -74.0011, category: 'Design',   addr: 'Greene St · Houston→Canal', note: { ko: '세계에서 가장 잘 보존된 cast-iron 건물 거리 (1850s). 250 Greene 등 파사드 디테일이 산업디자인 레퍼런스. 늦은 오후 광선이 베스트 — 카메라/폰 들고 천천히.', en: 'The world\'s best-preserved cast-iron block (1850s). Façade details (e.g. 250 Greene) are an industrial-design reference. Late-afternoon light is best — go slow with a camera/phone.' } },
+      { name: '★ MZ Wallace SoHo',        lat: 40.7233, lng: -73.9988, category: 'Shopping', addr: '93 Crosby St',            note: { ko: '뉴욕 출신 퀼팅 토트. 매장 디스플레이 자체가 제품 디자인 케이스 스터디. 한국에서도 슬슬 알려진 브랜드.', en: 'NYC quilted totes. The store display is a product-design case study in itself. Gaining recognition in Korea too.' } },
     ]
   },
   { day: 1, num: 7, time: '5:30 PM', name: 'Raku Soho',
     lat: 40.7272479, lng: -74.0025495, address: '48 MacDougal St',
-    transit: 'SoHo 내 · 도보 5분',
-    note: '예약 확정 · 4명. 우동 + 사이드 빠르게. 6:30엔 출발해야 7시 쇼 가능.',
+    transit: { ko: 'SoHo 내 · 도보 5분', en: 'Within SoHo · 5 min walk' },
+    note: { ko: '예약 확정 · 4명. 우동 + 사이드 빠르게. 6:30엔 출발해야 7시 쇼 가능.', en: 'Booking confirmed · party of 4. Udon + sides, keep it quick. Leave by 6:30 to make the 7PM show.' },
     gmaps: 'https://maps.google.com/?q=Raku+SoHo+48+MacDougal',
     featured: true, tag: 'Reserved' },
   { day: 1, num: 8, time: '7:00 PM', name: 'Belasco Theatre',
     lat: 40.7566389, lng: -73.9838861, address: '111 W 44th St · Broadway',
-    transit: 'Raku(SoHo) → Belasco(44th) · 약 3mi 북쪽 · 6:30 출발 필수',
+    transit: { ko: 'Raku(SoHo) → Belasco(44th) · 약 3mi 북쪽 · 6:30 출발 필수', en: 'Raku (SoHo) → Belasco (44th) · ~3mi north · must leave by 6:30' },
     routeOptions: [
-      { mode: 'uber', label: 'Uber', time: '15~20분', cost: '$22~28', best: true,
-        detail: '7PM 공연 + 6:45 입장이라 시간이 빠듯 — 6:30 Raku에서 바로 호출. 4명 1인 $6. 트래픽 있으면 Bleecker에서 잡기.' },
-      { mode: 'subway', label: '지하철', time: '20~25분', cost: '$2.90',
-        detail: '6 train Bleecker St → Grand Central + 도보 10분, 또는 B/D/F Broadway-Lafayette → 42 St. 환승 + 도보 변수라 공연날엔 빠듯.' },
-      { mode: 'walk', label: '도보', time: '50분+', cost: '무료',
-        detail: '3mi라 시간상 비추 — 공연 없는 날 산책이면 SoHo→Village→Midtown 좋지만 오늘은 No.' },
+      { mode: 'uber', label: 'Uber', time: { ko: '15~20분', en: '15~20 min' }, cost: '$22~28', best: true,
+        detail: { ko: '7PM 공연 + 6:45 입장이라 시간이 빠듯 — 6:30 Raku에서 바로 호출. 4명 1인 $6. 트래픽 있으면 Bleecker에서 잡기.', en: 'Tight timing — 7PM show with 6:45 doors, so call the car right at Raku at 6:30. ~$6/person for 4. If traffic, grab one on Bleecker.' } },
+      { mode: 'subway', label: { ko: '지하철', en: 'Subway' }, time: { ko: '20~25분', en: '20~25 min' }, cost: '$2.90',
+        detail: { ko: '6 train Bleecker St → Grand Central + 도보 10분, 또는 B/D/F Broadway-Lafayette → 42 St. 환승 + 도보 변수라 공연날엔 빠듯.', en: '6 train Bleecker St → Grand Central + 10 min walk, or B/D/F Broadway-Lafayette → 42 St. Transfers + walking add risk on show night.' } },
+      { mode: 'walk', label: { ko: '도보', en: 'Walk' }, time: { ko: '50분+', en: '50 min+' }, cost: { ko: '무료', en: 'Free' },
+        detail: { ko: '3mi라 시간상 비추 — 공연 없는 날 산책이면 SoHo→Village→Midtown 좋지만 오늘은 No.', en: 'Not advised — 3mi, too long for tonight. A nice stroll (SoHo→Village→Midtown) on a free evening, but not before the show.' } },
     ],
-    note: 'Maybe Happy Ending · 약 1시간 40분, 인터미션 없음. 7PM 시작 → 8:40PM 종료. 6:45까지 입장 권장.',
+    note: { ko: 'Maybe Happy Ending · 약 1시간 40분, 인터미션 없음. 7PM 시작 → 8:40PM 종료. 6:45까지 입장 권장.', en: 'Maybe Happy Ending · ~1h40m, no intermission. 7PM start → 8:40PM end. Be seated by 6:45.' },
     gmaps: 'https://maps.google.com/?q=Belasco+Theatre',
     featured: true, tag: 'Ticket' },
-  { day: 1, num: 9, time: '9:00 PM', name: 'InterContinental Barclay · 도착',
+  { day: 1, num: 9, time: '9:00 PM', name: { ko: 'InterContinental Barclay · 도착', en: 'InterContinental Barclay · Arrive' },
     lat: 40.7556629, lng: -73.9735276, address: '111 E 48th St',
-    transit: 'Belasco(44th & Broadway) → 호텔(48th & Park) · 약 0.6mi 북동쪽',
+    transit: { ko: 'Belasco(44th & Broadway) → 호텔(48th & Park) · 약 0.6mi 북동쪽', en: 'Belasco (44th & Broadway) → hotel (48th & Park) · ~0.6mi northeast' },
     routeOptions: [
-      { mode: 'walk', label: '도보', time: '12분', cost: '무료', best: true,
-        detail: '공연 끝나고 밤 산책 — 44th→48th, Broadway에서 동쪽 Park Ave까지. 미드타운 야경. 시차 피곤하면 짧으니 딱.' },
-      { mode: 'uber', label: 'Uber', time: '8~15분', cost: '$10~14',
-        detail: '공연 직후 극장가(8:40PM)는 차 막힘 — 도보가 더 빠를 수도. 비 오거나 다리 아프면.' },
+      { mode: 'walk', label: { ko: '도보', en: 'Walk' }, time: { ko: '12분', en: '12 min' }, cost: { ko: '무료', en: 'Free' }, best: true,
+        detail: { ko: '공연 끝나고 밤 산책 — 44th→48th, Broadway에서 동쪽 Park Ave까지. 미드타운 야경. 시차 피곤하면 짧으니 딱.', en: 'Post-show night walk — 44th→48th, east from Broadway to Park Ave. Midtown lights. Short enough if jet-lagged.' } },
+      { mode: 'uber', label: 'Uber', time: { ko: '8~15분', en: '8~15 min' }, cost: '$10~14',
+        detail: { ko: '공연 직후 극장가(8:40PM)는 차 막힘 — 도보가 더 빠를 수도. 비 오거나 다리 아프면.', en: 'The theater district jams right after curtain (8:40PM) — walking may be faster. For rain or tired legs.' } },
     ],
-    note: '첫날 마무리. 시차로 피곤할 테니 일찍 쉬기. 출출하면 호텔 근처 24시 델리.',
+    note: { ko: '첫날 마무리. 시차로 피곤할 테니 일찍 쉬기. 출출하면 호텔 근처 24시 델리.', en: 'Day one wrap-up. Rest early — jet lag will hit. Peckish? 24-hr deli near the hotel.' },
     gmaps: 'https://maps.google.com/?q=InterContinental+New+York+Barclay' },
-  { day: 2, num: 10, time: '9:00 AM', name: 'InterContinental Barclay · 출발',
+  { day: 2, num: 10, time: '9:00 AM', name: { ko: 'InterContinental Barclay · 출발', en: 'InterContinental Barclay · Depart' },
     lat: 40.7556629, lng: -73.9735276, address: '111 E 48th St',
-    transit: '호텔에서 출발',
-    note: '간단히 출발 (커피는 DUMBO에서). F train 타러 Rockefeller Center역까지 도보 8분.',
+    transit: { ko: '호텔에서 출발', en: 'Depart from hotel' },
+    note: { ko: '간단히 출발 (커피는 DUMBO에서). F train 타러 Rockefeller Center역까지 도보 8분.', en: 'Head out light (coffee in DUMBO). 8 min walk to Rockefeller Center station for the F train.' },
     gmaps: 'https://maps.google.com/?q=InterContinental+New+York+Barclay' },
   { day: 2, num: 11, time: '9:45 AM', name: 'Devoción · DUMBO',
     lat: 40.7022, lng: -73.9867, address: '105 York St · DUMBO',
-    transit: 'F train Rockefeller Ctr → York St (~25분) — 역 바로 옆',
-    note: '콜롬비아 산지 직배송 로스터. 라떼/필터 + 페스트리. 30~45분 여유 있게 마시고 Flea로 이동.',
+    transit: { ko: 'F train Rockefeller Ctr → York St (~25분) — 역 바로 옆', en: 'F train Rockefeller Ctr → York St (~25 min) — right by the station' },
+    note: { ko: '콜롬비아 산지 직배송 로스터. 라떼/필터 + 페스트리. 30~45분 여유 있게 마시고 Flea로 이동.', en: 'Colombia direct-trade roaster. Latte/filter + pastry. Take 30–45 min, then head to the Flea.' },
     gmaps: 'https://maps.google.com/?q=Devocion+105+York+St+Brooklyn' },
   { day: 2, num: 12, time: '10:45 AM', name: 'Brooklyn Flea · DUMBO',
     lat: 40.7035, lng: -73.9889, address: '80 Pearl St · Manhattan Bridge Archway',
-    transit: 'Devoción에서 도보 3분',
-    note: '토요일 10AM–5PM 오픈. 빈티지/굿즈/푸드. 1~1.5시간 둘러보고 Washington St 포토 스팟 들렀다 다리로.',
+    transit: { ko: 'Devoción에서 도보 3분', en: '3 min walk from Devoción' },
+    note: { ko: '토요일 10AM–5PM 오픈. 빈티지/굿즈/푸드. 1~1.5시간 둘러보고 Washington St 포토 스팟 들렀다 다리로.', en: 'Open Sat 10AM–5PM. Vintage/goods/food. Browse 1–1.5 hrs, hit the Washington St photo spot, then the bridge.' },
     gmaps: 'https://maps.google.com/?q=Brooklyn+Flea+DUMBO',
     points: [
-      { name: 'Crowley Vintage',  lat: 40.7029, lng: -73.9872, category: 'Shopping', addr: '68 Jay St, Suite 303 (3F)', note: '4.4★ 빈티지 의류. 토요일 12PM 오픈 — Flea 한 바퀴 돌고 다리 가기 전에 들리면 타이밍 딱.' },
-      { name: 'Time Out Market NY', lat: 40.7028, lng: -73.9899, category: 'Food',   addr: '55 Water St · DUMBO',     note: '뉴욕 인기 셰프 24+ 부스 모인 푸드홀. 다리 건너기 전 점심 옵션. 옥상 뷰도.' },
+      { name: 'Crowley Vintage',  lat: 40.7029, lng: -73.9872, category: 'Shopping', addr: '68 Jay St, Suite 303 (3F)', note: { ko: '4.4★ 빈티지 의류. 토요일 12PM 오픈 — Flea 한 바퀴 돌고 다리 가기 전에 들리면 타이밍 딱.', en: '4.4★ vintage clothing. Opens Sat 12PM — perfect to hit after a Flea loop, before the bridge.' } },
+      { name: 'Time Out Market NY', lat: 40.7028, lng: -73.9899, category: 'Food',   addr: '55 Water St · DUMBO',     note: { ko: '뉴욕 인기 셰프 24+ 부스 모인 푸드홀. 다리 건너기 전 점심 옵션. 옥상 뷰도.', en: 'Food hall with 24+ stalls from NYC\'s popular chefs. A lunch option before the bridge. Rooftop view too.' } },
     ]
   },
-  { day: 2, num: 13, time: '12:30 PM', name: 'Brooklyn Bridge · 도보',
+  { day: 2, num: 13, time: '12:30 PM', name: { ko: 'Brooklyn Bridge · 도보', en: 'Brooklyn Bridge · Walk' },
     lat: 40.7061, lng: -73.9969, address: 'Brooklyn → Manhattan · 1.1mi',
-    transit: 'DUMBO(Flea) → 다리 입구 · 약 0.5mi (Washington St → Cadman Plaza)',
+    transit: { ko: 'DUMBO(Flea) → 다리 입구 · 약 0.5mi (Washington St → Cadman Plaza)', en: 'DUMBO (Flea) → bridge entrance · ~0.5mi (Washington St → Cadman Plaza)' },
     routeOptions: [
-      { mode: 'walk', label: '도보', time: '10분', cost: '무료', best: true,
-        detail: 'Washington St 포토 스팟(맨해튼 브리지 액자뷰) → Cadman Plaza → 다리 입구. 가는 길 자체가 명소.' },
-      { mode: 'bike', label: 'Citi Bike', time: '5분', cost: '$4.79',
-        detail: 'Brooklyn Bridge Park 그린웨이 Pier 1→6 왕복(~2mi, 스카이라인 정면)으로 라이딩 후 다리 입구 반납. 다리는 도보로.' },
-      { mode: 'uber', label: 'Uber', time: '5분', cost: '$8~10',
-        detail: '짐 있거나 더우면. 다리 입구는 차 진입 제한이라 Cadman Plaza 근처 하차.' },
+      { mode: 'walk', label: { ko: '도보', en: 'Walk' }, time: { ko: '10분', en: '10 min' }, cost: { ko: '무료', en: 'Free' }, best: true,
+        detail: { ko: 'Washington St 포토 스팟(맨해튼 브리지 액자뷰) → Cadman Plaza → 다리 입구. 가는 길 자체가 명소.', en: 'Washington St photo spot (Manhattan Bridge framed view) → Cadman Plaza → bridge entrance. The walk there is a sight itself.' } },
+      { mode: 'bike', label: 'Citi Bike', time: { ko: '5분', en: '5 min' }, cost: '$4.79',
+        detail: { ko: 'Brooklyn Bridge Park 그린웨이 Pier 1→6 왕복(~2mi, 스카이라인 정면)으로 라이딩 후 다리 입구 반납. 다리는 도보로.', en: 'Ride the Brooklyn Bridge Park greenway Pier 1→6 round trip (~2mi, skyline straight ahead), dock at the bridge entrance. Cross the bridge on foot.' } },
+      { mode: 'uber', label: 'Uber', time: { ko: '5분', en: '5 min' }, cost: '$8~10',
+        detail: { ko: '짐 있거나 더우면. 다리 입구는 차 진입 제한이라 Cadman Plaza 근처 하차.', en: 'If you have bags or it\'s hot. Cars are restricted at the entrance — get out near Cadman Plaza.' } },
     ],
-    note: '브루클린에서 맨해튼 방향 (북쪽)으로 약 30~40분. 보행자 전용 레인 따라 천천히. 끝나면 City Hall / Tribeca 쪽 도착 — 아래 점들 참고.',
+    note: { ko: '브루클린에서 맨해튼 방향 (북쪽)으로 약 30~40분. 보행자 전용 레인 따라 천천히. 끝나면 City Hall / Tribeca 쪽 도착 — 아래 점들 참고.', en: 'Brooklyn → Manhattan (north) ~30–40 min. Take the pedestrian lane slowly. You arrive near City Hall / Tribeca — see the dots below.' },
     gmaps: 'https://maps.google.com/?q=Brooklyn+Bridge+pedestrian+walkway',
     points: [
-      { name: 'Frenchette Bakery',   lat: 40.7186, lng: -74.0080, category: 'Food',   addr: '220 W Broadway · Tribeca', note: '뉴욕 베이커리 신 정점. 크루아상/타르트 미쳤음. 다리 건너고 Tribeca 도착하면 픽업.' },
-      { name: 'Black Fox Coffee Co', lat: 40.7068, lng: -74.0073, category: 'Coffee', addr: '70 Pine St · FiDi',         note: '아르데코 로비 1층 카페. 호주 스타일 라떼 + 빵. 바이럴 + 로컬 둘 다 인정.' },
+      { name: 'Frenchette Bakery',   lat: 40.7186, lng: -74.0080, category: 'Food',   addr: '220 W Broadway · Tribeca', note: { ko: '뉴욕 베이커리 신 정점. 크루아상/타르트 미쳤음. 다리 건너고 Tribeca 도착하면 픽업.', en: 'Peak of the NYC bakery scene. Croissants/tarts are insane. Grab some when you reach Tribeca after the bridge.' } },
+      { name: 'Black Fox Coffee Co', lat: 40.7068, lng: -74.0073, category: 'Coffee', addr: '70 Pine St · FiDi',         note: { ko: '아르데코 로비 1층 카페. 호주 스타일 라떼 + 빵. 바이럴 + 로컬 둘 다 인정.', en: 'Café in an Art Deco lobby. Australian-style latte + pastries. Both viral and locally loved.' } },
     ]
   },
-  { day: 2, num: 14, time: '1:30 PM', name: 'Afternoon · 골라잡기',
-    lat: null, lng: null, address: '맨해튼 다운타운 · 점심 + 산책',
-    transit: 'Brooklyn Bridge 도착 후 도보 또는 6 train',
-    note: '브루클린 다리 도착 ~1:30PM → Oiji Mi(Flatiron) 7PM. 5시간 비어있음. 아래 동선 픽 중 하나로 큰 줄기 정하고, 그 다음 개별 픽 (★) 중에서 끼워넣기 — 당일 컨디션 보고 자유롭게.',
+  { day: 2, num: 14, time: '1:30 PM', name: { ko: 'Afternoon · 골라잡기', en: 'Afternoon · Pick & Choose' },
+    lat: null, lng: null, address: { ko: '맨해튼 다운타운 · 점심 + 산책', en: 'Downtown Manhattan · lunch + stroll' },
+    transit: { ko: 'Brooklyn Bridge 도착 후 도보 또는 6 train', en: 'On foot or 6 train after the Brooklyn Bridge' },
+    note: { ko: '브루클린 다리 도착 ~1:30PM → Oiji Mi(Flatiron) 7PM. 5시간 비어있음. 아래 동선 픽 중 하나로 큰 줄기 정하고, 그 다음 개별 픽 (★) 중에서 끼워넣기 — 당일 컨디션 보고 자유롭게.', en: 'Off the Brooklyn Bridge ~1:30PM → Oiji Mi (Flatiron) 7PM. 5 hours open. Pick one of the route options below for the main thread, then slot in the individual ★ picks — go by how you feel that day.' },
     tbd: true,
     points: [
       // === 동선 픽 — 큰 줄기 ===
       { name: 'A · Chinatown → LES → Union Sq', lat: 40.7158, lng: -73.9970, category: 'Food',
-        addr: '~1:30 Chinatown 점심 → 3:00 LES 산책 → 5:00 Union Sq',
-        note: '먹거리 중심. Xi\'an Famous Foods 우육면 + Joe\'s Shanghai 샤오롱바오. 3PM LES (Russ & Daughters / Economy Candy / Tenement Museum). 도보로 천천히 Union Sq → 19th St (Oiji Mi).' },
-      { name: 'B · Tribeca + SoHo 슬로우 루프', lat: 40.7195, lng: -74.0072, category: 'Shopping',
-        addr: '~1:30 Tribeca 점심 → 3:00 SoHo 재방문',
-        note: '쇼핑 중심. Frenchette Bakery 또는 Bubby\'s 브런치. 금요일 못 본 SoHo 가게 (Aimé Leon Dore, McNally Jackson) 다시. Union Sq까지 6 train.' },
+        addr: { ko: '~1:30 Chinatown 점심 → 3:00 LES 산책 → 5:00 Union Sq', en: '~1:30 Chinatown lunch → 3:00 LES stroll → 5:00 Union Sq' },
+        note: { ko: '먹거리 중심. Xi\'an Famous Foods 우육면 + Joe\'s Shanghai 샤오롱바오. 3PM LES (Russ & Daughters / Economy Candy / Tenement Museum). 도보로 천천히 Union Sq → 19th St (Oiji Mi).', en: 'Food-focused. Xi\'an Famous Foods hand-pulled noodles + Joe\'s Shanghai soup dumplings. 3PM LES (Russ & Daughters / Economy Candy / Tenement Museum). Stroll slowly to Union Sq → 19th St (Oiji Mi).' } },
+      { name: { ko: 'B · Tribeca + SoHo 슬로우 루프', en: 'B · Tribeca + SoHo slow loop' }, lat: 40.7195, lng: -74.0072, category: 'Shopping',
+        addr: { ko: '~1:30 Tribeca 점심 → 3:00 SoHo 재방문', en: '~1:30 Tribeca lunch → 3:00 SoHo revisit' },
+        note: { ko: '쇼핑 중심. Frenchette Bakery 또는 Bubby\'s 브런치. 금요일 못 본 SoHo 가게 (Aimé Leon Dore, McNally Jackson) 다시. Union Sq까지 6 train.', en: 'Shopping-focused. Frenchette Bakery or Bubby\'s brunch. Revisit the SoHo shops you missed Friday (Aimé Leon Dore, McNally Jackson). 6 train to Union Sq.' } },
       { name: 'C · Village + Washington Sq', lat: 40.7308, lng: -73.9973, category: 'Books',
-        addr: '~1:30 Joe\'s Pizza → 2:30 Washington Sq → 4:00 Strand → Union Sq',
-        note: 'NYC 클래식 무드. Joe\'s Pizza (7 Carmine St) 슬라이스 → Washington Sq 사람 구경 + 즉흥 공연 → Strand 책방 (1시간) → 도보 Union Sq.' },
+        addr: { ko: '~1:30 Joe\'s Pizza → 2:30 Washington Sq → 4:00 Strand → Union Sq', en: '~1:30 Joe\'s Pizza → 2:30 Washington Sq → 4:00 Strand → Union Sq' },
+        note: { ko: 'NYC 클래식 무드. Joe\'s Pizza (7 Carmine St) 슬라이스 → Washington Sq 사람 구경 + 즉흥 공연 → Strand 책방 (1시간) → 도보 Union Sq.', en: 'Classic NYC mood. Joe\'s Pizza (7 Carmine St) slice → Washington Sq people-watching + street performances → Strand bookstore (1 hr) → walk to Union Sq.' } },
       { name: 'D · Whitney + Meatpacking', lat: 40.7396, lng: -74.0089, category: 'Design',
-        addr: '~1:30 Whitney → 3:30 Meatpacking',
-        note: '아트 중심. Whitney Museum (99 Gansevoort, $30, 2시간). American art + 옥상 데크 뷰. Brooklyn Bridge에서 1/2/3 환승 약간 멀어 — 비 오면 보류.' },
+        addr: { ko: '~1:30 Whitney → 3:30 Meatpacking', en: '~1:30 Whitney → 3:30 Meatpacking' },
+        note: { ko: '아트 중심. Whitney Museum (99 Gansevoort, $30, 2시간). American art + 옥상 데크 뷰. Brooklyn Bridge에서 1/2/3 환승 약간 멀어 — 비 오면 보류.', en: 'Art-focused. Whitney Museum (99 Gansevoort, $30, 2 hrs). American art + rooftop deck views. A bit far via 1/2/3 transfer from Brooklyn Bridge — skip if raining.' } },
 
       // === 개별 픽 — 위 동선에 끼워넣기 (시간/지리 맞춰서) ===
       { name: '★ Strand Bookstore', lat: 40.7332, lng: -73.9907, category: 'Books',
         addr: '828 Broadway · Union Sq',
-        note: '"18 miles of books." 1927년부터. 1층 신간 + 지하 헌책 + 3층 아트북. 토트백 사가는 게 통과의례. 30~45분이면 충분 — Union Sq 도착 직전 들리기 좋음.' },
+        note: { ko: '"18 miles of books." 1927년부터. 1층 신간 + 지하 헌책 + 3층 아트북. 토트백 사가는 게 통과의례. 30~45분이면 충분 — Union Sq 도착 직전 들리기 좋음.', en: '"18 miles of books." Since 1927. New releases on 1, used books in the basement, art books on 3. Buying a tote is a rite of passage. 30–45 min is plenty — good right before reaching Union Sq.' } },
       { name: '★ Union Square Greenmarket', lat: 40.7359, lng: -73.9911, category: 'Food',
         addr: 'Union Square · Sat 8AM–6PM',
-        note: '토요일은 주중 최대 규모 — 농장 직배송 빵, 사과, 치즈, 꿀, 꽃. 시즌 과일 시식 + 빵 한 덩이 픽업하면 5분에 끝. 어느 동선이든 Union Sq 지날 때 통과.' },
+        note: { ko: '토요일은 주중 최대 규모 — 농장 직배송 빵, 사과, 치즈, 꿀, 꽃. 시즌 과일 시식 + 빵 한 덩이 픽업하면 5분에 끝. 어느 동선이든 Union Sq 지날 때 통과.', en: 'Saturday is the biggest of the week — farm-direct bread, apples, cheese, honey, flowers. Sample seasonal fruit + grab a loaf in 5 min. Pass through whenever your route hits Union Sq.' } },
       { name: '★ Katz\'s Delicatessen', lat: 40.7223, lng: -73.9874, category: 'Food',
         addr: '205 E Houston St · LES',
-        note: '1888년부터. 파스트라미 샌드위치 ($26)의 본가 — 자르는 사람한테 직접 팁 $1 주고 시식 한 입. "When Harry Met Sally" 그 자리. 줄 길지만 회전 빨라요.' },
+        note: { ko: '1888년부터. 파스트라미 샌드위치 ($26)의 본가 — 자르는 사람한테 직접 팁 $1 주고 시식 한 입. "When Harry Met Sally" 그 자리. 줄 길지만 회전 빨라요.', en: 'Since 1888. The home of the pastrami sandwich ($26) — tip the carver $1 for a sample bite. The "When Harry Met Sally" spot. Long line but fast turnover.' } },
       { name: '★ Russ & Daughters Cafe', lat: 40.7222, lng: -73.9893, category: 'Food',
         addr: '127 Orchard St · LES',
-        note: '4대째 베이글 + 훈제연어. 본점 (179 E Houston)은 to-go, Cafe는 sit-down 풀 메뉴. 토요일 12~2시 웨이팅 — 2:30 이후가 비교적 한산.' },
+        note: { ko: '4대째 베이글 + 훈제연어. 본점 (179 E Houston)은 to-go, Cafe는 sit-down 풀 메뉴. 토요일 12~2시 웨이팅 — 2:30 이후가 비교적 한산.', en: '4th-generation bagels + smoked salmon. The original (179 E Houston) is to-go; the Cafe is sit-down with a full menu. Saturday 12–2 wait — calmer after 2:30.' } },
       { name: '★ Joe\'s Shanghai', lat: 40.7156, lng: -73.9980, category: 'Food',
         addr: '46 Bowery · Chinatown',
-        note: '소룡포 차이나타운 클래식. 게살 버전이 시그니처. 외관 허름해도 줄이 진실. 4명이면 게살 + 일반 두 판씩 + 사이드 — 1인 $20 안에 해결.' },
+        note: { ko: '소룡포 차이나타운 클래식. 게살 버전이 시그니처. 외관 허름해도 줄이 진실. 4명이면 게살 + 일반 두 판씩 + 사이드 — 1인 $20 안에 해결.', en: 'A Chinatown soup-dumpling classic. The crab version is the signature. Looks shabby but the line tells the truth. For 4: two orders each of crab + regular + sides — under $20/person.' } },
       { name: '★ The New Museum', lat: 40.7224, lng: -73.9926, category: 'Design',
         addr: '235 Bowery · LES',
-        note: 'SANAA 디자인 화이트 박스 — 7층 컨템포러리 아트. $22, 90분~2시간. 옥상 Sky Room은 무료 — 다운타운 전망 30분이면 핵심.' },
+        note: { ko: 'SANAA 디자인 화이트 박스 — 7층 컨템포러리 아트. $22, 90분~2시간. 옥상 Sky Room은 무료 — 다운타운 전망 30분이면 핵심.', en: 'SANAA-designed white box — 7 floors of contemporary art. $22, 90 min–2 hrs. The rooftop Sky Room is free — 30 min of downtown views hits the highlights.' } },
       { name: '★ Tenement Museum', lat: 40.7188, lng: -73.9905, category: 'Design',
         addr: '103 Orchard St · LES',
-        note: '19세기 이민자 아파트 복원 — 가이드 투어로만 입장 ($30, 60분, 시간대별). 미리 예약 필수. NYC가 어떻게 만들어졌는지 한 시간에 압축. 가족 단위 추천.' },
+        note: { ko: '19세기 이민자 아파트 복원 — 가이드 투어로만 입장 ($30, 60분, 시간대별). 미리 예약 필수. NYC가 어떻게 만들어졌는지 한 시간에 압축. 가족 단위 추천.', en: 'Restored 19th-c. immigrant apartments — guided tour only ($30, 60 min, timed slots). Book ahead. How NYC was built, in one hour. Great for families.' } },
       { name: '★ Economy Candy', lat: 40.7183, lng: -73.9881, category: 'Shopping',
         addr: '108 Rivington St · LES',
-        note: '1937년부터. 천장까지 빈티지 캔디. 한국에서 보기 힘든 미국 클래식 (Pop Rocks, Razzles, Necco). 봉투에 담아 가는 재미 — 선물용 픽.' },
+        note: { ko: '1937년부터. 천장까지 빈티지 캔디. 한국에서 보기 힘든 미국 클래식 (Pop Rocks, Razzles, Necco). 봉투에 담아 가는 재미 — 선물용 픽.', en: 'Since 1937. Vintage candy to the ceiling. American classics rare in Korea (Pop Rocks, Razzles, Necco). Fun to fill a bag — a gift pick.' } },
       { name: '★ Washington Square Park', lat: 40.7308, lng: -73.9973, category: 'Design',
         addr: 'Fifth Ave & Waverly Pl · West Village',
-        note: '체스 두는 할아버지들, 즉흥 피아노, NYU 학생들. 분수대 주위 30분 사람 구경. Stonewall Inn(인근) + Caffe Reggio (119 MacDougal) 잠깐 들렀다 출발.' },
+        note: { ko: '체스 두는 할아버지들, 즉흥 피아노, NYU 학생들. 분수대 주위 30분 사람 구경. Stonewall Inn(인근) + Caffe Reggio (119 MacDougal) 잠깐 들렀다 출발.', en: 'Old men playing chess, impromptu piano, NYU students. 30 min of people-watching around the fountain. Pop by Stonewall Inn (nearby) + Caffe Reggio (119 MacDougal) on the way out.' } },
       { name: '★ Joe\'s Pizza', lat: 40.7305, lng: -74.0023, category: 'Food',
         addr: '7 Carmine St · West Village',
-        note: 'NYC 슬라이스의 정석. 1975년부터. $4 슬라이스, Spider-Man 영화 그 자리 (홀랜드 터널 부근). 줄은 5분, 서서 먹고 출발 — Washington Sq 직전 픽.' },
+        note: { ko: 'NYC 슬라이스의 정석. 1975년부터. $4 슬라이스, Spider-Man 영화 그 자리 (홀랜드 터널 부근). 줄은 5분, 서서 먹고 출발 — Washington Sq 직전 픽.', en: 'The definitive NYC slice. Since 1975. $4 slice, the Spider-Man movie spot (near the Holland Tunnel). 5-min line, eat standing, go — a pick right before Washington Sq.' } },
       { name: '★ Caffe Reggio', lat: 40.7300, lng: -74.0007, category: 'Coffee',
         addr: '119 MacDougal St · West Village',
-        note: '1927년 — 미국 최초 카푸치노 서빙. 빨간 벨벳 + 1902년 라마르초코 머신. Bob Dylan, Jack Kerouac 단골이었음. 인테리어 자체가 박물관.' },
+        note: { ko: '1927년 — 미국 최초 카푸치노 서빙. 빨간 벨벳 + 1902년 라마르초코 머신. Bob Dylan, Jack Kerouac 단골이었음. 인테리어 자체가 박물관.', en: 'Since 1927 — served America\'s first cappuccino. Red velvet + a 1902 La Marzocco machine. Bob Dylan and Jack Kerouac were regulars. The interior is a museum itself.' } },
       { name: '★ La Cabra', lat: 40.7287, lng: -73.9979, category: 'Coffee',
         addr: '152 2nd Ave · East Village',
-        note: '코펜하겐 출신 노르딕 스페셜티 — NYC 1호점. 밝은 인테리어 + 가벼운 로스트. 카르다몸 번 같이. 동네 분위기 잠깐 환기하기 좋음.' },
+        note: { ko: '코펜하겐 출신 노르딕 스페셜티 — NYC 1호점. 밝은 인테리어 + 가벼운 로스트. 카르다몸 번 같이. 동네 분위기 잠깐 환기하기 좋음.', en: 'Copenhagen-born Nordic specialty — first NYC location. Bright interior + light roasts. Pair with a cardamom bun. Nice for a quick change of pace.' } },
       { name: '★ John Derian Company', lat: 40.7268, lng: -73.9885, category: 'Design',
         addr: '6 E 2nd St · East Village',
-        note: '데쿠파주 트레이로 유명한 큐레이션 홈굿즈. 옆 매장 (Dry Goods, Furniture) 세 곳 같이 봐야 진가 — 디자인 좋아하면 30분 머무름.' },
+        note: { ko: '데쿠파주 트레이로 유명한 큐레이션 홈굿즈. 옆 매장 (Dry Goods, Furniture) 세 곳 같이 봐야 진가 — 디자인 좋아하면 30분 머무름.', en: 'Curated home goods famous for decoupage trays. See all three storefronts (Dry Goods, Furniture) for the full picture — design lovers stay 30 min.' } },
       { name: '★ McSorley\'s Old Ale House', lat: 40.7286, lng: -73.9897, category: 'Food',
         addr: '15 E 7th St · East Village',
-        note: '1854년 — NYC 최고령 술집. 메뉴: 라이트 에일 / 다크 에일 두 가지만, $7씩 두 잔이 한 주문. 톱밥 바닥, 100년 된 벽. 5시쯤 한 잔 — 박물관급.' },
+        note: { ko: '1854년 — NYC 최고령 술집. 메뉴: 라이트 에일 / 다크 에일 두 가지만, $7씩 두 잔이 한 주문. 톱밥 바닥, 100년 된 벽. 5시쯤 한 잔 — 박물관급.', en: 'Since 1854 — NYC\'s oldest bar. Menu: light ale / dark ale only, served two-at-a-time for $7. Sawdust floors, century-old walls. A 5PM pint — museum-grade.' } },
       { name: '★ Pearl River Mart', lat: 40.7170, lng: -74.0019, category: 'Shopping',
         addr: '395 Broadway · Tribeca',
-        note: '1971년부터 — 미국에서 가장 오래된 아시안 디파트먼트. 도자기, 키친웨어, 슬리퍼, 차. 한국 손님들도 의외로 신기한 아이템 발견. 30~45분.' },
+        note: { ko: '1971년부터 — 미국에서 가장 오래된 아시안 디파트먼트. 도자기, 키친웨어, 슬리퍼, 차. 한국 손님들도 의외로 신기한 아이템 발견. 30~45분.', en: 'Since 1971 — America\'s oldest Asian department store. Ceramics, kitchenware, slippers, tea. Even Korean visitors find surprising items. 30–45 min.' } },
 
       // === Designer picks (photo + inspiration) — locally beloved, lower-tourist ===
       { name: '★ Wing on Wo & Co', lat: 40.7158, lng: -73.9974, category: 'Design',
         addr: '26 Mott St · Chinatown',
-        note: '1890년부터 — 차이나타운 최고령 가게. 5대째 도자기 가게를 Mei Lum (W.O.W. Project)이 운영하며 동네 보존 활동까지. 핸드페인트 도자기 + 디자인 + 커뮤니티 스토리. 디자이너 ★★★.' },
+        note: { ko: '1890년부터 — 차이나타운 최고령 가게. 5대째 도자기 가게를 Mei Lum (W.O.W. Project)이 운영하며 동네 보존 활동까지. 핸드페인트 도자기 + 디자인 + 커뮤니티 스토리. 디자이너 ★★★.', en: 'Since 1890 — Chinatown\'s oldest store. A 5th-generation porcelain shop run by Mei Lum (W.O.W. Project), who also leads neighborhood preservation. Hand-painted porcelain + design + community story. Designers ★★★.' } },
       { name: '★ Doyers Street', lat: 40.7142, lng: -73.9979, category: 'Design',
         addr: 'Doyers St · Chinatown',
-        note: '맨해튼에서 유일하게 직각으로 꺾이는 골목 — 19세기 갱단 매복 자리에서 유래 ("Bloody Angle"). Nom Wah Tea Parlor + 페인팅된 골목 벽. 1분이면 끝나지만 사진 한 장 무조건.' },
+        note: { ko: '맨해튼에서 유일하게 직각으로 꺾이는 골목 — 19세기 갱단 매복 자리에서 유래 ("Bloody Angle"). Nom Wah Tea Parlor + 페인팅된 골목 벽. 1분이면 끝나지만 사진 한 장 무조건.', en: 'Manhattan\'s only sharply bent alley — born from 19th-c. gang ambushes ("Bloody Angle"). Nom Wah Tea Parlor + painted alley walls. A 1-min stop but a must for a photo.' } },
       { name: '★ Nom Wah Tea Parlor', lat: 40.7142, lng: -73.9979, category: 'Food',
         addr: '13 Doyers St · Chinatown',
-        note: '1920년 오픈 — 맨해튼 최고령 딤섬. 빈티지 카운터 + 노란 패키지의 차 박스. 점심 후라면 차 + 딤섬 한두 개로 분위기만 — 인테리어가 디자인 레퍼런스.' },
+        note: { ko: '1920년 오픈 — 맨해튼 최고령 딤섬. 빈티지 카운터 + 노란 패키지의 차 박스. 점심 후라면 차 + 딤섬 한두 개로 분위기만 — 인테리어가 디자인 레퍼런스.', en: 'Opened 1920 — Manhattan\'s oldest dim sum. Vintage counter + yellow-boxed teas. If you\'ve eaten, just tea + a dumpling or two for the vibe — the interior is a design reference.' } },
       { name: '★ Coming Soon', lat: 40.7142, lng: -73.9929, category: 'Design',
         addr: '53 Canal St · LES',
-        note: 'Sara Berks가 만든 인디 디자인 스토어. 위트 있는 가정용품 + 신진 디자이너 셀렉션. Instagram보다 매장이 100배 — 제품 디자이너 영감 ★★★.' },
+        note: { ko: 'Sara Berks가 만든 인디 디자인 스토어. 위트 있는 가정용품 + 신진 디자이너 셀렉션. Instagram보다 매장이 100배 — 제품 디자이너 영감 ★★★.', en: 'Indie design store by Sara Berks. Witty homewares + emerging-designer picks. The store is 100× the Instagram — product-designer inspiration ★★★.' } },
       { name: '★ Dover Street Market NY', lat: 40.7479, lng: -73.9851, category: 'Design',
         addr: '160 Lexington Ave · NoMad',
-        note: 'Rei Kawakubo (Comme des Garçons) 큐레이션 멀티 브랜드. 7층, 매장 자체가 작품. Oiji Mi 가는 길에 23rd St 환승하며 30분 들리기 좋음. Rose Bakery 카페도 그 안.' },
+        note: { ko: 'Rei Kawakubo (Comme des Garçons) 큐레이션 멀티 브랜드. 7층, 매장 자체가 작품. Oiji Mi 가는 길에 23rd St 환승하며 30분 들리기 좋음. Rose Bakery 카페도 그 안.', en: 'Multi-brand curated by Rei Kawakubo (Comme des Garçons). 7 floors, the store itself is an artwork. Easy 30-min stop transferring at 23rd St on the way to Oiji Mi. Rose Bakery café inside too.' } },
       { name: '★ ABC Carpet & Home', lat: 40.7378, lng: -73.9898, category: 'Design',
         addr: '888 Broadway · Flatiron',
-        note: '6층 거대한 디자인 백화점 — 빈티지 카펫, 라이팅, 그릇, 가구. Oiji Mi 바로 옆 (도보 3분). 6시 전 닫혀서 5시 전에 가야 함. 영감 ★★★.' },
+        note: { ko: '6층 거대한 디자인 백화점 — 빈티지 카펫, 라이팅, 그릇, 가구. Oiji Mi 바로 옆 (도보 3분). 6시 전 닫혀서 5시 전에 가야 함. 영감 ★★★.', en: '6 floors of a vast design emporium — vintage rugs, lighting, tableware, furniture. Right by Oiji Mi (3 min walk). Closes before 6 — go before 5. Inspiration ★★★.' } },
       { name: '★ Astor Place Cube', lat: 40.7297, lng: -73.9914, category: 'Design',
         addr: 'Astor Pl & Lafayette · East Village',
-        note: 'Tony Rosenthal의 회전 큐브 (Alamo, 1967). 손으로 밀면 돌아감. NYC 퍼블릭 아트 클래식. 옆 Astor Pl 지하철역 모자이크 비버 (역사 디자인 디테일) 같이.' },
+        note: { ko: 'Tony Rosenthal의 회전 큐브 (Alamo, 1967). 손으로 밀면 돌아감. NYC 퍼블릭 아트 클래식. 옆 Astor Pl 지하철역 모자이크 비버 (역사 디자인 디테일) 같이.', en: 'Tony Rosenthal\'s rotating cube (Alamo, 1967). Push it by hand and it spins. An NYC public-art classic. Pair with the mosaic beavers in the Astor Pl subway station (a historic design detail).' } },
       { name: '★ Mosaic Trail (E 8th)', lat: 40.7295, lng: -73.9912, category: 'Design',
         addr: 'E 8th St & 4th Ave · East Village',
-        note: 'Jim Power "Mosaic Man"이 30년간 거리 가로등에 박은 모자이크. Astor Pl ~ Tompkins Sq 사이 80개+. 걷는 동선 자체가 야외 갤러리.' },
+        note: { ko: 'Jim Power "Mosaic Man"이 30년간 거리 가로등에 박은 모자이크. Astor Pl ~ Tompkins Sq 사이 80개+. 걷는 동선 자체가 야외 갤러리.', en: 'Mosaics that Jim Power, the "Mosaic Man," embedded on street lampposts over 30 years. 80+ between Astor Pl and Tompkins Sq. The walk itself is an outdoor gallery.' } },
 
       // === Sample sales + designer resale (Spring/Summer season peak) ===
       // 일정은 자주 바뀌니까 가기 전 현서비서한테 "이번 주 sample sale 뭐 있어?" 물어보면 web search로 확인해줘요.
       { name: '★ 260 Sample Sale', lat: 40.7444, lng: -73.9881, category: 'Shopping',
         addr: '260 Fifth Ave · NoMad',
-        note: 'NYC 샘플세일의 본진 — Jonathan Simkhai, Khaite, Veronica Beard 같은 컨템퍼러리 브랜드가 50~70% off로 돌아가며 열려요. 보통 5~7일 단위 이벤트. 인스타 @260samplesale 에서 현재 무슨 브랜드인지 확인하고 가기.' },
+        note: { ko: 'NYC 샘플세일의 본진 — Jonathan Simkhai, Khaite, Veronica Beard 같은 컨템퍼러리 브랜드가 50~70% off로 돌아가며 열려요. 보통 5~7일 단위 이벤트. 인스타 @260samplesale 에서 현재 무슨 브랜드인지 확인하고 가기.', en: 'Home base of NYC sample sales — contemporary brands like Jonathan Simkhai, Khaite, Veronica Beard rotate through at 50–70% off. Usually 5–7 day events. Check @260samplesale on IG for the current brand before going.' } },
       { name: '★ Soiffer Haskin', lat: 40.7530, lng: -73.9942, category: 'Shopping',
         addr: '317 W 33rd St · Garment District',
-        note: '뉴욕 샘플세일계의 양대 산맥 (260과 함께). Vince, Theory, Tory Burch, Marc Jacobs 등 럭셔리 라인이 자주. Penn Station 바로 위 — 일정 있으면 효율적. 현금/카드 둘 다.' },
+        note: { ko: '뉴욕 샘플세일계의 양대 산맥 (260과 함께). Vince, Theory, Tory Burch, Marc Jacobs 등 럭셔리 라인이 자주. Penn Station 바로 위 — 일정 있으면 효율적. 현금/카드 둘 다.', en: 'One of NYC\'s two sample-sale heavyweights (with 260). Luxury lines like Vince, Theory, Tory Burch, Marc Jacobs often. Right above Penn Station — efficient if there\'s an event. Cash or card.' } },
       { name: '★ Beacon\'s Closet (Union Sq)', lat: 40.7353, lng: -73.9957, category: 'Shopping',
         addr: '10 W 13th St · Union Sq',
-        note: '뉴욕 디자이너 위탁판매의 정석. 큐레이션 빡세서 잡템 거의 없음 — Acne, A.P.C., Comme, Margiela 같은 게 흔함. 가격 $30~150 사이가 많아 한국 가져갈 만함. 주말 오후 가장 회전 빠름.' },
+        note: { ko: '뉴욕 디자이너 위탁판매의 정석. 큐레이션 빡세서 잡템 거의 없음 — Acne, A.P.C., Comme, Margiela 같은 게 흔함. 가격 $30~150 사이가 많아 한국 가져갈 만함. 주말 오후 가장 회전 빠름.', en: 'The standard for NYC designer consignment. Tight curation, little filler — Acne, A.P.C., Comme, Margiela are common. Mostly $30–150, worth taking back to Korea. Fastest turnover on weekend afternoons.' } },
       { name: '★ Crossroads Trading', lat: 40.7368, lng: -73.9960, category: 'Shopping',
         addr: '24 W 14th St · Union Sq',
-        note: 'Beacon\'s보다 더 컨템퍼러리 + 캐주얼 — Madewell, J.Crew, Reformation 같은 라인이 많음. 가격 $15~80. Beacon\'s 바로 옆이라 같이 봐도 좋아요.' },
+        note: { ko: 'Beacon\'s보다 더 컨템퍼러리 + 캐주얼 — Madewell, J.Crew, Reformation 같은 라인이 많음. 가격 $15~80. Beacon\'s 바로 옆이라 같이 봐도 좋아요.', en: 'More contemporary + casual than Beacon\'s — lots of Madewell, J.Crew, Reformation. $15–80. Right next to Beacon\'s, so do both.' } },
       { name: '★ The RealReal SoHo', lat: 40.7239, lng: -74.0021, category: 'Shopping',
         addr: '80 Wooster St · SoHo',
-        note: '럭셔리 위탁의 강자 — Hermès, Chanel, Bottega, Loewe 진품 인증된 중고. 매장에서 직접 만져보고 살 수 있는 게 메리트. 가격대 $200~수천 $. 디자이너 visit으로 좋아요.' },
+        note: { ko: '럭셔리 위탁의 강자 — Hermès, Chanel, Bottega, Loewe 진품 인증된 중고. 매장에서 직접 만져보고 살 수 있는 게 메리트. 가격대 $200~수천 $. 디자이너 visit으로 좋아요.', en: 'A luxury-consignment powerhouse — authenticated pre-owned Hermès, Chanel, Bottega, Loewe. The draw is handling pieces in person. $200 to several thousand. Good for a designer visit.' } },
       { name: '★ Awoke Vintage SoHo', lat: 40.7244, lng: -73.9990, category: 'Shopping',
         addr: '116 Mercer St · SoHo',
-        note: 'Brooklyn 본점의 SoHo 분점 — 70s-90s 빈티지 의류 큐레이션. 가격 $40~150. Aimé Leon Dore 인근이라 동선에 끼워넣기.' },
+        note: { ko: 'Brooklyn 본점의 SoHo 분점 — 70s-90s 빈티지 의류 큐레이션. 가격 $40~150. Aimé Leon Dore 인근이라 동선에 끼워넣기.', en: 'SoHo outpost of the Brooklyn original — curated 70s–90s vintage clothing. $40–150. Near Aimé Leon Dore, easy to slot in.' } },
 
       // === Hot food picks (요즘 핫한 곳) ===
       { name: '★ Golden Diner', lat: 40.7127, lng: -73.9918, category: 'Food',
         addr: '123 Madison St · Two Bridges',
-        note: '셰프 Sam Yoo의 코리안-아메리칸 다이너. 허니버터 토스트, 베이컨 에그 치즈, 더블 치즈버거. Chinatown/LES 동선 끝자락 (Two Bridges). 점심 피크 웨이팅 — 2시 전후 노려요.' },
+        note: { ko: '셰프 Sam Yoo의 코리안-아메리칸 다이너. 허니버터 토스트, 베이컨 에그 치즈, 더블 치즈버거. Chinatown/LES 동선 끝자락 (Two Bridges). 점심 피크 웨이팅 — 2시 전후 노려요.', en: 'Chef Sam Yoo\'s Korean-American diner. Honey-butter toast, bacon egg & cheese, double cheeseburger. At the tail end of the Chinatown/LES route (Two Bridges). Lunch-peak wait — aim for around 2.' } },
       { name: '★ PopUp Bagels', lat: 40.7335, lng: -74.0009, category: 'Food',
         addr: '177 W 4th St · West Village',
-        note: '2020년대 뉴욕 베이글 신성 — 따뜻하게 통째로 주고 크림치즈는 찍어먹는 방식. 플레인 + 시즌 스프레드. West Village 픽이라 Washington Sq 루트(C)에 끼우기 좋음. 보통 오전~점심.' },
+        note: { ko: '2020년대 뉴욕 베이글 신성 — 따뜻하게 통째로 주고 크림치즈는 찍어먹는 방식. 플레인 + 시즌 스프레드. West Village 픽이라 Washington Sq 루트(C)에 끼우기 좋음. 보통 오전~점심.', en: 'The 2020s NYC bagel star — served warm and whole, with cream cheese for dipping. Plain + seasonal spreads. A West Village pick, easy to slot into the Washington Sq route (C). Usually morning–lunch.' } },
       { name: '★ COQODAQ', lat: 40.7408, lng: -73.9904, category: 'Food',
         addr: '20 W 22nd St · Flatiron',
-        note: 'Cote 팀의 코리안 프라이드 치킨 — "치킨계의 성당" 컨셉. 풀코스 + 샴페인 페어링도. Flatiron이라 Oiji Mi(7PM) 근처지만 둘 다는 무리 — 다른 날 저녁 대안으로. 예약(Resy) 강추.' },
+        note: { ko: 'Cote 팀의 코리안 프라이드 치킨 — "치킨계의 성당" 컨셉. 풀코스 + 샴페인 페어링도. Flatiron이라 Oiji Mi(7PM) 근처지만 둘 다는 무리 — 다른 날 저녁 대안으로. 예약(Resy) 강추.', en: 'Korean fried chicken from the Cote team — a "cathedral of chicken" concept. Full course + Champagne pairings. In Flatiron near Oiji Mi (7PM) but both is too much — keep as a dinner alt for another night. Reserve on Resy.' } },
       { name: '★ Pranakhon Thai', lat: 40.7338, lng: -73.9928, category: 'Food',
         addr: '88 University Pl · Greenwich Village',
-        note: 'University Pl & 11th St — Union Square 바로 아래 빌리지. 태국 가정식 분위기. Strand/Union Sq Greenmarket 동선이랑 같은 구역이라 토요일 오후에 딱. 점심/저녁 둘 다 OK.' },
+        note: { ko: 'University Pl & 11th St — Union Square 바로 아래 빌리지. 태국 가정식 분위기. Strand/Union Sq Greenmarket 동선이랑 같은 구역이라 토요일 오후에 딱. 점심/저녁 둘 다 OK.', en: 'University Pl & 11th St — the Village just below Union Square. Thai home-cooking vibe. Same area as the Strand/Union Sq Greenmarket route, perfect for a Saturday afternoon. Lunch or dinner.' } },
     ]
   },
   { day: 2, num: 15, time: '7:00 PM', name: 'Oiji Mi',
     lat: 40.7396687, lng: -73.9924795, address: '17 W 19th St · Flatiron',
-    transit: '오후 동선에서 6 train 또는 도보로 23 St 방향',
-    note: '미슐랭 ★ 모던 코리안. 테이스팅 메뉴 추천. 식사 후 호텔까지 Uber 10분 또는 6 train 한 번.',
+    transit: { ko: '오후 동선에서 6 train 또는 도보로 23 St 방향', en: 'From the afternoon route, 6 train or walk toward 23 St' },
+    note: { ko: '미슐랭 ★ 모던 코리안. 테이스팅 메뉴 추천. 식사 후 호텔까지 Uber 10분 또는 6 train 한 번.', en: 'Michelin ★ modern Korean. Tasting menu recommended. After dinner, 10 min Uber to the hotel or one 6 train.' },
     gmaps: 'https://maps.google.com/?q=Oiji+Mi+New+York',
     featured: true, tag: '★ Reserved' },
-  { day: 3, num: 16, time: '9:00 AM', name: 'InterContinental Barclay · 출발',
+  { day: 3, num: 16, time: '9:00 AM', name: { ko: 'InterContinental Barclay · 출발', en: 'InterContinental Barclay · Depart' },
     lat: 40.7556629, lng: -73.9735276, address: '111 E 48th St',
-    transit: '체크아웃 · 짐 벨홉에 맡기고 출발',
-    note: '오후 3시쯤 짐 픽업하러 복귀. 6 train으로 UES 방향.',
+    transit: { ko: '체크아웃 · 짐 벨홉에 맡기고 출발', en: 'Check out · leave bags with the bellhop and head out' },
+    note: { ko: '오후 3시쯤 짐 픽업하러 복귀. 6 train으로 UES 방향.', en: 'Return around 3PM to grab the bags. 6 train toward the UES.' },
     gmaps: 'https://maps.google.com/?q=InterContinental+New+York+Barclay' },
   { day: 3, num: 17, time: '9:30 AM', name: 'Sant Ambroeus · UES',
     lat: 40.7748, lng: -73.9636, address: '1000 Madison Ave · 78th St',
-    transit: '6 train Grand Central → 77 St (~8분) + 도보 4분',
-    note: '클래식 밀라네제 카페. 카푸치노 + 코르네토 to-go. 리뷰 4.5+. 30분 정도 마시거나 들고 출발.',
+    transit: { ko: '6 train Grand Central → 77 St (~8분) + 도보 4분', en: '6 train Grand Central → 77 St (~8 min) + 4 min walk' },
+    note: { ko: '클래식 밀라네제 카페. 카푸치노 + 코르네토 to-go. 리뷰 4.5+. 30분 정도 마시거나 들고 출발.', en: 'Classic Milanese café. Cappuccino + cornetto to go. 4.5+ reviews. Sip for ~30 min or take it with you.' },
     gmaps: 'https://maps.google.com/?q=Sant+Ambroeus+Madison+Ave' },
   { day: 3, num: 18, time: '10:30 AM', name: 'Museum of Natural History',
     lat: 40.7813, lng: -73.9740, address: 'Central Park West & 79th St',
-    transit: 'Sant Ambroeus(UES) → AMNH(UWS) · 약 0.9mi · Central Park 가로질러',
+    transit: { ko: 'Sant Ambroeus(UES) → AMNH(UWS) · 약 0.9mi · Central Park 가로질러', en: 'Sant Ambroeus (UES) → AMNH (UWS) · ~0.9mi · across Central Park' },
     routeOptions: [
-      { mode: 'walk', label: '도보', time: '15~20분', cost: '무료', best: true,
-        detail: '79th St Transverse로 공원 가로질러 (Great Lawn 옆 → CPW 출구). The Mall/Bethesda 포토 스팟 지나감. 일요일 오전 산책 베스트.' },
-      { mode: 'bike', label: 'Citi Bike', time: '10분', cost: '$4.79',
-        detail: '공원 길 따라 라이딩. 주말이라 차 없음. 짐 없고 빨리 가고 싶으면.' },
-      { mode: 'uber', label: 'Uber / 버스', time: '10~15분', cost: '$10~14 / $2.90',
-        detail: '79th St는 공원 횡단 차도라 차로도 가능하지만 돌아감. M79 크로스타운 버스도 옵션. 비 오면.' },
+      { mode: 'walk', label: { ko: '도보', en: 'Walk' }, time: { ko: '15~20분', en: '15~20 min' }, cost: { ko: '무료', en: 'Free' }, best: true,
+        detail: { ko: '79th St Transverse로 공원 가로질러 (Great Lawn 옆 → CPW 출구). The Mall/Bethesda 포토 스팟 지나감. 일요일 오전 산책 베스트.', en: 'Cross the park via the 79th St Transverse (past Great Lawn → CPW exit). Passes The Mall/Bethesda photo spots. Best as a Sunday-morning walk.' } },
+      { mode: 'bike', label: 'Citi Bike', time: { ko: '10분', en: '10 min' }, cost: '$4.79',
+        detail: { ko: '공원 길 따라 라이딩. 주말이라 차 없음. 짐 없고 빨리 가고 싶으면.', en: 'Ride the park roads. Car-free on weekends. If you have no bags and want speed.' } },
+      { mode: 'uber', label: { ko: 'Uber / 버스', en: 'Uber / Bus' }, time: { ko: '10~15분', en: '10~15 min' }, cost: '$10~14 / $2.90',
+        detail: { ko: '79th St는 공원 횡단 차도라 차로도 가능하지만 돌아감. M79 크로스타운 버스도 옵션. 비 오면.', en: '79th St is a park-crossing road so a car works but detours. The M79 crosstown bus is an option too. For rain.' } },
     ],
-    note: '10AM 오픈. 일반 입장 $28, Space Show 포함 $34. 추천: African Mammals / Ocean Life / Rose Center 우주관. 2~2.5시간 관람 + 점심 (아래 픽 참고). 1시쯤 나와서 Lincoln Center 들렀다 호텔 복귀.\n\n🚲 Citi Bike 일요일 루트: Central Park West/East Drive는 주말 차량 통제 — AMNH 앞 도크에서 한 대 잡고 72nd St 로어 루프 한 바퀴 (~1.7mi, 20~30분) 돌고 반납. Day pass $19 또는 single ride $4.79. 헬멧 없어도 OK, 평지.',
+    note: { ko: '10AM 오픈. 일반 입장 $28, Space Show 포함 $34. 추천: African Mammals / Ocean Life / Rose Center 우주관. 2~2.5시간 관람 + 점심 (아래 픽 참고). 1시쯤 나와서 Lincoln Center 들렀다 호텔 복귀.\n\n🚲 Citi Bike 일요일 루트: Central Park West/East Drive는 주말 차량 통제 — AMNH 앞 도크에서 한 대 잡고 72nd St 로어 루프 한 바퀴 (~1.7mi, 20~30분) 돌고 반납. Day pass $19 또는 single ride $4.79. 헬멧 없어도 OK, 평지.', en: 'Opens 10AM. General admission $28, $34 with the Space Show. Recommended: African Mammals / Ocean Life / Rose Center planetarium. 2–2.5 hrs + lunch (see picks below). Leave around 1, stop at Lincoln Center, then back to the hotel.\n\n🚲 Citi Bike Sunday route: Central Park West/East Drive are car-free on weekends — grab a bike at the dock in front of AMNH, do the 72nd St lower loop (~1.7mi, 20–30 min), and dock it. Day pass $19 or single ride $4.79. No helmet needed, flat terrain.' },
     gmaps: 'https://maps.google.com/?q=American+Museum+of+Natural+History',
     featured: true, tag: 'Museum',
     points: [
-      { name: 'Levain Bakery',             lat: 40.7795, lng: -73.9808, category: 'Food',   addr: '167 W 74th St',  note: '전설의 6oz 청키 쿠키. UWS 본점. 박물관 후 디저트로 픽. 줄 서지만 회전 빨라요.' },
-      { name: 'Variety Coffee Roasters',   lat: 40.7770, lng: -73.9805, category: 'Coffee', addr: '162 W 72nd St',  note: '브루클린 출신 로컬 로스터의 UWS 점. 조용하고 진하게. 광고 없는 진짜 로컬 사랑.' },
+      { name: 'Levain Bakery',             lat: 40.7795, lng: -73.9808, category: 'Food',   addr: '167 W 74th St',  note: { ko: '전설의 6oz 청키 쿠키. UWS 본점. 박물관 후 디저트로 픽. 줄 서지만 회전 빨라요.', en: 'The legendary 6oz chunky cookie. UWS original. A post-museum dessert pick. There\'s a line but it moves fast.' } },
+      { name: 'Variety Coffee Roasters',   lat: 40.7770, lng: -73.9805, category: 'Coffee', addr: '162 W 72nd St',  note: { ko: '브루클린 출신 로컬 로스터의 UWS 점. 조용하고 진하게. 광고 없는 진짜 로컬 사랑.', en: 'UWS branch of a Brooklyn-born local roaster. Quiet and strong. A genuine local favorite, no hype.' } },
       // === Central Park photo waypoints (걷는 동선 위) ===
       { name: '★ Bethesda Terrace & Fountain', lat: 40.7740, lng: -73.9710, category: 'Design', addr: 'Mid-Park · 72nd St',
-        note: 'Calvert Vaux 디자인 (1864). 천장 미네톤 타일 + 분수대 천사상 (Angel of the Waters). 일요일 오전엔 가스펠 공연도 종종. 5~10분 머무를 만한 NYC 대표 포토.' },
+        note: { ko: 'Calvert Vaux 디자인 (1864). 천장 미네톤 타일 + 분수대 천사상 (Angel of the Waters). 일요일 오전엔 가스펠 공연도 종종. 5~10분 머무를 만한 NYC 대표 포토.', en: 'Designed by Calvert Vaux (1864). Minton-tile ceiling + the fountain\'s Angel of the Waters. Gospel performances often on Sunday mornings. A 5–10 min stop, a signature NYC photo.' } },
       { name: '★ Bow Bridge', lat: 40.7760, lng: -73.9722, category: 'Design', addr: 'The Lake · 74th St',
-        note: '주철 아치 다리 (1862). NYC 영화에 가장 많이 나온 다리 — Manhattan, Spider-Man 등. The Lake 위 호수 반사 + 보트 배경. 정면 + 사이드 둘 다 찍을 만함.' },
+        note: { ko: '주철 아치 다리 (1862). NYC 영화에 가장 많이 나온 다리 — Manhattan, Spider-Man 등. The Lake 위 호수 반사 + 보트 배경. 정면 + 사이드 둘 다 찍을 만함.', en: 'Cast-iron arched bridge (1862). The most-filmed bridge in NYC movies — Manhattan, Spider-Man, etc. Lake reflections + rowboats behind. Worth shooting head-on and from the side.' } },
       { name: '★ The Mall (Literary Walk)', lat: 40.7732, lng: -73.9712, category: 'Design', addr: 'Mid-Park · 66th–72nd St',
-        note: '뉴욕에서 가장 큰 미국 느릅나무 (American Elm) 가로수길. 일요일 오전엔 햇살 새어들고 — 영화에서 본 그 길. Sant Ambroeus → AMNH 가로지를 때 자연스럽게 지나감.' },
+        note: { ko: '뉴욕에서 가장 큰 미국 느릅나무 (American Elm) 가로수길. 일요일 오전엔 햇살 새어들고 — 영화에서 본 그 길. Sant Ambroeus → AMNH 가로지를 때 자연스럽게 지나감.', en: 'A promenade of NYC\'s largest American Elms. Sunday-morning light filters through — that path from the movies. You pass it naturally crossing from Sant Ambroeus → AMNH.' } },
       { name: '★ Cherry Hill Fountain', lat: 40.7745, lng: -73.9740, category: 'Design', addr: 'Mid-Park · 72nd St',
-        note: 'Bow Bridge 옆 작은 분수 + 벚꽃 (5월 말이라 잎만 무성). Bethesda → Bow Bridge 동선에서 1분. 사람 적고 사진 차분.' },
+        note: { ko: 'Bow Bridge 옆 작은 분수 + 벚꽃 (5월 말이라 잎만 무성). Bethesda → Bow Bridge 동선에서 1분. 사람 적고 사진 차분.', en: 'A small fountain by Bow Bridge + cherry trees (just leaves by late May). 1 min off the Bethesda → Bow Bridge path. Fewer people, calmer photos.' } },
     ]
   },
   { day: 3, num: 19, time: '1:30 PM', name: 'Lincoln Center',
     lat: 40.7725, lng: -73.9835, address: 'Columbus Ave & 63rd St · UWS',
-    transit: 'AMNH(79th) → Lincoln Center(63rd) · 약 0.8mi 남쪽',
+    transit: { ko: 'AMNH(79th) → Lincoln Center(63rd) · 약 0.8mi 남쪽', en: 'AMNH (79th) → Lincoln Center (63rd) · ~0.8mi south' },
     routeOptions: [
-      { mode: 'subway', label: '지하철', time: '5분', cost: '$2.90', best: true,
-        detail: '1 train 79 St → 66 St-Lincoln Center, 한 번에 직행. 역에서 광장 도보 2분. 가장 빠름.' },
-      { mode: 'walk', label: '도보', time: '15분', cost: '무료',
-        detail: 'Columbus Ave 따라 남쪽 16블록. UWS 동네 분위기 + 가게 구경. 날 좋으면 추천.' },
-      { mode: 'bike', label: 'Citi Bike', time: '8분', cost: '$4.79',
-        detail: 'Columbus Ave 자전거 레인으로 쭉 남쪽. 평지, 빠름.' },
+      { mode: 'subway', label: { ko: '지하철', en: 'Subway' }, time: { ko: '5분', en: '5 min' }, cost: '$2.90', best: true,
+        detail: { ko: '1 train 79 St → 66 St-Lincoln Center, 한 번에 직행. 역에서 광장 도보 2분. 가장 빠름.', en: '1 train 79 St → 66 St-Lincoln Center, direct in one ride. 2 min walk from the station to the plaza. Fastest.' } },
+      { mode: 'walk', label: { ko: '도보', en: 'Walk' }, time: { ko: '15분', en: '15 min' }, cost: { ko: '무료', en: 'Free' },
+        detail: { ko: 'Columbus Ave 따라 남쪽 16블록. UWS 동네 분위기 + 가게 구경. 날 좋으면 추천.', en: '16 blocks south along Columbus Ave. UWS neighborhood feel + shop-browsing. Recommended on a nice day.' } },
+      { mode: 'bike', label: 'Citi Bike', time: { ko: '8분', en: '8 min' }, cost: '$4.79',
+        detail: { ko: 'Columbus Ave 자전거 레인으로 쭉 남쪽. 평지, 빠름.', en: 'Straight south in the Columbus Ave bike lane. Flat, fast.' } },
     ],
-    note: 'Josie Robertson Plaza 분수(Revson Fountain) + Metropolitan Opera 파사드(로비 안 Chagall 벽화). 공연 없어도 광장 사진 + David Geffen Hall 로비 구경. 30~45분. 디자이너라면 Diller Scofidio + Renfro 리노베이션 디테일(잔디 지붕 Hypar Pavilion) 볼 만.',
+    note: { ko: 'Josie Robertson Plaza 분수(Revson Fountain) + Metropolitan Opera 파사드(로비 안 Chagall 벽화). 공연 없어도 광장 사진 + David Geffen Hall 로비 구경. 30~45분. 디자이너라면 Diller Scofidio + Renfro 리노베이션 디테일(잔디 지붕 Hypar Pavilion) 볼 만.', en: 'Josie Robertson Plaza fountain (Revson Fountain) + the Metropolitan Opera façade (Chagall murals inside the lobby). Even with no show, photos on the plaza + the David Geffen Hall lobby. 30–45 min. Designers: the Diller Scofidio + Renfro renovation details (the grass-roofed Hypar Pavilion) are worth a look.' },
     gmaps: 'https://maps.google.com/?q=Lincoln+Center+for+the+Performing+Arts',
     featured: true, tag: 'Arts' },
-  { day: 3, num: 20, time: '3:00 PM', name: 'InterContinental Barclay · 짐 픽업',
+  { day: 3, num: 20, time: '3:00 PM', name: { ko: 'InterContinental Barclay · 짐 픽업', en: 'InterContinental Barclay · Bag pickup' },
     lat: 40.7556629, lng: -73.9735276, address: '111 E 48th St',
-    transit: 'Lincoln Center → Midtown · 1 train 66 St → Times Sq + 도보, 또는 Uber 15분',
-    note: '벨홉에서 짐 찾고 화장실 + 정리. 30~45분 여유. Uber XL 호출 (JFK까지 ~$100~120).',
+    transit: { ko: 'Lincoln Center → Midtown · 1 train 66 St → Times Sq + 도보, 또는 Uber 15분', en: 'Lincoln Center → Midtown · 1 train 66 St → Times Sq + walk, or 15 min Uber' },
+    note: { ko: '벨홉에서 짐 찾고 화장실 + 정리. 30~45분 여유. Uber XL 호출 (JFK까지 ~$100~120).', en: 'Grab the bags from the bellhop, restroom + regroup. 30–45 min buffer. Call an Uber XL (~$100–120 to JFK).' },
     gmaps: 'https://maps.google.com/?q=InterContinental+New+York+Barclay' },
   { day: 3, num: 21, time: '4:00 PM', name: 'Hotel → JFK',
-    lat: 40.6446161, lng: -73.7797222, address: 'B6 615 · 6:29 PM 출발',
-    transit: 'Midtown → JFK · 4:15 출발',
-    note: '러시아워라 일찍 출발. 옵션:\n① Uber XL — 가장 편함, ~50~70분, $100~120. 트래픽 변수.\n② 익스프레스(train): 호텔 도보 7분 → Grand Central Madison → LIRR → Jamaica → AirTrain (~40분, 러시아워에도 정시성 좋음). 호텔 바로 옆이라 짐 끌고 가기 편함.\n③ 로컬: E train (Midtown → Jamaica) → AirTrain (~60분, 가장 저렴, $2.90 + $8.50).\nJFK 5:15 PM 도착 목표. 10:19 PM SFO 도착.',
+    lat: 40.6446161, lng: -73.7797222, address: { ko: 'B6 615 · 6:29 PM 출발', en: 'B6 615 · departs 6:29 PM' },
+    transit: { ko: 'Midtown → JFK · 4:15 출발', en: 'Midtown → JFK · leave by 4:15' },
+    note: { ko: '러시아워라 일찍 출발. 옵션:\n① Uber XL — 가장 편함, ~50~70분, $100~120. 트래픽 변수.\n② 익스프레스(train): 호텔 도보 7분 → Grand Central Madison → LIRR → Jamaica → AirTrain (~40분, 러시아워에도 정시성 좋음). 호텔 바로 옆이라 짐 끌고 가기 편함.\n③ 로컬: E train (Midtown → Jamaica) → AirTrain (~60분, 가장 저렴, $2.90 + $8.50).\nJFK 5:15 PM 도착 목표. 10:19 PM SFO 도착.', en: 'Leave early — rush hour. Options:\n① Uber XL — easiest, ~50–70 min, $100–120. Traffic-dependent.\n② Express (train): 7 min walk → Grand Central Madison → LIRR → Jamaica → AirTrain (~40 min, reliable even in rush hour). Right by the hotel, easy to roll bags.\n③ Local: E train (Midtown → Jamaica) → AirTrain (~60 min, cheapest, $2.90 + $8.50).\nAim to reach JFK by 5:15 PM. Arrive SFO 10:19 PM.' },
     gmaps: 'https://maps.google.com/?q=JFK+Airport' },
 ];
 
@@ -1559,15 +1594,22 @@ const isMobile = () => window.innerWidth <= 900;
 
 // =========== RENDER SIDEBAR LIST ===========
 const itineraryEl = document.getElementById('itinerary');
-[1, 2, 3].forEach(d => {
+const DAY_EYEBROW = {
+  1: { ko: '첫째 날', en: 'Day One' },
+  2: { ko: '둘째 날', en: 'Day Two' },
+  3: { ko: '셋째 날', en: 'Day Three' },
+};
+function renderList() {
+  itineraryEl.innerHTML = '';
+  [1, 2, 3].forEach(d => {
   const section = document.createElement('section');
   section.className = 'day-section';
   section.dataset.day = d;
   section.innerHTML = `
     <div class="day-header">
-      <div class="day-eyebrow"><span class="day-dot day-${d}-dot"></span>Day ${d.toString().padStart(2,'0')} · ${d === 1 ? '첫째' : d === 2 ? '둘째' : '셋째'} 날</div>
-      <div class="day-name">${dayLabels[d].name}</div>
-      <div class="day-date">${dayLabels[d].date} · 2026</div>
+      <div class="day-eyebrow"><span class="day-dot day-${d}-dot"></span>Day ${d.toString().padStart(2,'0')} · ${tr(DAY_EYEBROW[d])}</div>
+      <div class="day-name">${tr(dayLabels[d].name)}</div>
+      <div class="day-date">${tr(dayLabels[d].date)} · 2026</div>
     </div>
     <div class="stops"></div>
   `;
@@ -1579,42 +1621,42 @@ const itineraryEl = document.getElementById('itinerary');
     el.innerHTML = `
       <div class="stop-marker-col">
         <div class="stop-num">${stop.num}</div>
-        <div class="stop-time">${stop.time}</div>
+        <div class="stop-time">${tr(stop.time)}</div>
       </div>
       <div class="stop-content">
-        <div class="stop-name">${stop.name}</div>
+        <div class="stop-name">${tr(stop.name)}</div>
         <div class="stop-meta">
-          <span class="stop-address">${stop.address}</span>
-          ${stop.tag ? `<span class="tag ${stop.featured ? 'featured' : ''}">${stop.tag}</span>` : ''}
+          <span class="stop-address">${tr(stop.address)}</span>
+          ${stop.tag ? `<span class="tag ${stop.featured ? 'featured' : ''}">${tr(stop.tag)}</span>` : ''}
         </div>
-        ${stop.transit ? `<div class="stop-transit ko">${stop.transit}</div>` : ''}
+        ${stop.transit ? `<div class="stop-transit ko">${tr(stop.transit)}</div>` : ''}
         ${stop.routeOptions ? `
           <div class="route-options">
-            <div class="route-options-label">How to get here · 옵션</div>
+            <div class="route-options-label">${loc('How to get here · 옵션', 'How to get here')}</div>
             ${stop.routeOptions.map(r => `
               <div class="route-option" data-mode="${r.mode}">
                 <div class="route-option-head">
-                  <span class="route-mode">${MODE_ICON[r.mode] || '•'} ${r.label}</span>
-                  <span class="route-meta">${r.time}${r.cost ? ' · ' + r.cost : ''}</span>
-                  ${r.best ? '<span class="route-best">추천</span>' : ''}
+                  <span class="route-mode">${MODE_ICON[r.mode] || '•'} ${tr(r.label)}</span>
+                  <span class="route-meta">${tr(r.time)}${r.cost ? ' · ' + tr(r.cost) : ''}</span>
+                  ${r.best ? `<span class="route-best">${loc('추천', 'Best')}</span>` : ''}
                 </div>
-                <div class="route-detail ko">${r.detail}</div>
+                <div class="route-detail ko">${tr(r.detail)}</div>
               </div>
             `).join('')}
           </div>
         ` : ''}
-        <div class="stop-note ko">${stop.note}</div>
+        <div class="stop-note ko">${tr(stop.note)}</div>
         ${stop.points ? `
           <div class="sub-points">
             ${stop.points.map((p, i) => `
               <div class="sub-point" data-sub="${stop.num}-${i}" data-cat="${p.category}">
                 <div class="sub-point-dot"></div>
                 <div class="sub-point-body">
-                  <div class="sub-point-name">${p.name}</div>
-                  <div class="sub-point-note ko">${p.note}</div>
+                  <div class="sub-point-name">${tr(p.name)}</div>
+                  <div class="sub-point-note ko">${tr(p.note)}</div>
                 </div>
                 <div class="sub-point-right">
-                  <button class="sub-point-pin" data-sub="${stop.num}-${i}" aria-label="Pin ${p.name.replace(/"/g, '&quot;')}" title="찜">☆</button>
+                  <button class="sub-point-pin" data-sub="${stop.num}-${i}" aria-label="Pin" title="${loc('찜', 'Pin')}">☆</button>
                   <div class="sub-point-cat" data-cat="${p.category}">${p.category}</div>
                 </div>
               </div>
@@ -1640,7 +1682,9 @@ const itineraryEl = document.getElementById('itinerary');
     stopsEl.appendChild(el);
   });
   itineraryEl.appendChild(section);
-});
+  });
+}
+renderList();
 
 // =========== MAP ===========
 let map;
@@ -1696,7 +1740,8 @@ const markers = {};
 const routeLines = {};
 const subMarkers = { 1: [], 2: [], 3: [] };
 
-function setupMarkersAndInteraction() {
+function setupMarkersAndInteraction(opts) {
+  opts = opts || {};
   itinerary.forEach(stop => {
     // Main marker — only if the stop itself has coords. (TBD stops like #14
     // have lat: null and render no numbered pin, but their sub-points still
@@ -1710,11 +1755,11 @@ function setupMarkersAndInteraction() {
       });
       const marker = L.marker([stop.lat, stop.lng], { icon }).addTo(map);
       const popupHtml = `
-        <div class="popup-eyebrow">Day ${stop.day} · ${stop.time}</div>
-        <div class="popup-title">${stop.name}</div>
-        <div class="popup-address">${stop.address}</div>
-        ${stop.transit ? `<div class="popup-transit ko">${stop.transit}</div>` : ''}
-        <div class="popup-note ko">${stop.note}</div>
+        <div class="popup-eyebrow">Day ${stop.day} · ${tr(stop.time)}</div>
+        <div class="popup-title">${tr(stop.name)}</div>
+        <div class="popup-address">${tr(stop.address)}</div>
+        ${stop.transit ? `<div class="popup-transit ko">${tr(stop.transit)}</div>` : ''}
+        <div class="popup-note ko">${tr(stop.note)}</div>
         ${stop.gmaps ? `<a class="popup-link" href="${stop.gmaps}" target="_blank">Google Maps →</a>` : ''}
       `;
       marker.bindPopup(popupHtml, { closeButton: true, autoPan: true });
@@ -1733,7 +1778,7 @@ function setupMarkersAndInteraction() {
         if (p.lat == null || p.lng == null) return;
         const subIcon = L.divIcon({
           className: 'custom-marker',
-          html: `<div class="sub-marker" data-sub="${stop.num}-${i}" data-cat="${p.category}" title="${p.name}"></div>`,
+          html: `<div class="sub-marker" data-sub="${stop.num}-${i}" data-cat="${p.category}" title="${tr(p.name)}"></div>`,
           iconSize: [12, 12], iconAnchor: [6, 6], popupAnchor: [0, -8],
         });
         const subMarker = L.marker([p.lat, p.lng], { icon: subIcon }).addTo(map);
@@ -1743,11 +1788,11 @@ function setupMarkersAndInteraction() {
         subMarker.category = p.category;
         subMarker.subId = `${stop.num}-${i}`;
         subMarker.bindPopup(`
-          <div class="popup-eyebrow">${p.category} · ${stop.name}</div>
-          <div class="popup-title">${p.name}</div>
-          <div class="popup-address">${p.addr}</div>
-          <div class="popup-note ko">${p.note}</div>
-          <a class="popup-link" href="https://maps.google.com/?q=${encodeURIComponent(p.name + ' ' + p.addr)}" target="_blank">Google Maps →</a>
+          <div class="popup-eyebrow">${p.category} · ${tr(stop.name)}</div>
+          <div class="popup-title">${tr(p.name)}</div>
+          <div class="popup-address">${tr(p.addr)}</div>
+          <div class="popup-note ko">${tr(p.note)}</div>
+          <a class="popup-link" href="https://maps.google.com/?q=${encodeURIComponent(tr(p.name) + ' ' + tr(p.addr))}" target="_blank">Google Maps →</a>
         `, { closeButton: true, autoPan: true });
         subMarkers[stop.day].push(subMarker);
       });
@@ -1774,7 +1819,7 @@ function setupMarkersAndInteraction() {
       if (p.lat != null && p.lat > 40.70) allNycCoords.push([p.lat, p.lng]);
     });
   });
-  if (allNycCoords.length > 0) {
+  if (allNycCoords.length > 0 && !opts.skipFit) {
     map.fitBounds(L.latLngBounds(allNycCoords).pad(0.12));
   }
 }
@@ -2148,11 +2193,13 @@ function parseHash() {
     stop: parseInt(params.get('stop'), 10) || null,
     day: params.get('day') || null,
     pin: (params.get('pin') || '').split(',').map(s => s.trim()).filter(Boolean),
+    lang: params.get('lang') === 'en' ? 'en' : null,
   };
 }
 
 function writeHash(state) {
   const parts = [];
+  if (state.lang === 'en') parts.push('lang=en');  // ko is default → omitted
   if (state.stop) parts.push('stop=' + state.stop);
   if (state.day) parts.push('day=' + state.day);
   if (state.pin && state.pin.length) parts.push('pin=' + state.pin.join(','));
@@ -2895,6 +2942,48 @@ chatInputEl.addEventListener('input', (e) => {
 chatSuggestionsEl.querySelectorAll('.chat-sugg').forEach(b => {
   b.addEventListener('click', () => sendChat(b.dataset.q));
 });
+
+// =========== LANGUAGE TOGGLE ===========
+// Rebuilds the list + map popups in the chosen language and re-applies
+// filters / pins / now-next state. Korean is default; English persists in
+// the URL hash (lang=en) so a shared link opens in the same language.
+function rebuildMarkersForLang() {
+  if (typeof map === 'undefined' || !map) return;
+  Object.values(markers).forEach(m => map.removeLayer(m));
+  Object.values(routeLines).forEach(l => map.removeLayer(l));
+  [1, 2, 3].forEach(d => subMarkers[d].forEach(m => map.removeLayer(m)));
+  Object.keys(markers).forEach(k => delete markers[k]);
+  Object.keys(routeLines).forEach(k => delete routeLines[k]);
+  subMarkers[1].length = 0; subMarkers[2].length = 0; subMarkers[3].length = 0;
+  setupMarkersAndInteraction({ skipFit: true });
+}
+
+function updateChromeForLang() {
+  if (chatInputEl) chatInputEl.placeholder = loc('현서비서에게 질문…', 'Ask 현서비서…');
+}
+
+function setLang(lang) {
+  LANG = (lang === 'en') ? 'en' : 'ko';
+  document.body.dataset.lang = LANG;
+  patchHash({ lang: LANG === 'en' ? 'en' : null });
+  renderList();
+  rebuildMarkersForLang();
+  if (typeof applyListFilters === 'function') applyListFilters();
+  if (typeof applyMapFilters === 'function') applyMapFilters();
+  if (typeof syncLegendUI === 'function') syncLegendUI();
+  if (typeof syncPinUI === 'function') syncPinUI();
+  if (typeof refreshNowNext === 'function') refreshNowNext();
+  updateChromeForLang();
+}
+
+// Initialize body[data-lang] + chrome from the LANG resolved at load.
+document.body.dataset.lang = LANG;
+updateChromeForLang();
+
+const langToggleBtn = document.getElementById('langToggle');
+if (langToggleBtn) {
+  langToggleBtn.addEventListener('click', () => setLang(LANG === 'ko' ? 'en' : 'ko'));
+}
 
 // =========== MAP / LIST RESIZE (mobile) ===========
 // Drag the divider between the map and list to change the split. Updates
