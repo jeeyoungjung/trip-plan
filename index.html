@@ -2641,7 +2641,7 @@ function appendChatMsg(role, text) {
 function appendTyping() {
   const div = document.createElement('div');
   div.className = 'chat-msg assistant typing';
-  div.textContent = '생각 중';
+  div.textContent = loc('생각 중', 'Thinking');
   chatMessagesEl.appendChild(div);
   chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
   return div;
@@ -2804,6 +2804,9 @@ async function callAzureResponses(systemPrompt) {
   const useAgent = !!CFG.agent;
   const input = [];
   if (useAgent) {
+    const langDirective = LANG === 'en'
+      ? `\n\nLANGUAGE — IMPORTANT: The user has set the app to English. Reply ONLY in English, no matter what language the question is in. Proper nouns (place names, dish names) may stay in their original form.`
+      : `\n\nLANGUAGE — IMPORTANT: 사용자가 앱을 한국어 모드로 설정했습니다. 항상 한국어로 답해주세요. (고유명사는 원어 그대로 사용 가능.)`;
     input.push({
       role: 'user',
       content: `Trip itinerary context (source of truth for stops, times, addresses):
@@ -2819,9 +2822,12 @@ Rules:
 - Multiple places → multiple marker lines, each on its own line.
 - For places already in the itinerary, the marker is optional (the user can click the stop card). But for any NEW place not in the itinerary, ALWAYS include the marker so the user can add it to their map.
 - The marker does NOT replace your natural-language reply — it's appended after it. Keep your normal prose unchanged.
-- Use precise decimal coordinates (4+ decimals). Use the place's English name in NAME.`,
+- Use precise decimal coordinates (4+ decimals). Use the place's English name in NAME.${langDirective}`,
     });
-    input.push({ role: 'assistant', content: '네, 일정 확인했습니다. 새로운 장소를 추천할 때는 [map:위도,경도,이름] 마커도 같이 붙일게요.' });
+    input.push({ role: 'assistant', content: loc(
+      '네, 일정 확인했습니다. 새로운 장소를 추천할 때는 [map:위도,경도,이름] 마커도 같이 붙일게요.',
+      'Got it — I\'ve reviewed the itinerary. When I suggest a new place I\'ll append a [map:lat,lng,name] marker, and I\'ll reply in English.'
+    ) });
   } else {
     input.push({ role: 'system', content: systemPrompt });
   }
@@ -2874,7 +2880,7 @@ async function sendChat(text) {
   text = text.trim();
   if (!text) return;
   if (NEEDS_BROWSER_KEY && !apiKey) {
-    appendChatMsg('error', 'API key 먼저 입력해 주세요 ↑');
+    appendChatMsg('error', loc('API key 먼저 입력해 주세요 ↑', 'Please enter your API key first ↑'));
     chatKeyInputEl.focus();
     return;
   }
@@ -2897,15 +2903,15 @@ async function sendChat(text) {
     if (!result.ok) {
       if (result.status === 401 || result.status === 403) {
         if (PROVIDER === 'anthropic') setApiKey(null);
-        appendChatMsg('error', 'API key가 유효하지 않거나 권한이 없습니다.');
+        appendChatMsg('error', loc('API key가 유효하지 않거나 권한이 없습니다.', 'Your API key is invalid or lacks permission.'));
       } else if (result.status === 405 && PROVIDER === 'proxy') {
         // 405 from a static host (GitHub Pages, python http.server, etc.) means
         // the request isn't reaching a Worker. Two likely causes:
         //   - Worker not deployed yet → see worker/README.md
         //   - PROXY_URL in index.html still points at the placeholder
-        appendChatMsg('error', 'Chat 프록시(Worker)를 찾을 수 없어요. worker/README.md를 보고 Cloudflare Worker 배포 후 index.html의 PROXY_URL을 업데이트해 주세요.');
+        appendChatMsg('error', loc('Chat 프록시(Worker)를 찾을 수 없어요. worker/README.md를 보고 Cloudflare Worker 배포 후 index.html의 PROXY_URL을 업데이트해 주세요.', "Can't reach the chat proxy (Worker). See worker/README.md, deploy the Cloudflare Worker, then update PROXY_URL in index.html."));
       } else if (result.status === 405) {
-        appendChatMsg('error', 'Method 405 — 엔드포인트가 POST를 받지 않아요. PROXY_URL이 Cloudflare Worker URL인지 확인해 주세요.');
+        appendChatMsg('error', loc('Method 405 — 엔드포인트가 POST를 받지 않아요. PROXY_URL이 Cloudflare Worker URL인지 확인해 주세요.', 'Method 405 — the endpoint rejects POST. Check that PROXY_URL is the Cloudflare Worker URL.'));
       } else {
         appendChatMsg('error', result.error);
       }
