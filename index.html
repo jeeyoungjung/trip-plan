@@ -1200,11 +1200,11 @@
   <div class="chat-messages" id="chatMessages"></div>
 
   <div class="chat-suggestions" id="chatSuggestions">
-    <div class="chat-sugg-label">Try asking</div>
+    <div class="chat-sugg-label" id="chatSuggLabel">Try asking</div>
     <div class="chat-sugg-row">
-      <button class="chat-sugg" data-q="비 오면 토요일 브루클린 다리 대안은?">비 오면 대안?</button>
-      <button class="chat-sugg" data-q="토요일 오후 셋 (Chinatown / Tribeca / Whitney) 중 추천?">토요일 오후 추천?</button>
-      <button class="chat-sugg" data-q="Cho Dang Gol 오픈런 못 가면 K-Town 백업 어디?">K-Town 백업?</button>
+      <button class="chat-sugg" data-q-ko="비 오면 토요일 브루클린 다리 대안은?" data-q-en="If it rains, what's a backup for the Saturday Brooklyn Bridge walk?" data-label-ko="비 오면 대안?" data-label-en="Rainy-day backup?">비 오면 대안?</button>
+      <button class="chat-sugg" data-q-ko="토요일 오후 셋 (Chinatown / Tribeca / Whitney) 중 추천?" data-q-en="Which of the three Saturday afternoon routes (Chinatown / Tribeca / Whitney) do you recommend?" data-label-ko="토요일 오후 추천?" data-label-en="Best Sat afternoon?">토요일 오후 추천?</button>
+      <button class="chat-sugg" data-q-ko="Cho Dang Gol 오픈런 못 가면 K-Town 백업 어디?" data-q-en="If we miss the Cho Dang Gol open run, what's a good K-Town backup?" data-label-ko="K-Town 백업?" data-label-en="K-Town backup?">K-Town 백업?</button>
     </div>
   </div>
 
@@ -1244,6 +1244,8 @@ function tr(v) {
 }
 // Convenience for inline UI strings.
 function loc(ko, en) { return LANG === 'en' ? en : ko; }
+// User-facing bot name — Korean default, English when toggled.
+function botName() { return LANG === 'en' ? 'Travel Bot' : '현서비서'; }
 
 const itinerary = [
   { day: 1, num: 1, time: '8:34 AM', name: { ko: 'JFK Airport · 도착', en: 'JFK Airport · Arrival' },
@@ -2467,10 +2469,12 @@ function chatOpen() {
   if (chatMessagesEl.children.length === 0) {
     let label = 'Claude';
     if (PROVIDER === 'proxy' || PROVIDER === 'azure-responses') {
-      const agentLabel = CFG.agent?.displayName || CFG.agent?.name;
-      label = agentLabel ? `Agent · ${agentLabel}` : (PROVIDER === 'proxy' ? 'Hosted' : 'Azure');
+      label = `Agent · ${botName()}`;
     }
-    appendChatMsg('system', `안녕! NYC 트립 관련 뭐든 물어봐요 — 식당 백업, 날씨/일정 조정, 동선 추천 등. (${label})`);
+    appendChatMsg('system', loc(
+      `안녕! NYC 트립 관련 뭐든 물어봐요 — 식당 백업, 날씨/일정 조정, 동선 추천 등. (${label})`,
+      `Hi! Ask me anything about the NYC trip — restaurant backups, weather/schedule tweaks, route ideas, and more. (${label})`
+    ));
   }
   if (NEEDS_BROWSER_KEY && !apiKey) setTimeout(() => chatKeyInputEl.focus(), 340);
   else setTimeout(() => chatInputEl.focus(), 340);
@@ -2705,7 +2709,7 @@ function showOnMap(lat, lng, name) {
       L.popup({ closeButton: true, autoPan: true, className: 'chat-popup' })
         .setLatLng([lat, lng])
         .setContent(
-          `<div class="popup-eyebrow">현서비서 · From chat</div>` +
+          `<div class="popup-eyebrow">${botName()} · From chat</div>` +
           `<div class="popup-title">${name.replace(/[<>&"]/g, '')}</div>` +
           // Search by place name (not lat,lng) so Google Maps shows the
           // place card with reviews / hours instead of a raw coordinate pin.
@@ -2730,7 +2734,7 @@ function addCustomPoint(lat, lng, name) {
   });
   const marker = L.marker([lat, lng], { icon }).addTo(map);
   marker.bindPopup(
-    `<div class="popup-eyebrow">현서비서 추가</div>` +
+    `<div class="popup-eyebrow">${loc('현서비서 추가', 'Added by Travel Bot')}</div>` +
     `<div class="popup-title">${name.replace(/[<>&"]/g, '')}</div>` +
     `<a class="popup-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=${encodeURIComponent(name)}">Google Maps →</a>`,
     { closeButton: true, autoPan: true }
@@ -2746,11 +2750,14 @@ function buildSystemPrompt() {
     transit: s.transit, note: s.note, tag: s.tag, tbd: s.tbd || false,
     points: s.points ? s.points.map(p => ({ name: p.name, category: p.category, addr: p.addr, note: p.note })) : undefined,
   }));
+  const langRule = LANG === 'en'
+    ? 'The user has the app set to English. Always reply in English. You may keep proper nouns (place names, dish names) in their original form.'
+    : 'Reply in the user\'s language. The user mixes Korean and English; default to Korean for notes and English for proper nouns.';
   return [
     'You are a concise, practical NYC trip assistant for a 4-person group.',
     'Trip dates: May 29 (Fri) – May 31 (Sun), 2026. Today is ' + today + '.',
     'Hotel: InterContinental Barclay (111 E 48th St, Midtown).',
-    'Reply in the user\'s language. The user mixes Korean and English; default to Korean for notes and English for proper nouns.',
+    langRule,
     'Be specific: name places, give cross streets / subway stops, mention timing. Keep answers tight — 3–5 lines unless the user asks for more.',
     'When suggesting alternatives, prefer places not already in the itinerary unless the user is asking about an existing stop.',
     'Itinerary JSON follows:',
@@ -2954,7 +2961,7 @@ chatInputEl.addEventListener('input', (e) => {
   chatInputEl.style.height = Math.max(44, Math.min(140, chatInputEl.scrollHeight)) + 'px';
 });
 chatSuggestionsEl.querySelectorAll('.chat-sugg').forEach(b => {
-  b.addEventListener('click', () => sendChat(b.dataset.q));
+  b.addEventListener('click', () => sendChat(LANG === 'en' ? b.dataset.qEn : b.dataset.qKo));
 });
 
 // =========== LANGUAGE TOGGLE ===========
@@ -2973,7 +2980,25 @@ function rebuildMarkersForLang() {
 }
 
 function updateChromeForLang() {
-  if (chatInputEl) chatInputEl.placeholder = loc('현서비서에게 질문…', 'Ask 현서비서…');
+  const name = botName();
+  if (chatInputEl) chatInputEl.placeholder = loc(`${name}에게 질문…`, `Ask ${name}…`);
+  const toggleName = document.querySelector('.chat-toggle-name');
+  if (toggleName) toggleName.textContent = name;
+  const panelTitle = document.getElementById('chatPanelTitle');
+  if (panelTitle) panelTitle.textContent = name;
+  if (chatToggleEl) chatToggleEl.setAttribute('aria-label', loc(`${name} 챗 열기`, `Open ${name} chat`));
+  const suggLabel = document.getElementById('chatSuggLabel');
+  if (suggLabel) suggLabel.textContent = loc('이렇게 물어보세요', 'Try asking');
+  document.querySelectorAll('.chat-sugg').forEach(b => {
+    b.textContent = LANG === 'en' ? b.dataset.labelEn : b.dataset.labelKo;
+  });
+  const micBtn = document.getElementById('chatMicBtn');
+  if (micBtn) micBtn.setAttribute('aria-label', loc('음성 입력', 'Voice input'));
+  const keyHint = document.querySelector('.chat-keystrip-hint');
+  if (keyHint) keyHint.innerHTML = loc(
+    '키는 메모리에만 — 새로고침하면 사라져요. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">키 만들기 ↗</a>',
+    'Key stays in memory only — it\'s gone on refresh. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Create a key ↗</a>'
+  );
 }
 
 function setLang(lang) {
