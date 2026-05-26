@@ -2641,7 +2641,7 @@ function appendChatMsg(role, text) {
 function appendTyping() {
   const div = document.createElement('div');
   div.className = 'chat-msg assistant typing';
-  div.textContent = '생각 중';
+  div.textContent = loc('생각 중', 'Thinking');
   chatMessagesEl.appendChild(div);
   chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
   return div;
@@ -2880,7 +2880,7 @@ async function sendChat(text) {
   text = text.trim();
   if (!text) return;
   if (NEEDS_BROWSER_KEY && !apiKey) {
-    appendChatMsg('error', 'API key 먼저 입력해 주세요 ↑');
+    appendChatMsg('error', loc('API key 먼저 입력해 주세요 ↑', 'Please enter your API key first ↑'));
     chatKeyInputEl.focus();
     return;
   }
@@ -2903,15 +2903,15 @@ async function sendChat(text) {
     if (!result.ok) {
       if (result.status === 401 || result.status === 403) {
         if (PROVIDER === 'anthropic') setApiKey(null);
-        appendChatMsg('error', 'API key가 유효하지 않거나 권한이 없습니다.');
+        appendChatMsg('error', loc('API key가 유효하지 않거나 권한이 없습니다.', 'Your API key is invalid or lacks permission.'));
       } else if (result.status === 405 && PROVIDER === 'proxy') {
         // 405 from a static host (GitHub Pages, python http.server, etc.) means
         // the request isn't reaching a Worker. Two likely causes:
         //   - Worker not deployed yet → see worker/README.md
         //   - PROXY_URL in index.html still points at the placeholder
-        appendChatMsg('error', 'Chat 프록시(Worker)를 찾을 수 없어요. worker/README.md를 보고 Cloudflare Worker 배포 후 index.html의 PROXY_URL을 업데이트해 주세요.');
+        appendChatMsg('error', loc('Chat 프록시(Worker)를 찾을 수 없어요. worker/README.md를 보고 Cloudflare Worker 배포 후 index.html의 PROXY_URL을 업데이트해 주세요.', "Can't reach the chat proxy (Worker). See worker/README.md, deploy the Cloudflare Worker, then update PROXY_URL in index.html."));
       } else if (result.status === 405) {
-        appendChatMsg('error', 'Method 405 — 엔드포인트가 POST를 받지 않아요. PROXY_URL이 Cloudflare Worker URL인지 확인해 주세요.');
+        appendChatMsg('error', loc('Method 405 — 엔드포인트가 POST를 받지 않아요. PROXY_URL이 Cloudflare Worker URL인지 확인해 주세요.', 'Method 405 — the endpoint rejects POST. Check that PROXY_URL is the Cloudflare Worker URL.'));
       } else {
         appendChatMsg('error', result.error);
       }
