@@ -1150,7 +1150,7 @@ const itinerary = [
   { day: 1, num: 1, time: '8:34 AM', name: 'JFK Airport · 도착',
     lat: 40.6446161, lng: -73.7797222, address: 'Queens, NY 11430',
     transit: 'B6 816 SFO → JFK',
-    note: '입국 + 짐 30~45분. 호텔까지 3가지 옵션:\n① Uber XL (4명) — 가장 편함, ~45~60분, $100~120. 트래픽 변수.\n② 익스프레스: AirTrain($8.50) → Jamaica → LIRR 급행 → Penn Station (~35분, 1인 ~$11 peak). Penn에서 호텔까진 택시/지하철 10분.\n③ 로컬: AirTrain($8.50) → Jamaica → E train → Midtown (~50~60분, 1인 $2.90 OMNY). 가장 저렴, 짐 많으면 좀 빡셈.',
+    note: '입국 + 짐 30~45분. 호텔까지 3가지 옵션:\n① Uber XL (4명) — 가장 편함, ~45~60분, $100~120. 트래픽 변수.\n② 익스프레스(train): AirTrain($8.50) → Jamaica → LIRR → Grand Central Madison (~35분, 1인 ~$11 peak). 호텔이 Grand Central에서 도보 7분 — train 중 최적 도착지.\n③ 로컬: AirTrain($8.50) → Jamaica → E train → Midtown (~50~60분, 1인 $2.90 OMNY). 가장 저렴, 짐 많으면 좀 빡셈.',
     gmaps: 'https://maps.google.com/?q=JFK+Airport+Terminal+5' },
   { day: 1, num: 2, time: '10:30 AM', name: 'InterContinental Barclay',
     lat: 40.7556629, lng: -73.9735276, address: '111 E 48th St',
@@ -1160,6 +1160,8 @@ const itinerary = [
     points: [
       { name: 'dae day coffee',   lat: 40.7544, lng: -73.9748, category: 'Coffee', addr: '485 Lexington Ave · Midtown East', note: '호텔 도보 2분. 호주 스타일 스페셜티. Joe Coffee 라인업 (현지 로컬 협업). 모닝 라떼 픽업 딱.' },
       { name: 'Blue Dove Coffee', lat: 40.7372, lng: -73.9907, category: 'Coffee', addr: '33 Union Square W · Union Sq',     note: '※ "Dove Street" 못 찾아서 Blue Dove로 추정. Union Sq 바로 옆 작은 시그니처 카페. K-Town 가는 길에 6 train으로 한 정거장 위.' },
+      { name: '★ Grand Central Terminal', lat: 40.7527, lng: -73.9772, category: 'Design', addr: '89 E 42nd St · Midtown East',
+        note: '기차(LIRR/지하철)로 도착하면 여기 통과 — 호텔에서 도보 7분이라 train 옵션의 도착지. LIRR Grand Central Madison이 지하. Beaux-Arts 랜드마크: Main Concourse 천장 별자리 벽화, Whispering Gallery, Vanderbilt Hall. 들어온 김에 5분 구경.' },
     ]
   },
   { day: 1, num: 3, time: '12:00 PM', name: 'Cho Dang Gol',
@@ -1369,6 +1371,17 @@ const itinerary = [
       { name: '★ Awoke Vintage SoHo', lat: 40.7244, lng: -73.9990, category: 'Shopping',
         addr: '116 Mercer St · SoHo',
         note: 'Brooklyn 본점의 SoHo 분점 — 70s-90s 빈티지 의류 큐레이션. 가격 $40~150. Aimé Leon Dore 인근이라 동선에 끼워넣기.' },
+
+      // === Hot food picks (요즘 핫한 곳) ===
+      { name: '★ Golden Diner', lat: 40.7127, lng: -73.9918, category: 'Food',
+        addr: '123 Madison St · Two Bridges',
+        note: '셰프 Sam Yoo의 코리안-아메리칸 다이너. 허니버터 토스트, 베이컨 에그 치즈, 더블 치즈버거. Chinatown/LES 동선 끝자락 (Two Bridges). 점심 피크 웨이팅 — 2시 전후 노려요.' },
+      { name: '★ PopUp Bagels', lat: 40.7335, lng: -74.0009, category: 'Food',
+        addr: '177 W 4th St · West Village',
+        note: '2020년대 뉴욕 베이글 신성 — 따뜻하게 통째로 주고 크림치즈는 찍어먹는 방식. 플레인 + 시즌 스프레드. West Village 픽이라 Washington Sq 루트(C)에 끼우기 좋음. 보통 오전~점심.' },
+      { name: '★ COQODAQ', lat: 40.7408, lng: -73.9904, category: 'Food',
+        addr: '20 W 22nd St · Flatiron',
+        note: 'Cote 팀의 코리안 프라이드 치킨 — "치킨계의 성당" 컨셉. 풀코스 + 샴페인 페어링도. Flatiron이라 Oiji Mi(7PM) 근처지만 둘 다는 무리 — 다른 날 저녁 대안으로. 예약(Resy) 강추.' },
     ]
   },
   { day: 2, num: 15, time: '7:00 PM', name: 'Oiji Mi',
@@ -1421,7 +1434,7 @@ const itinerary = [
   { day: 3, num: 21, time: '4:00 PM', name: 'Hotel → JFK',
     lat: 40.6446161, lng: -73.7797222, address: 'B6 615 · 6:29 PM 출발',
     transit: 'Midtown → JFK · 4:15 출발',
-    note: '러시아워라 일찍 출발. 옵션:\n① Uber XL — 가장 편함, ~50~70분, $100~120. 트래픽 변수.\n② 익스프레스: LIRR (Penn 또는 Grand Central → Jamaica) → AirTrain (~40분, 러시아워에도 정시성 좋음).\n③ 로컬: E train (Midtown → Jamaica) → AirTrain (~60분, 가장 저렴, $2.90 + $8.50).\nJFK 5:15 PM 도착 목표. 10:19 PM SFO 도착.',
+    note: '러시아워라 일찍 출발. 옵션:\n① Uber XL — 가장 편함, ~50~70분, $100~120. 트래픽 변수.\n② 익스프레스(train): 호텔 도보 7분 → Grand Central Madison → LIRR → Jamaica → AirTrain (~40분, 러시아워에도 정시성 좋음). 호텔 바로 옆이라 짐 끌고 가기 편함.\n③ 로컬: E train (Midtown → Jamaica) → AirTrain (~60분, 가장 저렴, $2.90 + $8.50).\nJFK 5:15 PM 도착 목표. 10:19 PM SFO 도착.',
     gmaps: 'https://maps.google.com/?q=JFK+Airport' },
 ];
 
