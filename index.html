@@ -614,8 +614,10 @@
     .legend-item { font-size: 10px; margin-bottom: 3px; }
     .legend-swatch { width: 10px; height: 10px; }
 
-    /* Keep the zoom control inset matching the legend (12px) on mobile too. */
-    .leaflet-control-zoom { margin-top: 12px !important; margin-right: 12px !important; }
+    /* Tighter inset on mobile. Language toggle sits top-right at 12px; the zoom
+       control must clear it (12 top + 32 toggle + 8 gap = 52px). */
+    .lang-toggle { top: 12px; right: 12px; }
+    .leaflet-control-zoom { margin-top: 52px !important; margin-right: 12px !important; }
 
     /* Smaller popup on mobile */
     .leaflet-popup-content { padding: 18px 38px 14px 16px; width: 220px !important; }
