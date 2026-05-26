@@ -484,6 +484,9 @@
     font-family: var(--mono); font-size: 9px !important; color: var(--ink-3) !important;
   }
 
+  /* Map/list resize handle — desktop hides it (split is fixed there). */
+  .map-resize-handle { display: none; }
+
   /* ========= MOBILE LAYOUT ========= */
   @media (max-width: 900px) {
     /* App-shell flex column the exact height of the viewport. Map is a
@@ -498,6 +501,9 @@
       height: 100vh;
       height: 100dvh;
       overflow: hidden;  /* the .list owns scrolling, not the body */
+      /* Default split: map and list each take half of the non-tab height.
+         JS overrides --map-mobile-h (px) when the handle is dragged. */
+      --map-mobile-h: calc((100dvh - var(--tabs-h) - env(safe-area-inset-bottom, 0px) - 16px) / 2);
     }
 
     /* Hero is desktop-only — saves vertical real estate for the map + list. */
@@ -510,8 +516,29 @@
       position: relative;
     }
 
-    .list {
+    /* Draggable divider between map and list. */
+    .map-resize-handle {
+      display: flex;
       order: 2;
+      flex: 0 0 auto;
+      align-items: center;
+      justify-content: center;
+      height: 16px;
+      background: var(--panel);
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      cursor: ns-resize;
+      touch-action: none;  /* we drive the drag ourselves */
+      -webkit-tap-highlight-color: transparent;
+    }
+    .map-resize-handle span {
+      width: 36px; height: 4px; border-radius: 999px;
+      background: var(--ink-4);
+    }
+    .map-resize-handle.dragging span { background: var(--ink-2); }
+
+    .list {
+      order: 3;
       flex: 1 1 auto;
       min-height: 0;            /* let it shrink so internal scroll engages */
       overflow-y: auto;
@@ -523,7 +550,7 @@
 
     /* Tabs are the in-flow footer — always at the bottom of the flex column. */
     .tabs {
-      order: 3;
+      order: 4;
       flex: 0 0 auto;
       align-items: center;
       border-right: 0;
@@ -579,7 +606,7 @@
     .tab { font-size: 11px; letter-spacing: 0.14em; }
   }
 
-  /* ========= CHAT — 현서비 🤖 ========= */
+  /* ========= CHAT — 현서비서 🤖 ========= */
   /* Fixed FAB bottom-right · desktop: side drawer · mobile: full-screen takeover */
   .chat-toggle {
     position: fixed; bottom: 28px; right: 28px; z-index: 999997;
@@ -608,23 +635,11 @@
   .chat-toggle:hover .chat-toggle-emoji { transform: rotate(-8deg) scale(1.08); }
 
   .chat-toggle-name {
-    /* Korean-first: bot name is "현서비". Korean fonts don't carry an italic
+    /* Korean-first: bot name is "현서비서". Korean fonts don't carry an italic
        cut, so the previous serif+italic styling synth-italicized poorly. */
     font-family: var(--kr);
     font-weight: 500; font-size: 15px;
     letter-spacing: -0.02em; color: var(--panel);
-  }
-
-  .chat-toggle-dot {
-    width: 7px; height: 7px; border-radius: 50%;
-    background: #B5634A;
-    box-shadow: 0 0 0 3px rgba(181, 99, 74, 0.22);
-    animation: chatPulse 2.2s ease-in-out infinite;
-    margin-left: 2px;
-  }
-  @keyframes chatPulse {
-    0%, 100% { box-shadow: 0 0 0 3px rgba(181, 99, 74, 0.22); }
-    50%      { box-shadow: 0 0 0 6px rgba(181, 99, 74, 0.06); }
   }
 
   /* Backdrop */
@@ -683,7 +698,7 @@
     box-shadow: 0 0 0 2px rgba(123, 135, 87, 0.18);
   }
   .chat-title {
-    /* Korean-first: title is "현서비". Use the Korean stack with a slightly
+    /* Korean-first: title is "현서비서". Use the Korean stack with a slightly
        heavier weight for editorial presence; italic is dropped (Korean
        fonts don't have an italic cut). */
     font-family: var(--kr);
@@ -1100,16 +1115,18 @@
     </div>
   </main>
 
+  <!-- Mobile-only: drag up/down to resize the map vs list split. -->
+  <div class="map-resize-handle" id="mapResizeHandle" aria-hidden="true"><span></span></div>
+
   <div class="list" id="itinerary"></div>
 
 
 </div>
 
 <!-- ========= CHAT (LLM) — fixed/floating; lives outside .app so it can take over the viewport ========= -->
-<button class="chat-toggle" id="chatToggle" aria-label="현서비 챗 열기">
+<button class="chat-toggle" id="chatToggle" aria-label="현서비서 챗 열기">
   <span class="chat-toggle-emoji" aria-hidden="true">🤖</span>
-  <span class="chat-toggle-name">현서비</span>
-  <span class="chat-toggle-dot" aria-hidden="true"></span>
+  <span class="chat-toggle-name">현서비서</span>
 </button>
 
 <div class="chat-backdrop" id="chatBackdrop" aria-hidden="true"></div>
@@ -1121,7 +1138,7 @@
         <span class="chat-status-dot" aria-hidden="true"></span>
         <span>Agent · Online</span>
       </div>
-      <div class="chat-title" id="chatPanelTitle">현서비</div>
+      <div class="chat-title" id="chatPanelTitle">현서비서</div>
       <div class="chat-subtitle ko">NYC 트립 도우미 — 4인, May 28—31</div>
     </div>
     <button class="chat-close" id="chatClose" aria-label="Close">
@@ -1154,7 +1171,7 @@
   </div>
 
   <form class="chat-form" id="chatForm">
-    <textarea id="chatInput" placeholder="현서비에게 질문…" rows="1"></textarea>
+    <textarea id="chatInput" placeholder="현서비서에게 질문…" rows="1"></textarea>
     <button type="button" class="chat-mic-btn" id="chatMicBtn" aria-label="음성 입력" hidden>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <rect x="9" y="3" width="6" height="11" rx="3"/>
@@ -1406,7 +1423,7 @@ const itinerary = [
         note: 'Jim Power "Mosaic Man"이 30년간 거리 가로등에 박은 모자이크. Astor Pl ~ Tompkins Sq 사이 80개+. 걷는 동선 자체가 야외 갤러리.' },
 
       // === Sample sales + designer resale (Spring/Summer season peak) ===
-      // 일정은 자주 바뀌니까 가기 전 현서비한테 "이번 주 sample sale 뭐 있어?" 물어보면 web search로 확인해줘요.
+      // 일정은 자주 바뀌니까 가기 전 현서비서한테 "이번 주 sample sale 뭐 있어?" 물어보면 web search로 확인해줘요.
       { name: '★ 260 Sample Sale', lat: 40.7444, lng: -73.9881, category: 'Shopping',
         addr: '260 Fifth Ave · NoMad',
         note: 'NYC 샘플세일의 본진 — Jonathan Simkhai, Khaite, Veronica Beard 같은 컨템퍼러리 브랜드가 50~70% off로 돌아가며 열려요. 보통 5~7일 단위 이벤트. 인스타 @260samplesale 에서 현재 무슨 브랜드인지 확인하고 가기.' },
@@ -2262,7 +2279,7 @@ if (!window.TRIP_CONFIG) {
     provider: 'proxy',
     endpoint: PROXY_URL,
     // `name` is the agent identifier on Azure; `displayName` is the user-facing label.
-    agent: { name: 'jeeyoungbot', version: '2', displayName: '현서비' },
+    agent: { name: 'jeeyoungbot', version: '2', displayName: '현서비서' },
   };
 }
 let apiKey = null;
@@ -2587,7 +2604,7 @@ function showOnMap(lat, lng, name) {
       L.popup({ closeButton: true, autoPan: true, className: 'chat-popup' })
         .setLatLng([lat, lng])
         .setContent(
-          `<div class="popup-eyebrow">현서비 · From chat</div>` +
+          `<div class="popup-eyebrow">현서비서 · From chat</div>` +
           `<div class="popup-title">${name.replace(/[<>&"]/g, '')}</div>` +
           // Search by place name (not lat,lng) so Google Maps shows the
           // place card with reviews / hours instead of a raw coordinate pin.
@@ -2612,7 +2629,7 @@ function addCustomPoint(lat, lng, name) {
   });
   const marker = L.marker([lat, lng], { icon }).addTo(map);
   marker.bindPopup(
-    `<div class="popup-eyebrow">현서비 추가</div>` +
+    `<div class="popup-eyebrow">현서비서 추가</div>` +
     `<div class="popup-title">${name.replace(/[<>&"]/g, '')}</div>` +
     `<a class="popup-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=${encodeURIComponent(name)}">Google Maps →</a>`,
     { closeButton: true, autoPan: true }
@@ -2838,6 +2855,55 @@ chatInputEl.addEventListener('input', (e) => {
 chatSuggestionsEl.querySelectorAll('.chat-sugg').forEach(b => {
   b.addEventListener('click', () => sendChat(b.dataset.q));
 });
+
+// =========== MAP / LIST RESIZE (mobile) ===========
+// Drag the divider between the map and list to change the split. Updates
+// --map-mobile-h (px) on .app and tells Leaflet to recompute its size.
+// Default (set in CSS) is half map / half list.
+(function setupMapResize() {
+  const handle = document.getElementById('mapResizeHandle');
+  const appEl = document.querySelector('.app');
+  const mapWrap = document.querySelector('.map-wrap');
+  if (!handle || !appEl || !mapWrap) return;
+
+  let startY = 0, startH = 0, dragging = false, rafPending = false;
+
+  handle.addEventListener('pointerdown', (e) => {
+    if (window.innerWidth > 900) return;
+    dragging = true;
+    handle.classList.add('dragging');
+    try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+    startY = e.clientY;
+    startH = mapWrap.getBoundingClientRect().height;
+    e.preventDefault();
+  });
+
+  handle.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dy = e.clientY - startY;
+    const min = 140;
+    const max = window.innerHeight * 0.75;
+    const h = Math.max(min, Math.min(max, startH + dy));
+    appEl.style.setProperty('--map-mobile-h', h + 'px');
+    if (!rafPending) {
+      rafPending = true;
+      requestAnimationFrame(() => {
+        if (typeof map !== 'undefined' && map) map.invalidateSize();
+        rafPending = false;
+      });
+    }
+  });
+
+  function end(e) {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    try { handle.releasePointerCapture(e.pointerId); } catch (_) {}
+    if (typeof map !== 'undefined' && map) setTimeout(() => map.invalidateSize(), 60);
+  }
+  handle.addEventListener('pointerup', end);
+  handle.addEventListener('pointercancel', end);
+})();
 
 // =========== SWIPE TO CHANGE DAY (mobile) ===========
 // Horizontal drag on the sidebar cycles through tabs: All → Fri → Sat → Sun → All.
