@@ -1230,7 +1230,7 @@ function tr(v) {
   return v;
 }
 // Convenience for inline UI strings.
-function L(ko, en) { return LANG === 'en' ? en : ko; }
+function loc(ko, en) { return LANG === 'en' ? en : ko; }
 
 const itinerary = [
   { day: 1, num: 1, time: '8:34 AM', name: { ko: 'JFK Airport · 도착', en: 'JFK Airport · Arrival' },
@@ -1632,13 +1632,13 @@ function renderList() {
         ${stop.transit ? `<div class="stop-transit ko">${tr(stop.transit)}</div>` : ''}
         ${stop.routeOptions ? `
           <div class="route-options">
-            <div class="route-options-label">${L('How to get here · 옵션', 'How to get here')}</div>
+            <div class="route-options-label">${loc('How to get here · 옵션', 'How to get here')}</div>
             ${stop.routeOptions.map(r => `
               <div class="route-option" data-mode="${r.mode}">
                 <div class="route-option-head">
                   <span class="route-mode">${MODE_ICON[r.mode] || '•'} ${tr(r.label)}</span>
                   <span class="route-meta">${tr(r.time)}${r.cost ? ' · ' + tr(r.cost) : ''}</span>
-                  ${r.best ? `<span class="route-best">${L('추천', 'Best')}</span>` : ''}
+                  ${r.best ? `<span class="route-best">${loc('추천', 'Best')}</span>` : ''}
                 </div>
                 <div class="route-detail ko">${tr(r.detail)}</div>
               </div>
@@ -1656,7 +1656,7 @@ function renderList() {
                   <div class="sub-point-note ko">${tr(p.note)}</div>
                 </div>
                 <div class="sub-point-right">
-                  <button class="sub-point-pin" data-sub="${stop.num}-${i}" aria-label="Pin" title="${L('찜', 'Pin')}">☆</button>
+                  <button class="sub-point-pin" data-sub="${stop.num}-${i}" aria-label="Pin" title="${loc('찜', 'Pin')}">☆</button>
                   <div class="sub-point-cat" data-cat="${p.category}">${p.category}</div>
                 </div>
               </div>
@@ -2959,7 +2959,7 @@ function rebuildMarkersForLang() {
 }
 
 function updateChromeForLang() {
-  if (chatInputEl) chatInputEl.placeholder = L('현서비서에게 질문…', 'Ask 현서비서…');
+  if (chatInputEl) chatInputEl.placeholder = loc('현서비서에게 질문…', 'Ask 현서비서…');
 }
 
 function setLang(lang) {
