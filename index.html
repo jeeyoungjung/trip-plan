@@ -212,6 +212,34 @@
   }
   .stop-note { font-family: var(--kr); font-size: 12px; line-height: 1.6; color: var(--ink-2); margin-top: 4px; }
 
+  /* "How to get here" — structured top-3 transport options per leg. */
+  .route-options {
+    margin-top: 10px; padding: 10px 12px;
+    background: rgba(31, 29, 24, 0.025);
+    border-left: 2px solid var(--rule);
+  }
+  .route-options-label {
+    font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--ink-4); margin-bottom: 8px;
+  }
+  .route-option { margin-bottom: 9px; }
+  .route-option:last-child { margin-bottom: 0; }
+  .route-option-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .route-mode {
+    font-family: var(--kr); font-size: 12.5px; font-weight: 500; color: var(--ink);
+  }
+  .route-meta {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.02em; color: var(--ink-3);
+  }
+  .route-best {
+    font-family: var(--mono); font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--panel); background: #7B8757; padding: 2px 5px; border-radius: 2px;
+  }
+  .route-detail {
+    font-family: var(--kr); font-size: 11px; line-height: 1.5; color: var(--ink-2);
+    margin-top: 2px;
+  }
+
   .sub-points {
     margin-top: 12px; padding-top: 10px;
     border-top: 1px dashed var(--rule);
@@ -1146,6 +1174,9 @@
 <script src="config.local.js" onerror="void 0"></script>
 
 <script>
+// Transport mode glyphs for the per-stop "How to get here" route options.
+const MODE_ICON = { walk: '🚶', subway: '🚇', uber: '🚗', bike: '🚲', ferry: '⛴️' };
+
 const itinerary = [
   { day: 1, num: 1, time: '8:34 AM', name: 'JFK Airport · 도착',
     lat: 40.6446161, lng: -73.7797222, address: 'Queens, NY 11430',
@@ -1159,14 +1190,21 @@ const itinerary = [
     gmaps: 'https://maps.google.com/?q=InterContinental+New+York+Barclay',
     points: [
       { name: 'dae day coffee',   lat: 40.7544, lng: -73.9748, category: 'Coffee', addr: '485 Lexington Ave · Midtown East', note: '호텔 도보 2분. 호주 스타일 스페셜티. Joe Coffee 라인업 (현지 로컬 협업). 모닝 라떼 픽업 딱.' },
-      { name: 'Blue Dove Coffee', lat: 40.7372, lng: -73.9907, category: 'Coffee', addr: '33 Union Square W · Union Sq',     note: '※ "Dove Street" 못 찾아서 Blue Dove로 추정. Union Sq 바로 옆 작은 시그니처 카페. K-Town 가는 길에 6 train으로 한 정거장 위.' },
       { name: '★ Grand Central Terminal', lat: 40.7527, lng: -73.9772, category: 'Design', addr: '89 E 42nd St · Midtown East',
         note: '기차(LIRR/지하철)로 도착하면 여기 통과 — 호텔에서 도보 7분이라 train 옵션의 도착지. LIRR Grand Central Madison이 지하. Beaux-Arts 랜드마크: Main Concourse 천장 별자리 벽화, Whispering Gallery, Vanderbilt Hall. 들어온 김에 5분 구경.' },
     ]
   },
   { day: 1, num: 3, time: '12:00 PM', name: 'Cho Dang Gol',
     lat: 40.7501625, lng: -73.9863713, address: '55 W 35th St · K-Town',
-    transit: '호텔 → K-Town · 도보 15분 (1.1mi)',
+    transit: '호텔(48th) → K-Town(35th) · 약 1.1mi 남쪽',
+    routeOptions: [
+      { mode: 'walk', label: '도보', time: '15분', cost: '무료', best: true,
+        detail: '5th Ave 따라 남쪽으로 13블록. 12시 오픈런 맞추려면 11:40 출발. 짐 없으니 가볍게.' },
+      { mode: 'subway', label: '지하철', time: '8분', cost: '$2.90',
+        detail: '6 train 51 St → 33 St + 도보 4분. 비 오거나 시차로 지치면. 환승 없음.' },
+      { mode: 'uber', label: 'Uber', time: '7분', cost: '$10~14',
+        detail: '4명 나눠서 1인 $3. 시간 빠듯하면 가장 확실. 점심 트래픽 보통.' },
+    ],
     note: '12시 오픈런 — 안 그러면 웨이팅 한 시간+. 오징어순두부 + 해물파전.',
     gmaps: 'https://maps.google.com/?q=Cho+Dang+Gol+New+York' },
   { day: 1, num: 4, time: '1:45 PM', name: 'The High Line',
@@ -1186,7 +1224,15 @@ const itinerary = [
     gmaps: 'https://maps.google.com/?q=Little+Island+Pier+55' },
   { day: 1, num: 6, time: '3:45 PM', name: 'SoHo',
     lat: 40.7245908, lng: -74.0019174, address: 'Spring St · Prince St',
-    transit: 'Little Island → SoHo · 1 train 14 St → Houston St (~10분) 또는 도보 25분',
+    transit: 'Little Island → SoHo · 약 1.2mi 남동쪽',
+    routeOptions: [
+      { mode: 'walk', label: '도보', time: '25분', cost: '무료', best: true,
+        detail: 'Hudson St 따라 남동쪽 1.2mi. West Village 골목 + Hudson Square 통과 — 산책 자체가 볼거리. 5:30 Raku까지 여유 있으니 추천.' },
+      { mode: 'bike', label: 'Citi Bike', time: '12분', cost: '$4.79',
+        detail: 'Hudson River Greenway 남쪽 → Houston St에서 동쪽. 평지 + 강변 뷰. 데이패스 있으면 $0 추가. 빠르고 시원함.' },
+      { mode: 'uber', label: 'Uber', time: '10분', cost: '$13~18',
+        detail: '피곤하거나 비 오면. 4명이면 1인 $4 정도. SoHo 좁은 길이라 Spring/Prince 코너에 내려달라고.' },
+    ],
     note: '5:30 Raku 예약 있으니 산책하듯이. 아래 작은 점들 보고 끌리는 곳 두세 곳 들리기.',
     gmaps: 'https://maps.google.com/?q=SoHo+New+York',
     points: [
@@ -1214,7 +1260,15 @@ const itinerary = [
     featured: true, tag: 'Reserved' },
   { day: 1, num: 8, time: '7:00 PM', name: 'Belasco Theatre',
     lat: 40.7566389, lng: -73.9838861, address: '111 W 44th St · Broadway',
-    transit: 'SoHo → Midtown · Uber 15~20분 ($25) 또는 6 train Bleecker → Grand Central + 도보 10분',
+    transit: 'Raku(SoHo) → Belasco(44th) · 약 3mi 북쪽 · 6:30 출발 필수',
+    routeOptions: [
+      { mode: 'uber', label: 'Uber', time: '15~20분', cost: '$22~28', best: true,
+        detail: '7PM 공연 + 6:45 입장이라 시간이 빠듯 — 6:30 Raku에서 바로 호출. 4명 1인 $6. 트래픽 있으면 Bleecker에서 잡기.' },
+      { mode: 'subway', label: '지하철', time: '20~25분', cost: '$2.90',
+        detail: '6 train Bleecker St → Grand Central + 도보 10분, 또는 B/D/F Broadway-Lafayette → 42 St. 환승 + 도보 변수라 공연날엔 빠듯.' },
+      { mode: 'walk', label: '도보', time: '50분+', cost: '무료',
+        detail: '3mi라 시간상 비추 — 공연 없는 날 산책이면 SoHo→Village→Midtown 좋지만 오늘은 No.' },
+    ],
     note: 'Maybe Happy Ending · 약 1시간 40분, 인터미션 없음. 7PM 시작 → 8:40PM 종료. 6:45까지 입장 권장.',
     gmaps: 'https://maps.google.com/?q=Belasco+Theatre',
     featured: true, tag: 'Ticket',
@@ -1477,6 +1531,21 @@ const itineraryEl = document.getElementById('itinerary');
           ${stop.tag ? `<span class="tag ${stop.featured ? 'featured' : ''}">${stop.tag}</span>` : ''}
         </div>
         ${stop.transit ? `<div class="stop-transit ko">${stop.transit}</div>` : ''}
+        ${stop.routeOptions ? `
+          <div class="route-options">
+            <div class="route-options-label">How to get here · 옵션</div>
+            ${stop.routeOptions.map(r => `
+              <div class="route-option" data-mode="${r.mode}">
+                <div class="route-option-head">
+                  <span class="route-mode">${MODE_ICON[r.mode] || '•'} ${r.label}</span>
+                  <span class="route-meta">${r.time}${r.cost ? ' · ' + r.cost : ''}</span>
+                  ${r.best ? '<span class="route-best">추천</span>' : ''}
+                </div>
+                <div class="route-detail ko">${r.detail}</div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
         <div class="stop-note ko">${stop.note}</div>
         ${stop.points ? `
           <div class="sub-points">
