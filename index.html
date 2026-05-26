@@ -73,7 +73,11 @@
   .hero       { grid-area: hero; background: var(--panel); border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 32px 32px 24px; }
   .tabs       { grid-area: tabs; background: var(--panel); border-right: 1px solid var(--rule); border-bottom: 1px solid var(--rule); height: var(--tabs-h); }
   .list       { grid-area: list; background: var(--panel); border-right: 1px solid var(--rule); overflow-y: auto; min-height: 0; scrollbar-width: thin; scrollbar-color: var(--ink-4) transparent; }
-  .map-wrap   { grid-area: map; position: relative; background: #E8E4D9; }
+  /* overflow:hidden so the legend (absolutely positioned inside) is clipped
+     to the map's bounds — shrinking the map crops the legend rather than
+     letting it spill over the resize handle / list. Leaflet renders popups
+     inside #map (its own clip + autoPan), so this doesn't affect them. */
+  .map-wrap   { grid-area: map; position: relative; background: #E8E4D9; overflow: hidden; }
 
   .list::-webkit-scrollbar { width: 6px; }
   .list::-webkit-scrollbar-thumb { background: var(--ink-4); border-radius: 3px; }
