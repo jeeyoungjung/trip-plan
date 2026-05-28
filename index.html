@@ -118,7 +118,7 @@
   /* "★ Favorites" section — user-added pins, shown at the top of the list.
      Inherits .day-section so spacing/sizing matches other day sections. */
   .added-section.hidden { display: none; }
-  .added-stops { padding: 0 12px 14px; }   /* matches .stop side padding */
+  .added-stops { padding: 0 24px 24px 32px; }   /* extra left inset to align rows */
   /* Gold star marker in the .day-eyebrow, mirroring .day-dot positioning. */
   .added-eyebrow-dot {
     width: 14px !important; height: 14px !important;
@@ -131,7 +131,7 @@
   /* Category filter hides individual stops + sub-points that don't match. */
   .stop.hidden { display: none; }
   .sub-point.hidden { display: none; }
-  .day-header { padding: 28px 32px 16px; }
+  .day-header { padding: 24px; }
   .day-eyebrow {
     font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
     text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px;
@@ -266,9 +266,9 @@
   }
 
   .sub-points {
-    margin-top: 12px; padding-top: 10px;
+    margin-top: 16px; padding-top: 16px;
     border-top: 1px dashed var(--rule);
-    display: flex; flex-direction: column; gap: 8px;
+    display: flex; flex-direction: column; gap: 12px;
   }
   .sub-point {
     display: grid; grid-template-columns: 12px 1fr auto; gap: 10px;
@@ -1602,6 +1602,9 @@ const itinerary = [
       { name: '★ ABC Carpet & Home', lat: 40.7378, lng: -73.9898, category: 'Design',
         addr: '888 Broadway · Flatiron',
         note: { ko: '6층 거대한 디자인 백화점 — 빈티지 카펫, 라이팅, 그릇, 가구. Oiji Mi 바로 옆 (도보 3분). 6시 전 닫혀서 5시 전에 가야 함. 영감 ★★★.', en: '6 floors of a vast design emporium — vintage rugs, lighting, tableware, furniture. Right by Oiji Mi (3 min walk). Closes before 6 — go before 5. Inspiration ★★★.' } },
+      { name: '★ Fishs Eddy', lat: 40.7378, lng: -73.9905, category: 'Design',
+        addr: '889 Broadway @ E 19th St · Flatiron',
+        note: { ko: '1986년부터 — 빈티지 호텔/레스토랑 그릇과 위트 있는 NYC 시그니처 디시(스카이라인, 지하철 노선, 브라운스톤 패턴)로 유명한 동네의 명소. ABC Carpet 바로 건너편(도보 1분)이라 한 동선에 묶기 좋음. Oiji Mi(같은 19th St)도 같은 블록 — 7시 저녁 전에 30~40분 둘러보기 딱.\n\n뭘 사면 좋냐:\n• "Bridge & Tunnel" 머그 / 에스프레소 컵 — 가볍고 부서지지 않게 신문지 한 장 감으면 캐리어에도 OK.\n• Diner-style 헤비 머그 (1인 $10~14) — 4명 세트로 묶어도 부담 없음.\n• "212 NY" 디시 타월 / 앞치마 — 깨질 걱정 없는 선물용 픽.\n• 빈티지 호텔웨어 한 점 — 가격대 $8~30, 한국에서 보기 어려운 시리즈.\n\n팁: 1층은 NYC/유머 시리즈 + 작은 굿즈, 2층(B1)이 빈티지 호텔웨어 + 큰 그릇. 정기 세일대(50% off) 있는 날도 있으니 입구에서 먼저 체크. 평일 정오 후~오후 4시가 가장 한산. 영업: 일~월 11~7, 금~토 11~8(시즌 따라 변동, Resy 같은 예약 없음).', en: 'Since 1986 — the Flatiron destination for vintage hotel/restaurant tableware and witty NYC-themed dishes (skyline, subway-map, brownstone patterns). Directly across from ABC Carpet (~1 min walk), and Oiji Mi is on the same 19th St block — perfect 30–40 min stop before the 7PM dinner.\n\nWhat to grab:\n• "Bridge & Tunnel" mugs / espresso cups — light, wrap one in newspaper and they survive a carry-on.\n• Diner-style heavy mugs ($10–14 each) — a 4-person set still fits the budget.\n• "212 NY" dish towels / aprons — unbreakable, easy gifts.\n• A single piece of vintage hotelware — $8–30; lines you won\'t see in Korea.\n\nTips: ground floor = NYC + humor + small goods; lower level = vintage hotelware + larger plates. There\'s often a 50%-off sale table at the entrance — check first. Quietest weekday afternoons (12–4). Hours: roughly Sun–Mon 11–7, Fri–Sat 11–8 (varies seasonally; no reservations).' } },
       { name: '★ Astor Place Cube', lat: 40.7297, lng: -73.9914, category: 'Design',
         addr: 'Astor Pl & Lafayette · East Village',
         note: { ko: 'Tony Rosenthal의 회전 큐브 (Alamo, 1967). 손으로 밀면 돌아감. NYC 퍼블릭 아트 클래식. 옆 Astor Pl 지하철역 모자이크 비버 (역사 디자인 디테일) 같이.', en: 'Tony Rosenthal\'s rotating cube (Alamo, 1967). Push it by hand and it spins. An NYC public-art classic. Pair with the mosaic beavers in the Astor Pl subway station (a historic design detail).' } },
