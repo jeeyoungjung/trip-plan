@@ -364,8 +364,8 @@
   .popup-action.popup-restore:hover { background: var(--cat-saved); color: #fff; }
 
   /* Trash legend item + the restore panel it reveals */
-  .legend-trash.on { color: var(--ink); font-weight: 600; }
-  .legend-trash-ico { width: 12px; display: inline-flex; justify-content: center; font-size: 11px; }
+  /* Favorite legend swatch — a gold star instead of a color circle. */
+  .legend-star { width: 12px; display: inline-flex; justify-content: center; align-items: center; font-size: 12px; line-height: 1; color: var(--cat-saved); }
   .trash-panel {
     position: absolute; top: 24px; left: 24px; z-index: 600; width: 220px; max-height: 50%;
     overflow-y: auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px;
@@ -518,7 +518,10 @@
   .legend-item:last-of-type { margin-bottom: 0; }
   .legend-swatch { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
   .legend-swatch.legend-ring { background: var(--panel); border: 1.5px solid var(--ink-2); width: 10px; height: 10px; }
-  .legend-reset-row { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--rule); }
+  .legend-reset-row {
+    margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--rule);
+    display: flex; align-items: center; gap: 14px;
+  }
   .legend-reset {
     background: none; border: 0; padding: 0; cursor: pointer;
     font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
@@ -526,6 +529,8 @@
     transition: color 0.18s;
   }
   .legend-reset:hover { color: var(--ink); }
+  /* "Deleted" toggle sits next to Reset; inked when trash mode is active. */
+  #legendTrash.on { color: var(--ink); font-weight: 600; }
 
   /* Zoom controls — match the legend box: square corners, --rule border,
      --panel fill, the same soft shadow, mono +/−, and the ink-invert hover
@@ -1206,9 +1211,11 @@
       <button type="button" class="legend-item" data-cat="Shopping"><span class="legend-swatch legend-ring" style="border-color:var(--cat-shopping)"></span><span>Shopping</span></button>
       <button type="button" class="legend-item" data-cat="Books"><span class="legend-swatch legend-ring" style="border-color:var(--cat-books)"></span><span>Books</span></button>
       <button type="button" class="legend-item" data-cat="Design"><span class="legend-swatch legend-ring" style="border-color:var(--cat-design)"></span><span>Design</span></button>
-      <button type="button" class="legend-item" id="legendSaved" data-cat="Saved" hidden><span class="legend-swatch" style="background:var(--cat-saved)"></span><span>★ Added</span></button>
-      <button type="button" class="legend-item legend-trash" id="legendTrash" hidden><span class="legend-trash-ico">🗑</span><span class="legend-trash-label">Trash</span></button>
-      <div class="legend-reset-row"><button type="button" class="legend-reset" id="legendReset">Reset</button></div>
+      <button type="button" class="legend-item" id="legendSaved" data-cat="Saved" hidden><span class="legend-star">★</span><span>Favorite</span></button>
+      <div class="legend-reset-row">
+        <button type="button" class="legend-reset" id="legendReset">Reset</button>
+        <button type="button" class="legend-reset legend-deleted" id="legendTrash" hidden>Deleted</button>
+      </div>
     </div>
     <div class="trash-panel" id="trashPanel" hidden></div>
   </main>
@@ -2944,6 +2951,12 @@ function restorePlace(id) {
   tripState.hidden.splice(i, 1);
   saveTripState();
   if (map) map.closePopup();
+  // Nothing left in the trash → exit trash mode + hide the Deleted toggle.
+  if (!tripState.hidden.length) {
+    filters.showTrash = false;
+    const tb = document.getElementById('legendTrash');
+    if (tb) { tb.classList.remove('on'); tb.hidden = true; }
+  }
   applyMapFilters();
   applyListFilters();
   renderTrashPanel();
