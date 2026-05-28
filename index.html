@@ -1769,10 +1769,11 @@ function renderList() {
     if (stop.points) {
       el.querySelectorAll('.sub-point').forEach((subEl) => {
         subEl.addEventListener('click', (e) => {
-          e.stopPropagation();
-          // Action buttons (favorite / remove) handle themselves — don't also
-          // focus the sub-point when one is clicked.
+          // Action buttons (favorite / remove) handle themselves via the
+          // document-delegated listeners — bail BEFORE stopPropagation so the
+          // click still bubbles to them. (Stopping first would kill them.)
           if (e.target.closest('.sub-point-pin, .sub-point-remove')) return;
+          e.stopPropagation();
           focusSubPoint(subEl.dataset.sub);
         });
       });
@@ -2143,9 +2144,19 @@ function applyListFilters() {
     if (hasMatch) dayHasContent[stop.day] = true;
   });
 
-  // Hidden ("trashed") sub-points never appear in the sidebar list.
+  // Deleted sub-points: hidden from the list, EXCEPT in Trash mode (the
+  // "Deleted" legend toggle), where they reappear so they can be restored.
+  // Their remove button flips to a restore (↩) affordance while shown.
   document.querySelectorAll('.sub-point[data-sub]').forEach(sp => {
-    if (isHidden(sp.dataset.sub)) sp.classList.add('hidden');
+    const deleted = isHidden(sp.dataset.sub);
+    const rb = sp.querySelector('.sub-point-remove');
+    if (rb) {
+      rb.textContent = deleted ? '↩' : '🗑';
+      rb.title = deleted ? loc('다시 표시', 'Restore') : loc('관심 없음', 'Remove');
+    }
+    // Only force visibility for deleted rows; leave category/day filtering of
+    // non-deleted rows untouched.
+    if (deleted) sp.classList.toggle('hidden', !filters.showTrash);
   });
 
   document.querySelectorAll('.day-section').forEach(section => {
@@ -3029,14 +3040,23 @@ function renderTrashPanel() {
 }
 
 // Delegated handler for Hide/Restore buttons (popups + trash panel).
+// The list's .sub-point-remove is a TOGGLE: hide when active, restore when
+// the row is currently shown as deleted (in Trash mode).
 document.addEventListener('click', (e) => {
-  const hideBtn = e.target.closest('.popup-hide, .sub-point-remove');
+  const subRemove = e.target.closest('.sub-point-remove');
+  if (subRemove) {
+    e.preventDefault(); e.stopPropagation();
+    const id = subRemove.dataset.id;
+    isHidden(id) ? restorePlace(id) : hidePlace(id);
+    return;
+  }
+  const hideBtn = e.target.closest('.popup-hide');
   if (hideBtn) { e.preventDefault(); e.stopPropagation(); hidePlace(hideBtn.dataset.id); return; }
   const restoreBtn = e.target.closest('.popup-restore');
   if (restoreBtn) { e.preventDefault(); restorePlace(restoreBtn.dataset.id); return; }
 });
 
-// Trash legend → toggle Trash mode (reveal hidden pins + restore panel).
+// Trash legend → toggle Trash mode (reveal deleted rows/pins + restore panel).
 const legendTrashBtn = document.getElementById('legendTrash');
 if (legendTrashBtn) {
   legendTrashBtn.addEventListener('click', (e) => {
@@ -3044,6 +3064,7 @@ if (legendTrashBtn) {
     filters.showTrash = !filters.showTrash;
     legendTrashBtn.classList.toggle('on', filters.showTrash);
     applyMapFilters();
+    applyListFilters();
     renderTrashPanel();
   });
 }
