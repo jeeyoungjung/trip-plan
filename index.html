@@ -114,6 +114,20 @@
   /* ========= STOPS LIST ========= */
   .day-section { border-bottom: 1px solid var(--rule-soft); }
   .day-section.hidden { display: none; }
+
+  /* "★ Favorites" section — user-added pins, shown at the top of the list.
+     Inherits .day-section so spacing/sizing matches other day sections. */
+  .added-section.hidden { display: none; }
+  .added-stops { padding: 0 12px 14px; }   /* matches .stop side padding */
+  /* Gold star marker in the .day-eyebrow, mirroring .day-dot positioning. */
+  .added-eyebrow-dot {
+    width: 14px !important; height: 14px !important;
+    background: var(--cat-saved) !important; border: 0 !important; color: #fff;
+    display: inline-flex !important; align-items: center; justify-content: center;
+    font-size: 10px; line-height: 1;
+  }
+  /* Per-row gold dot in place of the category-colored ring. */
+  .sub-point.added-point .sub-point-dot { background: var(--cat-saved); border-color: var(--cat-saved); }
   /* Category filter hides individual stops + sub-points that don't match. */
   .stop.hidden { display: none; }
   .sub-point.hidden { display: none; }
@@ -1000,6 +1014,16 @@
     font-family: var(--kr); font-size: 12.5px; color: var(--ink);
     margin-bottom: 8px; letter-spacing: -0.005em; line-height: 1.3;
   }
+  .chat-map-note {
+    width: 100%; box-sizing: border-box;
+    background: var(--surface, #fff); color: var(--ink);
+    border: 1px solid var(--rule); border-radius: 8px;
+    padding: 7px 10px; font: 13px/1.3 var(--sans);
+    margin: 8px 0; outline: none;
+    transition: border-color .15s;
+  }
+  .chat-map-note::placeholder { color: var(--ink-4); }
+  .chat-map-note:focus { border-color: var(--ink-3); }
   .chat-map-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
   .chat-map-btn {
     font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em;
@@ -2189,11 +2213,21 @@ function applyListFilters() {
   });
 
   document.querySelectorAll('.day-section').forEach(section => {
+    if (section.id === 'addedSection') return;   // handled separately below
     const d = parseInt(section.dataset.day, 10);
     const dayOK = dayMatch(d);
     const hasContent = !catsIsolated || dayHasContent[d];
     section.classList.toggle('hidden', !(dayOK && hasContent));
   });
+
+  // The "Favorites" (added) section is day-agnostic. Hide it when isolated
+  // to a non-Saved category or when every row is currently hidden.
+  const addedSection = document.getElementById('addedSection');
+  if (addedSection) {
+    const catOK = !catsIsolated || filters.activeCategories.has('Saved');
+    const anyVisible = !!addedSection.querySelector('.sub-point:not(.hidden)');
+    addedSection.classList.toggle('hidden', !catOK || !anyVisible);
+  }
 }
 
 function fitToActiveView(duration = 0.7) {
@@ -2407,6 +2441,14 @@ function syncPinUI() {
   document.querySelectorAll('.sub-marker').forEach(m => {
     const on = pinned.has(m.dataset.sub);
     m.classList.toggle('pinned', on);
+  });
+  // Lift favorited sub-markers above everything else on the map so the gold
+  // stars are never occluded by neighboring pins.
+  [1, 2, 3].forEach(d => {
+    if (typeof subMarkers === 'undefined' || !subMarkers[d]) return;
+    subMarkers[d].forEach(marker => {
+      marker.setZIndexOffset(pinned.has(marker.subId) ? 1000 : 0);
+    });
   });
   // Mirror onto any open popup's favorite button.
   document.querySelectorAll('.popup-fav').forEach(btn => {
@@ -2841,6 +2883,12 @@ function renderMapActionCards(points) {
     const name = document.createElement('div');
     name.className = 'chat-map-name ko';
     name.textContent = '📍 ' + p.name;
+    // Optional note input — captured at add time, persisted with the pin,
+    // and shown in the popup + the sidebar Favorites section.
+    const noteInput = document.createElement('input');
+    noteInput.type = 'text';
+    noteInput.className = 'chat-map-note';
+    noteInput.placeholder = loc('메모 (선택) — 어떤 장소인지, 왜 가고 싶은지 등', 'Add a note (optional) — what this place is, why save it…');
     const btns = document.createElement('div');
     btns.className = 'chat-map-buttons';
     // Single action: drop a persistent ★ pin on the map AND fly to it.
@@ -2850,7 +2898,7 @@ function renderMapActionCards(points) {
     show.className = 'chat-map-btn';
     show.textContent = loc('★ 지도에 표시', '★ Show on map');
     show.addEventListener('click', () => {
-      addCustomPoint(p.lat, p.lng, p.name);
+      addCustomPoint(p.lat, p.lng, p.name, { note: noteInput.value });
       show.textContent = loc('★ 지도에 추가됨 · 다시 보기', '★ Added · re-center');
     });
     const gmap = document.createElement('a');
@@ -2860,7 +2908,7 @@ function renderMapActionCards(points) {
     gmap.href = 'https://maps.google.com/?q=' + encodeURIComponent(p.name);
     gmap.textContent = 'Google Maps ↗';
     btns.append(show, gmap);
-    card.append(name, btns);
+    card.append(name, noteInput, btns);
     wrap.appendChild(card);
   });
   chatMessagesEl.appendChild(wrap);
@@ -2892,10 +2940,13 @@ function showOnMap(lat, lng, name) {
   }, 320);
 }
 
+function addedKey(p) { return `${p.lat.toFixed(5)},${p.lng.toFixed(5)},${p.name}`; }
+
 function addCustomPoint(lat, lng, name, opts) {
   opts = opts || {};
   const persist = opts.persist !== false;   // chat-add persists; replay does not
   const focus = opts.focus !== false;
+  const note = (opts.note || '').trim();
   if (!map) return;
   const key = `${lat.toFixed(5)},${lng.toFixed(5)},${name}`;
   if (!customMarkers.has(key)) {
@@ -2905,20 +2956,37 @@ function addCustomPoint(lat, lng, name, opts) {
       iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -11],
     });
     const marker = L.marker([lat, lng], { icon });
+    marker.setZIndexOffset(1000);   // favorites always render above other markers
     marker.category = 'Saved';  // so legend filtering (applyMapFilters) controls it
     marker.customKey = key;
-    marker.bindPopup(() => buildPlacePopup({
-      eyebrow: loc('현서비서 추가', 'Added by Travel Bot'),
-      title: name, gmapsQ: name, id: key,
-    }), { closeButton: true, autoPan: true });
+    // Function popup so the note (and Hide/Restore state) update on each open.
+    marker.bindPopup(() => {
+      const cur = tripState.added.find(a => addedKey(a) === key);
+      return buildPlacePopup({
+        eyebrow: loc('현서비서 추가', 'Added by Travel Bot'),
+        title: name,
+        note: (cur && cur.note) || '',
+        gmapsQ: name, id: key,
+      });
+    }, { closeButton: true, autoPan: true });
     customMarkers.set(key, marker);
     if (!isHidden(key)) marker.addTo(map);
   }
-  revealSavedLegend();
-  if (persist && !tripState.added.some(a => `${a.lat.toFixed(5)},${a.lng.toFixed(5)},${a.name}` === key)) {
-    tripState.added.push({ lat, lng, name });
-    saveTripState();
+  // Upsert into tripState.added, then save once if anything changed.
+  let changed = false;
+  const idx = tripState.added.findIndex(a => addedKey(a) === key);
+  if (idx === -1) {
+    tripState.added.push({ lat, lng, name, note });
+    changed = true;
+  } else if (note && tripState.added[idx].note !== note) {
+    tripState.added[idx].note = note;
+    changed = true;
   }
+  if (persist && changed) saveTripState();
+  syncFavoriteLegend();
+  renderAddedList();
+  if (typeof applyMapFilters === 'function') applyMapFilters();
+  if (typeof applyListFilters === 'function') applyListFilters();
   if (focus) showOnMap(lat, lng, name);
 }
 
@@ -2945,6 +3013,67 @@ function syncFavoriteLegend() {
 }
 // Backwards-compatible alias for callers that still say "revealSavedLegend".
 function revealSavedLegend() { syncFavoriteLegend(); }
+
+// Renders the "★ Favorites" section at the top of the sidebar with the user's
+// added pins. Items reuse .sub-point markup so filter/hide logic + styling
+// flow through naturally. Hidden entries stay out unless Trash mode is on.
+function renderAddedList() {
+  if (typeof itineraryEl === 'undefined' || !itineraryEl) return;
+  let section = document.getElementById('addedSection');
+  if (!tripState.added.length) {
+    if (section) section.remove();
+    return;
+  }
+  if (!section) {
+    section = document.createElement('section');
+    section.id = 'addedSection';
+    // Inherit .day-section spacing/border so it matches the rest of the list.
+    section.className = 'day-section added-section';
+    itineraryEl.insertBefore(section, itineraryEl.firstChild);
+  }
+  const rows = tripState.added.map(p => {
+    const key = addedKey(p);
+    const safeKey = key.replace(/"/g, '&quot;');
+    const safeName = String(p.name || '').replace(/[<>&"]/g, '');
+    const safeNote = String(p.note || '').replace(/[<>&"]/g, '');
+    return `
+      <div class="sub-point added-point" data-sub="${safeKey}" data-cat="Saved" data-lat="${p.lat}" data-lng="${p.lng}" data-name="${safeName}">
+        <div class="sub-point-dot"></div>
+        <div class="sub-point-body">
+          <div class="sub-point-name">${safeName}</div>
+          ${safeNote ? `<div class="sub-point-note ko">${safeNote}</div>` : ''}
+        </div>
+        <div class="sub-point-right">
+          <div class="sub-point-actions">
+            <button class="sub-point-remove" data-id="${safeKey}" aria-label="Remove" title="${loc('관심 없음','Remove')}">🗑</button>
+          </div>
+          <div class="sub-point-cat" data-cat="Saved">★ ${loc('찜','Favorite')}</div>
+        </div>
+      </div>`;
+  }).join('');
+  const n = tripState.added.length;
+  const countLabel = LANG === 'en' ? `${n} place${n === 1 ? '' : 's'}` : `${n}곳`;
+  section.innerHTML = `
+    <div class="day-header">
+      <div class="day-eyebrow"><span class="day-dot added-eyebrow-dot">★</span>${loc('추가한 장소', 'Favorites')}</div>
+      <div class="day-name">${loc('★ 즐겨찾기', '★ Favorites')}</div>
+      <div class="day-date">${countLabel}</div>
+    </div>
+    <div class="added-stops">
+      <div class="sub-points">${rows}</div>
+    </div>`;
+  // Wire row clicks → fly map to the place (action buttons handle themselves
+  // via the document-delegated remove handler).
+  section.querySelectorAll('.added-point').forEach(row => {
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('.sub-point-pin, .sub-point-remove')) return;
+      const lat = parseFloat(row.dataset.lat);
+      const lng = parseFloat(row.dataset.lng);
+      const nm = row.dataset.name;
+      if (Number.isFinite(lat) && Number.isFinite(lng)) showOnMap(lat, lng, nm);
+    });
+  });
+}
 
 // =========== SHARED TRIP STATE (saved ★ + hidden/trashed places) ===========
 // Persisted via the Worker's /state endpoint (Cloudflare KV) so the whole
@@ -2983,9 +3112,10 @@ function saveTripState() {
 function applyTripState() {
   tripState.added.forEach(p => {
     if (p && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {
-      addCustomPoint(p.lat, p.lng, p.name, { persist: false, focus: false });
+      addCustomPoint(p.lat, p.lng, p.name, { persist: false, focus: false, note: p.note });
     }
   });
+  renderAddedList();
   if (tripState.added.length) revealSavedLegend();
   if (tripState.hidden.length) revealTrashLegend();
   if (typeof applyMapFilters === 'function') applyMapFilters();
