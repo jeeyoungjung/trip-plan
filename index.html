@@ -36,6 +36,7 @@
     --cat-shopping: #7B8757;  /* sage olive */
     --cat-books:    #5E7896;  /* dusty slate */
     --cat-design:   #9E6884;  /* rose mauve */
+    --cat-saved:    #C99A2E;  /* gold — user-added ★ pins */
     --display: 'Fraunces', 'Noto Sans KR', serif;
     --sans: 'DM Sans', 'Noto Sans KR', system-ui, sans-serif;
     --kr: 'Noto Sans KR', sans-serif;
@@ -145,7 +146,7 @@
 
   .stop {
     display: grid; grid-template-columns: 56px 1fr; gap: 16px;
-    padding: 16px 32px; cursor: pointer;
+    padding: 12px 12px; cursor: pointer;
     transition: background 0.2s, opacity 0.3s ease;
     border-bottom: 1px solid var(--rule-soft); position: relative;
     -webkit-tap-highlight-color: transparent;
@@ -294,21 +295,37 @@
   .sub-point-cat[data-cat="Books"]    { color: var(--cat-books);    border-color: var(--cat-books); }
   .sub-point-cat[data-cat="Design"]   { color: var(--cat-design);   border-color: var(--cat-design); }
 
-  /* Right-column: pin star above the category chip. */
+  /* Right-column: favorite + remove actions above the category chip. */
   .sub-point-right {
     display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
     margin-top: 2px;
   }
-  .sub-point-pin {
+  .sub-point-actions { display: flex; align-items: center; gap: 2px; }
+  .sub-point-pin, .sub-point-remove {
     background: none; border: 0; cursor: pointer; padding: 0 2px;
-    font-family: inherit; font-size: 15px; line-height: 1;
-    color: var(--ink-4);
+    font-family: inherit; line-height: 1; color: var(--ink-4);
     transition: color 0.18s, transform 0.15s;
     -webkit-tap-highlight-color: transparent;
   }
+  .sub-point-pin { font-size: 15px; }
+  .sub-point-remove { font-size: 12px; }
   .sub-point-pin:hover { color: var(--ink-3); transform: scale(1.15); }
   .sub-point-pin.pinned { color: #B5634A; }
   .sub-point-pin.pinned:hover { color: var(--ink); }
+  .sub-point-remove:hover { color: #C4314B; transform: scale(1.15); }
+
+  /* Popup action icons (favorite / remove / restore) */
+  .popup-icon-btn {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 6px;
+    width: 30px; height: 26px; padding: 0; cursor: pointer; font-size: 14px; line-height: 1;
+    color: var(--ink-4); display: inline-flex; align-items: center; justify-content: center;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  .popup-icon-btn:hover { color: var(--ink-2); border-color: var(--ink-4); }
+  .popup-icon-btn.popup-fav.on { color: #B5634A; border-color: #B5634A; }
+  .popup-icon-btn.popup-hide:hover { color: #C4314B; border-color: #C4314B; }
+  .popup-icon-btn.popup-restore { color: #9A7411; border-color: var(--cat-saved); }
+  .popup-icon-btn.popup-restore:hover { background: var(--cat-saved); color: #fff; }
 
   /* Pinned sub-marker on the map — filled terracotta, slightly larger. */
   .sub-marker.pinned {
@@ -320,15 +337,53 @@
 
   /* Custom pin — places added from the chat into the map for this session. */
   .custom-pin {
-    width: 22px; height: 22px; border-radius: 50%;
-    background: #B5634A; color: var(--panel);
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--cat-saved); color: #fff;
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; line-height: 1; font-weight: 500;
-    box-shadow: 0 2px 6px rgba(31, 29, 24, 0.18), 0 0 0 2px var(--panel);
+    font-size: 13px; line-height: 1; font-weight: 500;
+    box-shadow: 0 2px 6px rgba(31, 29, 24, 0.22), 0 0 0 2px var(--panel);
     cursor: pointer;
     transition: transform 0.2s;
   }
-  .custom-pin:hover { transform: scale(1.15); }
+  .custom-pin:hover { transform: scale(1.18); }
+
+  /* Trashed (hidden) markers — only visible in Trash mode, muted. */
+  .custom-marker.trashed { opacity: 0.5; filter: grayscale(0.7); }
+  .custom-marker.trashed .sub-marker,
+  .custom-marker.trashed .custom-pin { box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--t1, #C4314B); }
+
+  /* Popup action row (Google Maps link + Hide/Restore button) */
+  .popup-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  .popup-action {
+    font-size: 11px; font-family: var(--mono); letter-spacing: .02em;
+    border: 1px solid var(--rule); background: var(--panel); color: var(--ink-3);
+    border-radius: 6px; padding: 4px 9px; cursor: pointer; transition: all .15s;
+  }
+  .popup-action.popup-hide:hover { border-color: #C4314B; color: #C4314B; }
+  .popup-action.popup-restore { border-color: var(--cat-saved); color: #9A7411; }
+  .popup-action.popup-restore:hover { background: var(--cat-saved); color: #fff; }
+
+  /* Trash legend item + the restore panel it reveals */
+  .legend-trash.on { color: var(--ink); font-weight: 600; }
+  .legend-trash-ico { width: 12px; display: inline-flex; justify-content: center; font-size: 11px; }
+  .trash-panel {
+    position: absolute; top: 24px; left: 24px; z-index: 600; width: 220px; max-height: 50%;
+    overflow-y: auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.14); padding: 12px 14px;
+  }
+  .trash-panel-title { font-family: var(--mono); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-4); margin-bottom: 8px; }
+  .trash-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--rule-soft); }
+  .trash-row:first-of-type { border-top: 0; }
+  .trash-name { flex: 1; font-size: 12px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .trash-restore {
+    flex: none; font-size: 10.5px; font-family: var(--mono); border: 1px solid var(--cat-saved);
+    background: transparent; color: #9A7411; border-radius: 5px; padding: 3px 8px; cursor: pointer;
+  }
+  .trash-restore:hover { background: var(--cat-saved); color: #fff; }
+  .trash-empty { font-size: 12px; color: var(--ink-4); }
+  @media (max-width: 900px) {
+    .trash-panel { top: 12px; left: 12px; width: 180px; }
+  }
 
 
   /* ========= MAP ========= */
@@ -384,7 +439,7 @@
     border: 1px solid var(--rule); padding: 0;
   }
   .leaflet-popup-content {
-    margin: 0 !important; padding: 18px 40px 16px 18px;
+    margin: 0 !important; padding: 20px;
     width: 240px !important; font-family: var(--sans);
   }
   .leaflet-popup-tip { background: var(--panel); border: 1px solid var(--rule); }
@@ -633,7 +688,7 @@
     .leaflet-control-zoom { margin-top: 52px !important; margin-right: 12px !important; }
 
     /* Smaller popup on mobile */
-    .leaflet-popup-content { padding: 18px 38px 14px 16px; width: 220px !important; }
+    .leaflet-popup-content { padding: 20px; width: 220px !important; }
     .leaflet-popup-close-button { top: 6px !important; right: 6px !important; width: 28px !important; height: 28px !important; font-size: 20px !important; }
     .popup-title { font-size: 16px; }
     .popup-note { font-size: 11px; }
@@ -1151,8 +1206,11 @@
       <button type="button" class="legend-item" data-cat="Shopping"><span class="legend-swatch legend-ring" style="border-color:var(--cat-shopping)"></span><span>Shopping</span></button>
       <button type="button" class="legend-item" data-cat="Books"><span class="legend-swatch legend-ring" style="border-color:var(--cat-books)"></span><span>Books</span></button>
       <button type="button" class="legend-item" data-cat="Design"><span class="legend-swatch legend-ring" style="border-color:var(--cat-design)"></span><span>Design</span></button>
+      <button type="button" class="legend-item" id="legendSaved" data-cat="Saved" hidden><span class="legend-swatch" style="background:var(--cat-saved)"></span><span>★ Added</span></button>
+      <button type="button" class="legend-item legend-trash" id="legendTrash" hidden><span class="legend-trash-ico">🗑</span><span class="legend-trash-label">Trash</span></button>
       <div class="legend-reset-row"><button type="button" class="legend-reset" id="legendReset">Reset</button></div>
     </div>
+    <div class="trash-panel" id="trashPanel" hidden></div>
   </main>
 
   <!-- Mobile-only: drag up/down to resize the map vs list split. -->
@@ -1265,6 +1323,8 @@ const itinerary = [
       { name: 'dae day coffee',   lat: 40.7544, lng: -73.9748, category: 'Coffee', addr: '485 Lexington Ave · Midtown East', note: { ko: '호텔 도보 2분. 호주 스타일 스페셜티. Joe Coffee 라인업 (현지 로컬 협업). 모닝 라떼 픽업 딱.', en: '2-min walk from the hotel. Australian-style specialty; Joe Coffee beans (local collab). Perfect morning latte pickup.' } },
       { name: '★ Grand Central Terminal', lat: 40.7527, lng: -73.9772, category: 'Design', addr: '89 E 42nd St · Midtown East',
         note: { ko: '기차(LIRR/지하철)로 도착하면 여기 통과 — 호텔에서 도보 7분이라 train 옵션의 도착지. LIRR Grand Central Madison이 지하. Beaux-Arts 랜드마크: Main Concourse 천장 별자리 벽화, Whispering Gallery, Vanderbilt Hall. 들어온 김에 5분 구경.', en: 'Where the train option (LIRR/subway) lands — 7-min walk to the hotel. LIRR Grand Central Madison is below. Beaux-Arts landmark: Main Concourse celestial ceiling, Whispering Gallery, Vanderbilt Hall. Worth a 5-min look.' } },
+      { name: 'Bryant Park', lat: 40.7536, lng: -73.9832, category: 'Design', addr: '42nd St & 6th Ave · Midtown',
+        note: { ko: '미드타운 한복판의 공원 — NY Public Library 본관 뒤. 잔디밭 + 카페 + 시즌 이벤트. 호텔/Grand Central에서 도보 5~10분이라 잠깐 쉬어가기 좋음.', en: 'A park in the heart of Midtown, behind the NY Public Library main branch. Lawn + kiosks + seasonal events. 5–10 min walk from the hotel / Grand Central — a nice pause.' } },
     ]
   },
   { day: 1, num: 3, time: '12:00 PM', name: 'Cho Dang Gol',
@@ -1533,6 +1593,9 @@ const itinerary = [
       { name: '★ Pranakhon Thai', lat: 40.7338, lng: -73.9928, category: 'Food',
         addr: '88 University Pl · Greenwich Village',
         note: { ko: 'University Pl & 11th St — Union Square 바로 아래 빌리지. 태국 가정식 분위기. Strand/Union Sq Greenmarket 동선이랑 같은 구역이라 토요일 오후에 딱. 점심/저녁 둘 다 OK.', en: 'University Pl & 11th St — the Village just below Union Square. Thai home-cooking vibe. Same area as the Strand/Union Sq Greenmarket route, perfect for a Saturday afternoon. Lunch or dinner.' } },
+      { name: 'Tamarind Tribeca', lat: 40.7196, lng: -74.0089, category: 'Food',
+        addr: '99 Hudson St · Tribeca',
+        note: { ko: '트라이베카 고급 인도 요리 — 넓고 모던한 다이닝룸. 브루클린 다리 건너 Tribeca 도착(B 동선)이랑 같은 구역. 점심도 하고 저녁 예약도 가능. 가격대 있는 편.', en: 'Upscale Indian in Tribeca — spacious, modern dining room. Same area as the Tribeca arrival off the Brooklyn Bridge (route B). Does lunch; dinner reservations available. On the pricier side.' } },
     ]
   },
   { day: 2, num: 15, time: '7:30 PM', name: 'Oiji Mi',
@@ -1678,7 +1741,10 @@ function renderList() {
                   <div class="sub-point-note ko">${tr(p.note)}</div>
                 </div>
                 <div class="sub-point-right">
-                  <button class="sub-point-pin" data-sub="${stop.num}-${i}" aria-label="Pin" title="${loc('찜', 'Pin')}">☆</button>
+                  <div class="sub-point-actions">
+                    <button class="sub-point-pin" data-sub="${stop.num}-${i}" aria-label="Favorite" title="${loc('찜', 'Favorite')}">☆</button>
+                    <button class="sub-point-remove" data-id="${stop.num}-${i}" aria-label="Remove" title="${loc('관심 없음', 'Remove')}">🗑</button>
+                  </div>
                   <div class="sub-point-cat" data-cat="${p.category}">${p.category}</div>
                 </div>
               </div>
@@ -1697,6 +1763,9 @@ function renderList() {
       el.querySelectorAll('.sub-point').forEach((subEl) => {
         subEl.addEventListener('click', (e) => {
           e.stopPropagation();
+          // Action buttons (favorite / remove) handle themselves — don't also
+          // focus the sub-point when one is clicked.
+          if (e.target.closest('.sub-point-pin, .sub-point-remove')) return;
           focusSubPoint(subEl.dataset.sub);
         });
       });
@@ -1745,6 +1814,11 @@ function initMap() {
 
     // Add markers, routes, and wire interaction (defined below)
     setupMarkersAndInteraction();
+
+    // Pull shared saved/hidden pins from the backend, then apply them.
+    // Deferred a tick so the whole script (incl. STATE_API / tripState consts
+    // defined further down) is evaluated before this runs.
+    setTimeout(loadTripState, 0);
 
     // Force size recalc — sticky containers can mis-measure on initial paint
     setTimeout(() => map.invalidateSize(), 100);
@@ -1809,13 +1883,14 @@ function setupMarkersAndInteraction(opts) {
         // (getElement() returns null when detached, so DOM-based lookup fails).
         subMarker.category = p.category;
         subMarker.subId = `${stop.num}-${i}`;
-        subMarker.bindPopup(`
-          <div class="popup-eyebrow">${p.category} · ${tr(stop.name)}</div>
-          <div class="popup-title">${tr(p.name)}</div>
-          <div class="popup-address">${tr(p.addr)}</div>
-          <div class="popup-note ko">${tr(p.note)}</div>
-          <a class="popup-link" href="https://maps.google.com/?q=${encodeURIComponent(tr(p.name) + ' ' + tr(p.addr))}" target="_blank">Google Maps →</a>
-        `, { closeButton: true, autoPan: true });
+        // Function popup so the Hide/Restore action reflects current state
+        // each time it opens.
+        const sid = `${stop.num}-${i}`;
+        subMarker.bindPopup(() => buildPlacePopup({
+          eyebrow: `${p.category} · ${tr(stop.name)}`,
+          title: tr(p.name), addr: tr(p.addr), note: tr(p.note),
+          gmapsQ: tr(p.name) + ' ' + tr(p.addr), id: sid,
+        }), { closeButton: true, autoPan: true });
         subMarkers[stop.day].push(subMarker);
       });
     }
@@ -1930,9 +2005,14 @@ function focusStop(num) {
 //   filters.activeDay      — 'all' | '1' | '2' | '3'  (driven by day tabs / legend day items)
 //   filters.activeCategories — Set of category names  (driven by legend category items)
 // applyMapFilters() reconciles every marker + route line against both.
+// Built-in sub-point categories. 'Saved' is the user-added (★) pin bucket —
+// it's a full filter category but does NOT count toward main-marker isolation.
+const BASE_CATS = ['Coffee', 'Food', 'Shopping', 'Books', 'Design'];
+const ALL_CATS = [...BASE_CATS, 'Saved'];
 const filters = {
   activeDay: 'all',
-  activeCategories: new Set(['Coffee', 'Food', 'Shopping', 'Books', 'Design']),
+  activeCategories: new Set(ALL_CATS),
+  showTrash: false,   // when true, reveal hidden ("trashed") pins for restore
 };
 
 function coordsForDay(d) {
@@ -1955,7 +2035,7 @@ function applyMapFilters() {
   // Main stops aren't tagged per-category, so they can't be filtered by
   // category individually; we treat any isolation as "show only category
   // sub-points".
-  const catsIsolated = filters.activeCategories.size < 5;
+  const catsIsolated = BASE_CATS.some(c => !filters.activeCategories.has(c));
 
   // Main stop markers — visible if day matches AND categories aren't isolated
   itinerary.forEach(stop => {
@@ -1982,10 +2062,28 @@ function applyMapFilters() {
   [1, 2, 3].forEach(d => {
     subMarkers[d].forEach(marker => {
       const cat = marker.category || null;
-      const show = dayMatch(d) && (!cat || filters.activeCategories.has(cat));
+      const hidden = isHidden(marker.subId);
+      // Hidden ("trashed") markers only show in Trash mode; otherwise gate
+      // normally on day + category.
+      const show = hidden
+        ? filters.showTrash
+        : dayMatch(d) && (!cat || filters.activeCategories.has(cat));
       if (show && !map.hasLayer(marker)) marker.addTo(map);
       else if (!show && map.hasLayer(marker)) map.removeLayer(marker);
+      const el = marker.getElement && marker.getElement();
+      if (el) el.classList.toggle('trashed', hidden && show);
     });
+  });
+
+  // User-added (★) pins — gated on the 'Saved' category, not day, so personal
+  // marks persist across day filters. Trashed ones follow the same rule.
+  customMarkers.forEach((marker, key) => {
+    const hidden = isHidden(key);
+    const show = hidden ? filters.showTrash : filters.activeCategories.has('Saved');
+    if (show && !map.hasLayer(marker)) marker.addTo(map);
+    else if (!show && map.hasLayer(marker)) map.removeLayer(marker);
+    const el = marker.getElement && marker.getElement();
+    if (el) el.classList.toggle('trashed', hidden && show);
   });
 }
 
@@ -2004,7 +2102,7 @@ function syncLegendUI() {
 // hide day sections that end up empty. Day filter alone behaves as before.
 function applyListFilters() {
   const dayMatch = (d) => filters.activeDay === 'all' || String(d) === filters.activeDay;
-  const catsIsolated = filters.activeCategories.size < 5;
+  const catsIsolated = BASE_CATS.some(c => !filters.activeCategories.has(c));
   const dayHasContent = { 1: false, 2: false, 3: false };
 
   document.querySelectorAll('.stop').forEach(stopEl => {
@@ -2036,6 +2134,11 @@ function applyListFilters() {
     });
     stopEl.classList.toggle('hidden', !hasMatch);
     if (hasMatch) dayHasContent[stop.day] = true;
+  });
+
+  // Hidden ("trashed") sub-points never appear in the sidebar list.
+  document.querySelectorAll('.sub-point[data-sub]').forEach(sp => {
+    if (isHidden(sp.dataset.sub)) sp.classList.add('hidden');
   });
 
   document.querySelectorAll('.day-section').forEach(section => {
@@ -2089,7 +2192,7 @@ document.querySelectorAll('.legend-item[data-day]').forEach(item => {
 
 // Legend category items → mirror the day-tab pattern: clicking one
 // isolates to that category; clicking the same one again restores all.
-const ALL_CATS = ['Coffee', 'Food', 'Shopping', 'Books', 'Design'];
+// (ALL_CATS is defined once near the filters state, above.)
 document.querySelectorAll('.legend-item[data-cat]').forEach(item => {
   item.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -2258,11 +2361,18 @@ function syncPinUI() {
     const on = pinned.has(m.dataset.sub);
     m.classList.toggle('pinned', on);
   });
+  // Mirror onto any open popup's favorite button.
+  document.querySelectorAll('.popup-fav').forEach(btn => {
+    const on = pinned.has(btn.dataset.sub);
+    btn.classList.toggle('on', on);
+    btn.textContent = on ? '★' : '☆';
+  });
 }
 
-// Pin click handler — delegated so it works for all sub-points
+// Favorite (pin) click handler — delegated; works for list pins AND popup
+// favorite buttons (both carry data-sub).
 document.addEventListener('click', (e) => {
-  const btn = e.target.closest('.sub-point-pin');
+  const btn = e.target.closest('.sub-point-pin, .popup-fav');
   if (!btn) return;
   e.stopPropagation();
   e.preventDefault();
@@ -2680,21 +2790,23 @@ function renderMapActionCards(points) {
     name.textContent = '📍 ' + p.name;
     const btns = document.createElement('div');
     btns.className = 'chat-map-buttons';
+    // Single action: drop a persistent ★ pin on the map AND fly to it.
+    // (Replaces the old "Show on map" popover-only behavior.)
     const show = document.createElement('button');
     show.type = 'button';
     show.className = 'chat-map-btn';
-    show.textContent = 'Show on map';
-    show.addEventListener('click', () => showOnMap(p.lat, p.lng, p.name));
-    const add = document.createElement('button');
-    add.type = 'button';
-    add.className = 'chat-map-btn';
-    add.textContent = '+ Add';
-    add.addEventListener('click', () => {
+    show.textContent = loc('★ 지도에 표시', '★ Show on map');
+    show.addEventListener('click', () => {
       addCustomPoint(p.lat, p.lng, p.name);
-      add.disabled = true;
-      add.textContent = '✓ Added';
+      show.textContent = loc('★ 지도에 추가됨 · 다시 보기', '★ Added · re-center');
     });
-    btns.append(show, add);
+    const gmap = document.createElement('a');
+    gmap.className = 'chat-map-btn';
+    gmap.target = '_blank';
+    gmap.rel = 'noopener';
+    gmap.href = 'https://maps.google.com/?q=' + encodeURIComponent(p.name);
+    gmap.textContent = 'Google Maps ↗';
+    btns.append(show, gmap);
     card.append(name, btns);
     wrap.appendChild(card);
   });
@@ -2702,7 +2814,8 @@ function renderMapActionCards(points) {
   chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
 }
 
-// Session-only custom markers (cleared on reload, per the no-storage rule).
+// User-added (★) markers. Persisted to the shared backend (tripState.added)
+// so they survive reload + sync across devices.
 const customMarkers = new Map(); // key: "lat,lng,name" → leaflet marker
 
 function showOnMap(lat, lng, name) {
@@ -2726,27 +2839,200 @@ function showOnMap(lat, lng, name) {
   }, 320);
 }
 
-function addCustomPoint(lat, lng, name) {
+function addCustomPoint(lat, lng, name, opts) {
+  opts = opts || {};
+  const persist = opts.persist !== false;   // chat-add persists; replay does not
+  const focus = opts.focus !== false;
   if (!map) return;
   const key = `${lat.toFixed(5)},${lng.toFixed(5)},${name}`;
-  if (customMarkers.has(key)) {
-    showOnMap(lat, lng, name);  // already added — just focus
-    return;
+  if (!customMarkers.has(key)) {
+    const icon = L.divIcon({
+      className: 'custom-marker',
+      html: `<div class="custom-pin" data-name="${name.replace(/"/g, '&quot;')}">★</div>`,
+      iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -11],
+    });
+    const marker = L.marker([lat, lng], { icon });
+    marker.category = 'Saved';  // so legend filtering (applyMapFilters) controls it
+    marker.customKey = key;
+    marker.bindPopup(() => buildPlacePopup({
+      eyebrow: loc('현서비서 추가', 'Added by Travel Bot'),
+      title: name, gmapsQ: name, id: key,
+    }), { closeButton: true, autoPan: true });
+    customMarkers.set(key, marker);
+    if (!isHidden(key)) marker.addTo(map);
   }
-  const icon = L.divIcon({
-    className: 'custom-marker',
-    html: `<div class="custom-pin" data-name="${name.replace(/"/g, '&quot;')}">★</div>`,
-    iconSize: [22, 22], iconAnchor: [11, 11], popupAnchor: [0, -10],
+  revealSavedLegend();
+  if (persist && !tripState.added.some(a => `${a.lat.toFixed(5)},${a.lng.toFixed(5)},${a.name}` === key)) {
+    tripState.added.push({ lat, lng, name });
+    saveTripState();
+  }
+  if (focus) showOnMap(lat, lng, name);
+}
+
+// The "★ Added" legend item is hidden until the first user pin exists, so the
+// legend doesn't show an empty bucket. Reveal it + make sure the category is on.
+function revealSavedLegend() {
+  const el = document.getElementById('legendSaved');
+  if (el) el.hidden = false;
+  if (!filters.activeCategories.has('Saved')) {
+    filters.activeCategories.add('Saved');
+    if (typeof syncLegendUI === 'function') syncLegendUI();
+  }
+}
+
+// =========== SHARED TRIP STATE (saved ★ + hidden/trashed places) ===========
+// Persisted via the Worker's /state endpoint (Cloudflare KV) so the whole
+// group sees the same map on every device. Degrades to in-session only if the
+// backend is unreachable (fetch failures are swallowed).
+const STATE_API = PROXY_URL + '/state';
+const tripState = { added: [], hidden: [] };
+let stateSaveTimer = null;
+
+function isHidden(id) { return tripState.hidden.indexOf(id) !== -1; }
+
+async function loadTripState() {
+  try {
+    const r = await fetch(STATE_API, { method: 'GET' });
+    if (r.ok) {
+      const d = await r.json();
+      if (Array.isArray(d.added))  tripState.added  = d.added;
+      if (Array.isArray(d.hidden)) tripState.hidden = d.hidden;
+    }
+  } catch (_) { /* offline / not yet deployed — in-session only */ }
+  applyTripState();
+}
+
+function saveTripState() {
+  if (stateSaveTimer) clearTimeout(stateSaveTimer);
+  stateSaveTimer = setTimeout(() => {
+    fetch(STATE_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ added: tripState.added, hidden: tripState.hidden }),
+    }).catch(() => {});
+  }, 600);
+}
+
+// Re-create saved pins + apply hidden visibility + reveal legends/panel.
+function applyTripState() {
+  tripState.added.forEach(p => {
+    if (p && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {
+      addCustomPoint(p.lat, p.lng, p.name, { persist: false, focus: false });
+    }
   });
-  const marker = L.marker([lat, lng], { icon }).addTo(map);
-  marker.bindPopup(
-    `<div class="popup-eyebrow">${loc('현서비서 추가', 'Added by Travel Bot')}</div>` +
-    `<div class="popup-title">${name.replace(/[<>&"]/g, '')}</div>` +
-    `<a class="popup-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=${encodeURIComponent(name)}">Google Maps →</a>`,
-    { closeButton: true, autoPan: true }
-  );
-  customMarkers.set(key, marker);
-  showOnMap(lat, lng, name);
+  if (tripState.added.length) revealSavedLegend();
+  if (tripState.hidden.length) revealTrashLegend();
+  if (typeof applyMapFilters === 'function') applyMapFilters();
+  if (typeof applyListFilters === 'function') applyListFilters();
+  renderTrashPanel();
+}
+
+function hidePlace(id) {
+  if (!id || isHidden(id)) return;
+  tripState.hidden.push(id);
+  saveTripState();
+  revealTrashLegend();
+  if (map) map.closePopup();
+  applyMapFilters();
+  applyListFilters();
+  renderTrashPanel();
+}
+
+function restorePlace(id) {
+  const i = tripState.hidden.indexOf(id);
+  if (i === -1) return;
+  tripState.hidden.splice(i, 1);
+  saveTripState();
+  if (map) map.closePopup();
+  applyMapFilters();
+  applyListFilters();
+  renderTrashPanel();
+}
+
+// Build a place popup with Favorite (★) + Remove/Restore icon actions, reading
+// current state each open (bound as a function). Used by sub-point markers and
+// user-added ★ pins. The decorative leading "★ " in curated names is stripped
+// from the title since favoriting is now an explicit button.
+function buildPlacePopup({ eyebrow, title, addr, note, gmapsQ, id }) {
+  const safeId = String(id).replace(/"/g, '&quot;');
+  const isSub = /^\d+-\d+$/.test(String(id));   // only sub-points are favoritable
+  const pinned = isSub && parseHash().pin.indexOf(id) !== -1;
+  const favBtn = isSub
+    ? `<button type="button" class="popup-icon-btn popup-fav${pinned ? ' on' : ''}" data-sub="${safeId}" title="${loc('찜', 'Favorite')}" aria-label="Favorite">${pinned ? '★' : '☆'}</button>`
+    : '';
+  const removeBtn = isHidden(id)
+    ? `<button type="button" class="popup-icon-btn popup-restore" data-id="${safeId}" title="${loc('다시 표시', 'Restore')}" aria-label="Restore">↩</button>`
+    : `<button type="button" class="popup-icon-btn popup-hide" data-id="${safeId}" title="${loc('관심 없음', 'Remove')}" aria-label="Remove">🗑</button>`;
+  const cleanTitle = String(title).replace(/^★\s*/, '').replace(/[<>]/g, '');
+  return `
+    <div class="popup-eyebrow">${eyebrow}</div>
+    <div class="popup-title">${cleanTitle}</div>
+    ${addr ? `<div class="popup-address">${addr}</div>` : ''}
+    ${note ? `<div class="popup-note ko">${note}</div>` : ''}
+    <div class="popup-actions">
+      <a class="popup-link" href="https://maps.google.com/?q=${encodeURIComponent(gmapsQ)}" target="_blank" rel="noopener">Google Maps →</a>
+      ${favBtn}
+      ${removeBtn}
+    </div>`;
+}
+
+// Resolve a hidden id → display name (+ coords) for the trash panel.
+function resolveHidden(id) {
+  const sub = /^(\d+)-(\d+)$/.exec(id);
+  if (sub) {
+    const stop = itinerary.find(s => s.num === +sub[1]);
+    const p = stop && stop.points && stop.points[+sub[2]];
+    if (p) return { name: tr(p.name), lat: p.lat, lng: p.lng };
+  }
+  const parts = String(id).split(',');
+  if (parts.length >= 3) {
+    const lat = parseFloat(parts[0]), lng = parseFloat(parts[1]);
+    if (Number.isFinite(lat)) return { name: parts.slice(2).join(','), lat, lng };
+  }
+  return { name: id, lat: null, lng: null };
+}
+
+function revealTrashLegend() {
+  const el = document.getElementById('legendTrash');
+  if (el) el.hidden = false;
+}
+
+// The trash panel lists removed places with a "put back" button. Visible only
+// while Trash mode is on.
+function renderTrashPanel() {
+  const panel = document.getElementById('trashPanel');
+  if (!panel) return;
+  if (!filters.showTrash) { panel.hidden = true; panel.innerHTML = ''; return; }
+  panel.hidden = false;
+  const rows = tripState.hidden.map(id => {
+    const r = resolveHidden(id);
+    const safeName = String(r.name || '').replace(/[<>&"]/g, '');
+    const safeId = String(id).replace(/"/g, '&quot;');
+    return `<div class="trash-row"><span class="trash-name" title="${safeName}">${safeName}</span>` +
+      `<button type="button" class="trash-restore popup-restore" data-id="${safeId}">${loc('복구', 'Put back')}</button></div>`;
+  }).join('');
+  panel.innerHTML = `<div class="trash-panel-title">🗑 ${loc('관심 없음 목록', 'Hidden places')}</div>` +
+    (rows || `<div class="trash-empty">${loc('비어 있음', 'Nothing here')}</div>`);
+}
+
+// Delegated handler for Hide/Restore buttons (popups + trash panel).
+document.addEventListener('click', (e) => {
+  const hideBtn = e.target.closest('.popup-hide, .sub-point-remove');
+  if (hideBtn) { e.preventDefault(); e.stopPropagation(); hidePlace(hideBtn.dataset.id); return; }
+  const restoreBtn = e.target.closest('.popup-restore');
+  if (restoreBtn) { e.preventDefault(); restorePlace(restoreBtn.dataset.id); return; }
+});
+
+// Trash legend → toggle Trash mode (reveal hidden pins + restore panel).
+const legendTrashBtn = document.getElementById('legendTrash');
+if (legendTrashBtn) {
+  legendTrashBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    filters.showTrash = !filters.showTrash;
+    legendTrashBtn.classList.toggle('on', filters.showTrash);
+    applyMapFilters();
+    renderTrashPanel();
+  });
 }
 
 function buildSystemPrompt() {
