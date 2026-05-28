@@ -115,18 +115,19 @@
   .day-section { border-bottom: 1px solid var(--rule-soft); }
   .day-section.hidden { display: none; }
 
-  /* "★ Favorites" section — user-added pins, shown at the top of the list. */
-  .added-section { border-bottom: 1px solid var(--rule-soft); background: linear-gradient(180deg, rgba(255,204,0,0.06), transparent); }
+  /* "★ Favorites" section — user-added pins, shown at the top of the list.
+     Inherits .day-section so spacing/sizing matches other day sections. */
   .added-section.hidden { display: none; }
-  .added-header { padding: 14px 12px 4px; }
-  .added-header .day-eyebrow { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-3); }
-  .added-dot {
-    width: 16px; height: 16px; border-radius: 50%;
-    background: var(--cat-saved); color: #fff;
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 11px; line-height: 1;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.18);
+  .added-stops { padding: 0 12px 14px; }   /* matches .stop side padding */
+  /* Gold star marker in the .day-eyebrow, mirroring .day-dot positioning. */
+  .added-eyebrow-dot {
+    width: 14px !important; height: 14px !important;
+    background: var(--cat-saved) !important; border: 0 !important; color: #fff;
+    display: inline-flex !important; align-items: center; justify-content: center;
+    font-size: 10px; line-height: 1;
   }
+  /* Per-row gold dot in place of the category-colored ring. */
+  .sub-point.added-point .sub-point-dot { background: var(--cat-saved); border-color: var(--cat-saved); }
   /* Category filter hides individual stops + sub-points that don't match. */
   .stop.hidden { display: none; }
   .sub-point.hidden { display: none; }
@@ -2212,6 +2213,7 @@ function applyListFilters() {
   });
 
   document.querySelectorAll('.day-section').forEach(section => {
+    if (section.id === 'addedSection') return;   // handled separately below
     const d = parseInt(section.dataset.day, 10);
     const dayOK = dayMatch(d);
     const hasContent = !catsIsolated || dayHasContent[d];
@@ -3016,7 +3018,8 @@ function renderAddedList() {
   if (!section) {
     section = document.createElement('section');
     section.id = 'addedSection';
-    section.className = 'added-section';
+    // Inherit .day-section spacing/border so it matches the rest of the list.
+    section.className = 'day-section added-section';
     itineraryEl.insertBefore(section, itineraryEl.firstChild);
   }
   const rows = tripState.added.map(p => {
@@ -3026,7 +3029,7 @@ function renderAddedList() {
     const safeNote = String(p.note || '').replace(/[<>&"]/g, '');
     return `
       <div class="sub-point added-point" data-sub="${safeKey}" data-cat="Saved" data-lat="${p.lat}" data-lng="${p.lng}" data-name="${safeName}">
-        <div class="sub-point-dot added-dot">★</div>
+        <div class="sub-point-dot"></div>
         <div class="sub-point-body">
           <div class="sub-point-name">${safeName}</div>
           ${safeNote ? `<div class="sub-point-note ko">${safeNote}</div>` : ''}
@@ -3039,11 +3042,17 @@ function renderAddedList() {
         </div>
       </div>`;
   }).join('');
+  const n = tripState.added.length;
+  const countLabel = LANG === 'en' ? `${n} place${n === 1 ? '' : 's'}` : `${n}곳`;
   section.innerHTML = `
-    <div class="day-header added-header">
-      <div class="day-eyebrow"><span class="legend-star">★</span>${loc('추가한 장소','Favorites')}</div>
+    <div class="day-header">
+      <div class="day-eyebrow"><span class="day-dot added-eyebrow-dot">★</span>${loc('추가한 장소', 'Favorites')}</div>
+      <div class="day-name">${loc('★ 즐겨찾기', '★ Favorites')}</div>
+      <div class="day-date">${countLabel}</div>
     </div>
-    <div class="stops">${rows}</div>`;
+    <div class="added-stops">
+      <div class="sub-points">${rows}</div>
+    </div>`;
   // Wire row clicks → fly map to the place (action buttons handle themselves
   // via the document-delegated remove handler).
   section.querySelectorAll('.added-point').forEach(row => {
