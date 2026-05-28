@@ -89,8 +89,30 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Everything else — cache-first with network fallback. Successful GETs are
-  // added to the shell cache so subsequent loads are instant + offline-ready.
+  // Page navigations + the HTML doc — NETWORK-FIRST. Always try to fetch the
+  // latest page when online so deploys show up immediately (no "feature looks
+  // gone / update missing" cache confusion). Fall back to cache only when the
+  // network is unreachable, so the app still opens offline.
+  const isDoc = event.request.mode === 'navigate'
+    || event.request.destination === 'document'
+    || url.pathname.endsWith('/')
+    || url.pathname.endsWith('/index.html');
+  if (isDoc) {
+    event.respondWith(
+      fetch(event.request).then((res) => {
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(SHELL_CACHE).then((cache) => cache.put(event.request, clone));
+        }
+        return res;
+      }).catch(() => caches.match(event.request).then((c) => c || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // Everything else (icons, CSS, Leaflet, etc.) — cache-first with network
+  // fallback. Successful GETs are added to the shell cache so subsequent loads
+  // are instant + offline-ready.
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
