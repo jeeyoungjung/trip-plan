@@ -295,21 +295,37 @@
   .sub-point-cat[data-cat="Books"]    { color: var(--cat-books);    border-color: var(--cat-books); }
   .sub-point-cat[data-cat="Design"]   { color: var(--cat-design);   border-color: var(--cat-design); }
 
-  /* Right-column: pin star above the category chip. */
+  /* Right-column: favorite + remove actions above the category chip. */
   .sub-point-right {
     display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
     margin-top: 2px;
   }
-  .sub-point-pin {
+  .sub-point-actions { display: flex; align-items: center; gap: 2px; }
+  .sub-point-pin, .sub-point-remove {
     background: none; border: 0; cursor: pointer; padding: 0 2px;
-    font-family: inherit; font-size: 15px; line-height: 1;
-    color: var(--ink-4);
+    font-family: inherit; line-height: 1; color: var(--ink-4);
     transition: color 0.18s, transform 0.15s;
     -webkit-tap-highlight-color: transparent;
   }
+  .sub-point-pin { font-size: 15px; }
+  .sub-point-remove { font-size: 12px; }
   .sub-point-pin:hover { color: var(--ink-3); transform: scale(1.15); }
   .sub-point-pin.pinned { color: #B5634A; }
   .sub-point-pin.pinned:hover { color: var(--ink); }
+  .sub-point-remove:hover { color: #C4314B; transform: scale(1.15); }
+
+  /* Popup action icons (favorite / remove / restore) */
+  .popup-icon-btn {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 6px;
+    width: 30px; height: 26px; padding: 0; cursor: pointer; font-size: 14px; line-height: 1;
+    color: var(--ink-4); display: inline-flex; align-items: center; justify-content: center;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  .popup-icon-btn:hover { color: var(--ink-2); border-color: var(--ink-4); }
+  .popup-icon-btn.popup-fav.on { color: #B5634A; border-color: #B5634A; }
+  .popup-icon-btn.popup-hide:hover { color: #C4314B; border-color: #C4314B; }
+  .popup-icon-btn.popup-restore { color: #9A7411; border-color: var(--cat-saved); }
+  .popup-icon-btn.popup-restore:hover { background: var(--cat-saved); color: #fff; }
 
   /* Pinned sub-marker on the map — filled terracotta, slightly larger. */
   .sub-marker.pinned {
@@ -423,7 +439,7 @@
     border: 1px solid var(--rule); padding: 0;
   }
   .leaflet-popup-content {
-    margin: 0 !important; padding: 18px 40px 16px 18px;
+    margin: 0 !important; padding: 20px;
     width: 240px !important; font-family: var(--sans);
   }
   .leaflet-popup-tip { background: var(--panel); border: 1px solid var(--rule); }
@@ -672,7 +688,7 @@
     .leaflet-control-zoom { margin-top: 52px !important; margin-right: 12px !important; }
 
     /* Smaller popup on mobile */
-    .leaflet-popup-content { padding: 18px 38px 14px 16px; width: 220px !important; }
+    .leaflet-popup-content { padding: 20px; width: 220px !important; }
     .leaflet-popup-close-button { top: 6px !important; right: 6px !important; width: 28px !important; height: 28px !important; font-size: 20px !important; }
     .popup-title { font-size: 16px; }
     .popup-note { font-size: 11px; }
@@ -1725,7 +1741,10 @@ function renderList() {
                   <div class="sub-point-note ko">${tr(p.note)}</div>
                 </div>
                 <div class="sub-point-right">
-                  <button class="sub-point-pin" data-sub="${stop.num}-${i}" aria-label="Pin" title="${loc('찜', 'Pin')}">☆</button>
+                  <div class="sub-point-actions">
+                    <button class="sub-point-pin" data-sub="${stop.num}-${i}" aria-label="Favorite" title="${loc('찜', 'Favorite')}">☆</button>
+                    <button class="sub-point-remove" data-id="${stop.num}-${i}" aria-label="Remove" title="${loc('관심 없음', 'Remove')}">🗑</button>
+                  </div>
                   <div class="sub-point-cat" data-cat="${p.category}">${p.category}</div>
                 </div>
               </div>
@@ -1744,6 +1763,9 @@ function renderList() {
       el.querySelectorAll('.sub-point').forEach((subEl) => {
         subEl.addEventListener('click', (e) => {
           e.stopPropagation();
+          // Action buttons (favorite / remove) handle themselves — don't also
+          // focus the sub-point when one is clicked.
+          if (e.target.closest('.sub-point-pin, .sub-point-remove')) return;
           focusSubPoint(subEl.dataset.sub);
         });
       });
@@ -2339,11 +2361,18 @@ function syncPinUI() {
     const on = pinned.has(m.dataset.sub);
     m.classList.toggle('pinned', on);
   });
+  // Mirror onto any open popup's favorite button.
+  document.querySelectorAll('.popup-fav').forEach(btn => {
+    const on = pinned.has(btn.dataset.sub);
+    btn.classList.toggle('on', on);
+    btn.textContent = on ? '★' : '☆';
+  });
 }
 
-// Pin click handler — delegated so it works for all sub-points
+// Favorite (pin) click handler — delegated; works for list pins AND popup
+// favorite buttons (both carry data-sub).
 document.addEventListener('click', (e) => {
-  const btn = e.target.closest('.sub-point-pin');
+  const btn = e.target.closest('.sub-point-pin, .popup-fav');
   if (!btn) return;
   e.stopPropagation();
   e.preventDefault();
@@ -2920,22 +2949,30 @@ function restorePlace(id) {
   renderTrashPanel();
 }
 
-// Build a place popup with a Hide or Restore action depending on current state.
-// Used by sub-point markers and user-added ★ pins (bound as a function so it
-// re-evaluates each open).
+// Build a place popup with Favorite (★) + Remove/Restore icon actions, reading
+// current state each open (bound as a function). Used by sub-point markers and
+// user-added ★ pins. The decorative leading "★ " in curated names is stripped
+// from the title since favoriting is now an explicit button.
 function buildPlacePopup({ eyebrow, title, addr, note, gmapsQ, id }) {
   const safeId = String(id).replace(/"/g, '&quot;');
-  const action = isHidden(id)
-    ? `<button type="button" class="popup-action popup-restore" data-id="${safeId}">↩ ${loc('다시 표시', 'Restore')}</button>`
-    : `<button type="button" class="popup-action popup-hide" data-id="${safeId}">🗑 ${loc('관심 없음', 'Not interested')}</button>`;
+  const isSub = /^\d+-\d+$/.test(String(id));   // only sub-points are favoritable
+  const pinned = isSub && parseHash().pin.indexOf(id) !== -1;
+  const favBtn = isSub
+    ? `<button type="button" class="popup-icon-btn popup-fav${pinned ? ' on' : ''}" data-sub="${safeId}" title="${loc('찜', 'Favorite')}" aria-label="Favorite">${pinned ? '★' : '☆'}</button>`
+    : '';
+  const removeBtn = isHidden(id)
+    ? `<button type="button" class="popup-icon-btn popup-restore" data-id="${safeId}" title="${loc('다시 표시', 'Restore')}" aria-label="Restore">↩</button>`
+    : `<button type="button" class="popup-icon-btn popup-hide" data-id="${safeId}" title="${loc('관심 없음', 'Remove')}" aria-label="Remove">🗑</button>`;
+  const cleanTitle = String(title).replace(/^★\s*/, '').replace(/[<>]/g, '');
   return `
     <div class="popup-eyebrow">${eyebrow}</div>
-    <div class="popup-title">${String(title).replace(/[<>]/g, '')}</div>
+    <div class="popup-title">${cleanTitle}</div>
     ${addr ? `<div class="popup-address">${addr}</div>` : ''}
     ${note ? `<div class="popup-note ko">${note}</div>` : ''}
     <div class="popup-actions">
       <a class="popup-link" href="https://maps.google.com/?q=${encodeURIComponent(gmapsQ)}" target="_blank" rel="noopener">Google Maps →</a>
-      ${action}
+      ${favBtn}
+      ${removeBtn}
     </div>`;
 }
 
@@ -2980,8 +3017,8 @@ function renderTrashPanel() {
 
 // Delegated handler for Hide/Restore buttons (popups + trash panel).
 document.addEventListener('click', (e) => {
-  const hideBtn = e.target.closest('.popup-hide');
-  if (hideBtn) { e.preventDefault(); hidePlace(hideBtn.dataset.id); return; }
+  const hideBtn = e.target.closest('.popup-hide, .sub-point-remove');
+  if (hideBtn) { e.preventDefault(); e.stopPropagation(); hidePlace(hideBtn.dataset.id); return; }
   const restoreBtn = e.target.closest('.popup-restore');
   if (restoreBtn) { e.preventDefault(); restorePlace(restoreBtn.dataset.id); return; }
 });
