@@ -2442,6 +2442,14 @@ function syncPinUI() {
     const on = pinned.has(m.dataset.sub);
     m.classList.toggle('pinned', on);
   });
+  // Lift favorited sub-markers above everything else on the map so the gold
+  // stars are never occluded by neighboring pins.
+  [1, 2, 3].forEach(d => {
+    if (typeof subMarkers === 'undefined' || !subMarkers[d]) return;
+    subMarkers[d].forEach(marker => {
+      marker.setZIndexOffset(pinned.has(marker.subId) ? 1000 : 0);
+    });
+  });
   // Mirror onto any open popup's favorite button.
   document.querySelectorAll('.popup-fav').forEach(btn => {
     const on = pinned.has(btn.dataset.sub);
@@ -2948,6 +2956,7 @@ function addCustomPoint(lat, lng, name, opts) {
       iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -11],
     });
     const marker = L.marker([lat, lng], { icon });
+    marker.setZIndexOffset(1000);   // favorites always render above other markers
     marker.category = 'Saved';  // so legend filtering (applyMapFilters) controls it
     marker.customKey = key;
     // Function popup so the note (and Hide/Restore state) update on each open.
