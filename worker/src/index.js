@@ -14,6 +14,38 @@
 
 const REQUIRED = ['AZURE_ENDPOINT', 'AZURE_KEY', 'AGENT_NAME', 'AGENT_VERSION'];
 
+const STATE_KEY = 'shared';        // single shared bucket for this trip
+const EMPTY_STATE = { added: [], hidden: [] };
+
+// GET  /state → current { added, hidden }
+// POST /state → overwrite with the posted { added, hidden }
+// Backed by the KV namespace bound as TRIP_STATE. If the binding is missing
+// (not yet created), GET returns empty state and POST is a no-op so the client
+// degrades gracefully instead of erroring.
+async function handleState(request, env, headers) {
+  if (request.method === 'GET') {
+    if (!env.TRIP_STATE) return new Response(JSON.stringify(EMPTY_STATE), { status: 200, headers });
+    const raw = await env.TRIP_STATE.get(STATE_KEY);
+    return new Response(raw || JSON.stringify(EMPTY_STATE), { status: 200, headers });
+  }
+  if (request.method === 'POST') {
+    let body;
+    try { body = await request.json(); } catch { body = null; }
+    if (!body || typeof body !== 'object') {
+      return new Response(JSON.stringify({ error: { message: 'Invalid body' } }), { status: 400, headers });
+    }
+    const clean = {
+      added: Array.isArray(body.added) ? body.added.slice(0, 300) : [],
+      hidden: Array.isArray(body.hidden) ? body.hidden.slice(0, 1000) : [],
+      v: 1,
+      updated: Date.now(),
+    };
+    if (env.TRIP_STATE) await env.TRIP_STATE.put(STATE_KEY, JSON.stringify(clean));
+    return new Response(JSON.stringify({ ok: true, stored: !!env.TRIP_STATE }), { status: 200, headers });
+  }
+  return new Response(JSON.stringify({ error: { message: 'Method not allowed' } }), { status: 405, headers });
+}
+
 function corsHeaders(origin, allowed) {
   const allow = (allowed && allowed !== '*' && origin && origin === allowed) ? origin : (allowed || '*');
   return {
@@ -32,6 +64,14 @@ export default {
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: baseHeaders });
+    }
+
+    // Shared trip state (saved/hidden pins) — persisted in KV so all devices
+    // sharing this trip see the same map. Single shared bucket; this is a
+    // private 4-person trip app, not multi-tenant.
+    const url = new URL(request.url);
+    if (url.pathname === '/state' || url.pathname === '/state/') {
+      return handleState(request, env, baseHeaders);
     }
 
     // Health check — GET returns whether secrets are configured.

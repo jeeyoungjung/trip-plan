@@ -29,9 +29,26 @@ wrangler secret put AGENT_VERSION
 wrangler secret put ALLOWED_ORIGIN
 # Paste: https://jeeyoungjung.github.io
 
-# 4. Deploy
+# 4. Create the KV namespace for shared saved/hidden pins (one-time)
+npx wrangler kv namespace create TRIP_STATE
+# Copy the printed `id = "..."` into wrangler.toml under [[kv_namespaces]]
+# (replace REPLACE_WITH_KV_NAMESPACE_ID).
+
+# 5. Deploy
 wrangler deploy
 ```
+
+## Shared trip state (saved / hidden pins)
+
+The site stores the group's added (★) pins and hidden ("trashed") places in
+Cloudflare KV so everyone sees the same map on any device. The worker exposes:
+
+- `GET /state` → `{ added: [...], hidden: [...] }`
+- `POST /state` → overwrite with the posted state
+
+It's one shared bucket (`shared`) — fine for a private 4-person trip. If the KV
+binding isn't set up yet, `GET` returns empty state and `POST` is a no-op, so the
+site still works in-session (it just won't sync across devices until KV exists).
 
 `wrangler deploy` prints a URL like `https://jeeyoungbot-proxy.<your-cloudflare-subdomain>.workers.dev`. Copy it.
 
