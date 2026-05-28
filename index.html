@@ -36,7 +36,7 @@
     --cat-shopping: #7B8757;  /* sage olive */
     --cat-books:    #5E7896;  /* dusty slate */
     --cat-design:   #9E6884;  /* rose mauve */
-    --cat-saved:    #C99A2E;  /* gold — user-added ★ pins */
+    --cat-saved:    #FFCC00;  /* bright yellow — favorites (★) */
     --display: 'Fraunces', 'Noto Sans KR', serif;
     --sans: 'DM Sans', 'Noto Sans KR', system-ui, sans-serif;
     --kr: 'Noto Sans KR', sans-serif;
@@ -310,7 +310,7 @@
   .sub-point-pin { font-size: 15px; }
   .sub-point-remove { font-size: 12px; }
   .sub-point-pin:hover { color: var(--ink-3); transform: scale(1.15); }
-  .sub-point-pin.pinned { color: #B5634A; }
+  .sub-point-pin.pinned { color: var(--cat-saved); }
   .sub-point-pin.pinned:hover { color: var(--ink); }
   .sub-point-remove:hover { color: #C4314B; transform: scale(1.15); }
 
@@ -322,17 +322,36 @@
     transition: color .15s, border-color .15s, background .15s;
   }
   .popup-icon-btn:hover { color: var(--ink-2); border-color: var(--ink-4); }
-  .popup-icon-btn.popup-fav.on { color: #B5634A; border-color: #B5634A; }
+  .popup-icon-btn.popup-fav.on { color: var(--cat-saved); border-color: var(--cat-saved); }
   .popup-icon-btn.popup-hide:hover { color: #C4314B; border-color: #C4314B; }
   .popup-icon-btn.popup-restore { color: #9A7411; border-color: var(--cat-saved); }
   .popup-icon-btn.popup-restore:hover { background: var(--cat-saved); color: #fff; }
 
-  /* Pinned sub-marker on the map — filled terracotta, slightly larger. */
+  /* Pinned (favorited) sub-marker on the map — a bright yellow star icon
+     replaces the colored circle. The star is rendered via ::before so the
+     12x12 .sub-marker can keep its dimensions while the glyph overflows
+     visibly, centered on the geographic anchor. */
   .sub-marker.pinned {
-    width: 16px; height: 16px;
-    background: #B5634A !important;
-    border-color: #B5634A !important;
-    box-shadow: 0 0 0 2px var(--panel), 0 1px 3px rgba(0,0,0,0.15);
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    position: relative; overflow: visible;
+  }
+  .sub-marker.pinned::before {
+    content: '★';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--cat-saved); font-size: 22px; line-height: 1;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,0,0,0.12);
+    pointer-events: none;
+  }
+  /* Same star treatment for a favorited custom (★ added) pin so the look is consistent. */
+  .custom-pin.pinned { background: transparent; box-shadow: none; position: relative; }
+  .custom-pin.pinned::before {
+    content: '★'; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); color: var(--cat-saved);
+    font-size: 26px; line-height: 1;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.35);
   }
 
   /* Custom pin — places added from the chat into the map for this session. */
@@ -364,8 +383,8 @@
   .popup-action.popup-restore:hover { background: var(--cat-saved); color: #fff; }
 
   /* Trash legend item + the restore panel it reveals */
-  .legend-trash.on { color: var(--ink); font-weight: 600; }
-  .legend-trash-ico { width: 12px; display: inline-flex; justify-content: center; font-size: 11px; }
+  /* Favorite legend swatch — a gold star instead of a color circle. */
+  .legend-star { width: 12px; display: inline-flex; justify-content: center; align-items: center; font-size: 12px; line-height: 1; color: var(--cat-saved); }
   .trash-panel {
     position: absolute; top: 24px; left: 24px; z-index: 600; width: 220px; max-height: 50%;
     overflow-y: auto; background: var(--panel); border: 1px solid var(--rule); border-radius: 10px;
@@ -518,7 +537,10 @@
   .legend-item:last-of-type { margin-bottom: 0; }
   .legend-swatch { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
   .legend-swatch.legend-ring { background: var(--panel); border: 1.5px solid var(--ink-2); width: 10px; height: 10px; }
-  .legend-reset-row { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--rule); }
+  .legend-reset-row {
+    margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--rule);
+    display: flex; align-items: center; gap: 14px;
+  }
   .legend-reset {
     background: none; border: 0; padding: 0; cursor: pointer;
     font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
@@ -526,6 +548,8 @@
     transition: color 0.18s;
   }
   .legend-reset:hover { color: var(--ink); }
+  /* "Deleted" toggle sits next to Reset; inked when trash mode is active. */
+  #legendTrash.on { color: var(--ink); font-weight: 600; }
 
   /* Zoom controls — match the legend box: square corners, --rule border,
      --panel fill, the same soft shadow, mono +/−, and the ink-invert hover
@@ -1206,9 +1230,11 @@
       <button type="button" class="legend-item" data-cat="Shopping"><span class="legend-swatch legend-ring" style="border-color:var(--cat-shopping)"></span><span>Shopping</span></button>
       <button type="button" class="legend-item" data-cat="Books"><span class="legend-swatch legend-ring" style="border-color:var(--cat-books)"></span><span>Books</span></button>
       <button type="button" class="legend-item" data-cat="Design"><span class="legend-swatch legend-ring" style="border-color:var(--cat-design)"></span><span>Design</span></button>
-      <button type="button" class="legend-item" id="legendSaved" data-cat="Saved" hidden><span class="legend-swatch" style="background:var(--cat-saved)"></span><span>★ Added</span></button>
-      <button type="button" class="legend-item legend-trash" id="legendTrash" hidden><span class="legend-trash-ico">🗑</span><span class="legend-trash-label">Trash</span></button>
-      <div class="legend-reset-row"><button type="button" class="legend-reset" id="legendReset">Reset</button></div>
+      <button type="button" class="legend-item" id="legendSaved" data-cat="Saved" hidden><span class="legend-star">★</span><span>Favorite</span></button>
+      <div class="legend-reset-row">
+        <button type="button" class="legend-reset" id="legendReset">Reset</button>
+        <button type="button" class="legend-reset legend-deleted" id="legendTrash" hidden>Deleted</button>
+      </div>
     </div>
     <div class="trash-panel" id="trashPanel" hidden></div>
   </main>
@@ -1762,10 +1788,11 @@ function renderList() {
     if (stop.points) {
       el.querySelectorAll('.sub-point').forEach((subEl) => {
         subEl.addEventListener('click', (e) => {
-          e.stopPropagation();
-          // Action buttons (favorite / remove) handle themselves — don't also
-          // focus the sub-point when one is clicked.
+          // Action buttons (favorite / remove) handle themselves via the
+          // document-delegated listeners — bail BEFORE stopPropagation so the
+          // click still bubbles to them. (Stopping first would kill them.)
           if (e.target.closest('.sub-point-pin, .sub-point-remove')) return;
+          e.stopPropagation();
           focusSubPoint(subEl.dataset.sub);
         });
       });
@@ -2059,15 +2086,20 @@ function applyMapFilters() {
   // — NOT from the DOM, because getElement() returns null after a marker is
   // removed, which would silently make all hidden markers re-appear on the
   // next filter change ("category bleed" bug).
+  // Favorited (pinned) sub-points show under the "Favorite" (Saved) filter too,
+  // regardless of their base category. Read once per pass.
+  const pinnedSet = new Set(parseHash().pin);
+  const favOn = filters.activeCategories.has('Saved');
   [1, 2, 3].forEach(d => {
     subMarkers[d].forEach(marker => {
       const cat = marker.category || null;
       const hidden = isHidden(marker.subId);
+      const isPinned = pinnedSet.has(marker.subId);
       // Hidden ("trashed") markers only show in Trash mode; otherwise gate
-      // normally on day + category.
+      // on day AND (category active OR (pinned + Favorite active)).
       const show = hidden
         ? filters.showTrash
-        : dayMatch(d) && (!cat || filters.activeCategories.has(cat));
+        : dayMatch(d) && ((!cat || filters.activeCategories.has(cat)) || (isPinned && favOn));
       if (show && !map.hasLayer(marker)) marker.addTo(map);
       else if (!show && map.hasLayer(marker)) map.removeLayer(marker);
       const el = marker.getElement && marker.getElement();
@@ -2124,11 +2156,16 @@ function applyListFilters() {
     }
 
     // Category isolated — sub-points filtered individually, stop shown only
-    // if any sub-point matches. Stops with no sub-points at all (transit /
-    // hotel / arrival rows) are hidden under category filter.
+    // if any sub-point matches. A pinned (favorited) row also matches when
+    // "Favorite" (Saved) is active, regardless of its base category — so
+    // isolating to Favorite reveals all favorites.
+    const pinnedSetL = new Set(parseHash().pin);
+    const favOnL = filters.activeCategories.has('Saved');
     let hasMatch = false;
     stopEl.querySelectorAll('.sub-point').forEach(sp => {
-      const match = filters.activeCategories.has(sp.dataset.cat);
+      const id = sp.dataset.sub;
+      const match = filters.activeCategories.has(sp.dataset.cat)
+        || (favOnL && pinnedSetL.has(id));
       sp.classList.toggle('hidden', !match);
       if (match) hasMatch = true;
     });
@@ -2136,9 +2173,19 @@ function applyListFilters() {
     if (hasMatch) dayHasContent[stop.day] = true;
   });
 
-  // Hidden ("trashed") sub-points never appear in the sidebar list.
+  // Deleted sub-points: hidden from the list, EXCEPT in Trash mode (the
+  // "Deleted" legend toggle), where they reappear so they can be restored.
+  // Their remove button flips to a restore (↩) affordance while shown.
   document.querySelectorAll('.sub-point[data-sub]').forEach(sp => {
-    if (isHidden(sp.dataset.sub)) sp.classList.add('hidden');
+    const deleted = isHidden(sp.dataset.sub);
+    const rb = sp.querySelector('.sub-point-remove');
+    if (rb) {
+      rb.textContent = deleted ? '↩' : '🗑';
+      rb.title = deleted ? loc('다시 표시', 'Restore') : loc('관심 없음', 'Remove');
+    }
+    // Only force visibility for deleted rows; leave category/day filtering of
+    // non-deleted rows untouched.
+    if (deleted) sp.classList.toggle('hidden', !filters.showTrash);
   });
 
   document.querySelectorAll('.day-section').forEach(section => {
@@ -2367,6 +2414,8 @@ function syncPinUI() {
     btn.classList.toggle('on', on);
     btn.textContent = on ? '★' : '☆';
   });
+  // Keep the "Favorite" legend visibility in sync with the favorites count.
+  syncFavoriteLegend();
 }
 
 // Favorite (pin) click handler — delegated; works for list pins AND popup
@@ -2378,6 +2427,10 @@ document.addEventListener('click', (e) => {
   e.preventDefault();
   togglePinInHash(btn.dataset.sub);
   syncPinUI();
+  // If "Favorite" filter is active (alone or alongside others), the new
+  // favorite needs to appear immediately in the list + on the map.
+  if (typeof applyMapFilters === 'function') applyMapFilters();
+  if (typeof applyListFilters === 'function') applyListFilters();
 });
 
 // React to hash changes (back/forward, external paste)
@@ -2869,16 +2922,29 @@ function addCustomPoint(lat, lng, name, opts) {
   if (focus) showOnMap(lat, lng, name);
 }
 
-// The "★ Added" legend item is hidden until the first user pin exists, so the
-// legend doesn't show an empty bucket. Reveal it + make sure the category is on.
-function revealSavedLegend() {
+// "Favorite" legend visibility tracks the total favorites count — that's
+// pinned sub-points (URL hash) + user-added (★) custom pins. Show when there's
+// at least one; hide when there are none (and drop a stale Saved-isolate).
+function syncFavoriteLegend() {
   const el = document.getElementById('legendSaved');
-  if (el) el.hidden = false;
-  if (!filters.activeCategories.has('Saved')) {
-    filters.activeCategories.add('Saved');
+  if (!el) return;
+  const hasPinned = (location.hash.match(/(?:^|&|#)pin=([^&]*)/) || [])[1];
+  const pinCount = hasPinned ? hasPinned.split(',').filter(Boolean).length : 0;
+  const hasAny = pinCount > 0 || (typeof customMarkers !== 'undefined' && customMarkers.size > 0);
+  el.hidden = !hasAny;
+  if (hasAny) {
+    if (!filters.activeCategories.has('Saved')) {
+      filters.activeCategories.add('Saved');
+      if (typeof syncLegendUI === 'function') syncLegendUI();
+    }
+  } else if (filters.activeCategories.size === 1 && filters.activeCategories.has('Saved')) {
+    // Was isolated to Favorite but nothing left to show → restore everything.
+    filters.activeCategories = new Set(ALL_CATS);
     if (typeof syncLegendUI === 'function') syncLegendUI();
   }
 }
+// Backwards-compatible alias for callers that still say "revealSavedLegend".
+function revealSavedLegend() { syncFavoriteLegend(); }
 
 // =========== SHARED TRIP STATE (saved ★ + hidden/trashed places) ===========
 // Persisted via the Worker's /state endpoint (Cloudflare KV) so the whole
@@ -2944,6 +3010,12 @@ function restorePlace(id) {
   tripState.hidden.splice(i, 1);
   saveTripState();
   if (map) map.closePopup();
+  // Nothing left in the trash → exit trash mode + hide the Deleted toggle.
+  if (!tripState.hidden.length) {
+    filters.showTrash = false;
+    const tb = document.getElementById('legendTrash');
+    if (tb) { tb.classList.remove('on'); tb.hidden = true; }
+  }
   applyMapFilters();
   applyListFilters();
   renderTrashPanel();
@@ -3016,14 +3088,23 @@ function renderTrashPanel() {
 }
 
 // Delegated handler for Hide/Restore buttons (popups + trash panel).
+// The list's .sub-point-remove is a TOGGLE: hide when active, restore when
+// the row is currently shown as deleted (in Trash mode).
 document.addEventListener('click', (e) => {
-  const hideBtn = e.target.closest('.popup-hide, .sub-point-remove');
+  const subRemove = e.target.closest('.sub-point-remove');
+  if (subRemove) {
+    e.preventDefault(); e.stopPropagation();
+    const id = subRemove.dataset.id;
+    isHidden(id) ? restorePlace(id) : hidePlace(id);
+    return;
+  }
+  const hideBtn = e.target.closest('.popup-hide');
   if (hideBtn) { e.preventDefault(); e.stopPropagation(); hidePlace(hideBtn.dataset.id); return; }
   const restoreBtn = e.target.closest('.popup-restore');
   if (restoreBtn) { e.preventDefault(); restorePlace(restoreBtn.dataset.id); return; }
 });
 
-// Trash legend → toggle Trash mode (reveal hidden pins + restore panel).
+// Trash legend → toggle Trash mode (reveal deleted rows/pins + restore panel).
 const legendTrashBtn = document.getElementById('legendTrash');
 if (legendTrashBtn) {
   legendTrashBtn.addEventListener('click', (e) => {
@@ -3031,6 +3112,7 @@ if (legendTrashBtn) {
     filters.showTrash = !filters.showTrash;
     legendTrashBtn.classList.toggle('on', filters.showTrash);
     applyMapFilters();
+    applyListFilters();
     renderTrashPanel();
   });
 }
