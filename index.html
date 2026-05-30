@@ -521,6 +521,9 @@
     border-bottom: 1px solid var(--ink); text-decoration: none; padding-bottom: 1px;
   }
   .popup-link:hover { color: var(--ink-3); border-color: var(--ink-3); }
+  /* "Directions →" link — slightly accented so it reads as the primary action. */
+  .popup-link-dir { color: #2563eb; border-bottom-color: #BBD6EE; }
+  .popup-link-dir:hover { color: #1d4ed8; border-bottom-color: #1d4ed8; }
 
   /* ========= LEGEND ========= */
   .legend {
@@ -1523,12 +1526,12 @@ const itinerary = [
     ],
     note: { ko: '첫날 마무리. 시차로 피곤할 테니 일찍 쉬기. 출출하면 호텔 근처 24시 델리.', en: 'Day one wrap-up. Rest early — jet lag will hit. Peckish? 24-hr deli near the hotel.' },
     gmaps: 'https://maps.google.com/?q=InterContinental+New+York+Barclay' },
-  { day: 2, num: 10, time: '9:00 AM', name: { ko: 'InterContinental Barclay · 출발', en: 'InterContinental Barclay · Depart' },
+  { day: 2, num: 10, time: '9:00 AM', name: { ko: 'InterContinental Barclay · 브런치 + 출발', en: 'InterContinental Barclay · Brunch + Depart' },
     lat: 40.7556629, lng: -73.9735276, address: '111 E 48th St',
-    transit: { ko: '호텔에서 출발', en: 'Depart from hotel' },
-    note: { ko: '간단히 출발 (커피는 DUMBO에서). F train 타러 Rockefeller Center역까지 도보 8분.', en: 'Head out light (coffee in DUMBO). 8 min walk to Rockefeller Center station for the F train.' },
+    transit: { ko: '9:00 호텔에서 브런치 → 9:45 출발. F train Rockefeller Ctr역까지 도보 8분.', en: '9:00 brunch at the hotel → depart 9:45. 8-min walk to Rockefeller Center station for the F train.' },
+    note: { ko: '여유 있게 호텔에서 브런치 시작. 9:45에 가볍게 출발 (DUMBO에서 Devoción 커피는 식후 픽으로 천천히).', en: 'Take it easy — brunch at the hotel first. Leave around 9:45 (Devoción in DUMBO becomes a post-brunch coffee, not breakfast).' },
     gmaps: 'https://maps.google.com/?q=InterContinental+New+York+Barclay' },
-  { day: 2, num: 11, time: '9:45 AM', name: 'Devoción · DUMBO',
+  { day: 2, num: 11, time: '10:30 AM', name: 'Devoción · DUMBO',
     lat: 40.7022, lng: -73.9867, address: '105 York St · DUMBO',
     transit: { ko: 'F train Rockefeller Ctr → York St (~25분) — 역 바로 옆', en: 'F train Rockefeller Ctr → York St (~25 min) — right by the station' },
     note: { ko: '콜롬비아 산지 직배송 로스터. 라떼/필터 + 페스트리. 30~45분 여유 있게 마시고 Flea로 이동.', en: 'Colombia direct-trade roaster. Latte/filter + pastry. Take 30–45 min, then head to the Flea.' },
@@ -1537,7 +1540,7 @@ const itinerary = [
       { name: "L'Appartement 4F", lat: 40.6943, lng: -73.9938, category: 'Food', addr: '115 Montague St · Brooklyn Heights', note: { ko: '바이럴 프렌치 베이커리 — 크루아상/쿠앵 아망이 시그니처. DUMBO 남쪽 Brooklyn Heights(도보 12~15분). 줄이 길고 인기 품목은 일찍 매진 — 오픈런 추천. 아침 일찍이면 Devoción 전에, 아니면 패스.', en: 'Viral French bakery — croissants / kouign-amann are the signature. In Brooklyn Heights, just south of DUMBO (12–15 min walk). Long lines and popular items sell out early — go at open. Hit it before Devoción if early, otherwise skip.' } },
     ]
   },
-  { day: 2, num: 12, time: '10:45 AM', name: 'Brooklyn Flea · DUMBO',
+  { day: 2, num: 12, time: '11:30 AM', name: 'Brooklyn Flea · DUMBO',
     lat: 40.7035, lng: -73.9889, address: '80 Pearl St · Manhattan Bridge Archway',
     transit: { ko: 'Devoción에서 도보 3분', en: '3 min walk from Devoción' },
     note: { ko: '토요일 10AM–5PM 오픈. 빈티지/굿즈/푸드. 1~1.5시간 둘러보고 Washington St 포토 스팟 들렀다 다리로.', en: 'Open Sat 10AM–5PM. Vintage/goods/food. Browse 1–1.5 hrs, hit the Washington St photo spot, then the bridge.' },
@@ -1547,7 +1550,7 @@ const itinerary = [
       { name: 'Time Out Market NY', lat: 40.7028, lng: -73.9899, category: 'Food',   addr: '55 Water St · DUMBO',     note: { ko: '뉴욕 인기 셰프 24+ 부스 모인 푸드홀. 다리 건너기 전 점심 옵션. 옥상 뷰도.', en: 'Food hall with 24+ stalls from NYC\'s popular chefs. A lunch option before the bridge. Rooftop view too.' } },
     ]
   },
-  { day: 2, num: 13, time: '12:30 PM', name: { ko: 'Brooklyn Bridge · 도보', en: 'Brooklyn Bridge · Walk' },
+  { day: 2, num: 13, time: '1:00 PM', name: { ko: 'Brooklyn Bridge · 도보', en: 'Brooklyn Bridge · Walk' },
     lat: 40.7061, lng: -73.9969, address: 'Brooklyn → Manhattan · 1.1mi',
     transit: { ko: 'DUMBO(Flea) → 다리 입구 · 약 0.5mi (Washington St → Cadman Plaza)', en: 'DUMBO (Flea) → bridge entrance · ~0.5mi (Washington St → Cadman Plaza)' },
     routeOptions: [
@@ -1565,24 +1568,24 @@ const itinerary = [
       { name: 'Black Fox Coffee Co', lat: 40.7068, lng: -74.0073, category: 'Coffee', addr: '70 Pine St · FiDi',         note: { ko: '아르데코 로비 1층 카페. 호주 스타일 라떼 + 빵. 바이럴 + 로컬 둘 다 인정.', en: 'Café in an Art Deco lobby. Australian-style latte + pastries. Both viral and locally loved.' } },
     ]
   },
-  { day: 2, num: 14, time: '1:30 PM', name: { ko: 'Afternoon · 골라잡기', en: 'Afternoon · Pick & Choose' },
+  { day: 2, num: 14, time: '2:00 PM', name: { ko: 'Afternoon · 골라잡기', en: 'Afternoon · Pick & Choose' },
     lat: null, lng: null, address: { ko: '맨해튼 다운타운 · 점심 + 산책', en: 'Downtown Manhattan · lunch + stroll' },
     transit: { ko: 'Brooklyn Bridge 도착 후 도보 또는 6 train', en: 'On foot or 6 train after the Brooklyn Bridge' },
-    note: { ko: '브루클린 다리 도착 ~1:30PM → Oiji Mi(Flatiron) 7:30PM. 5시간 이상 비어있음. 아래 동선 픽 중 하나로 큰 줄기 정하고, 그 다음 개별 픽 (★) 중에서 끼워넣기 — 당일 컨디션 보고 자유롭게.', en: 'Off the Brooklyn Bridge ~1:30PM → Oiji Mi (Flatiron) 7:30PM. 5+ hours open. Pick one of the route options below for the main thread, then slot in the individual ★ picks — go by how you feel that day.' },
+    note: { ko: '브루클린 다리 도착 ~2:00PM → Oiji Mi(Flatiron) 7:30PM. 5시간 이상 비어있음. 아래 동선 픽 중 하나로 큰 줄기 정하고, 그 다음 개별 픽 (★) 중에서 끼워넣기 — 당일 컨디션 보고 자유롭게.', en: 'Off the Brooklyn Bridge ~2:00PM → Oiji Mi (Flatiron) 7:30PM. 5+ hours open. Pick one of the route options below for the main thread, then slot in the individual ★ picks — go by how you feel that day.' },
     tbd: true,
     points: [
       // === 동선 픽 — 큰 줄기 ===
       { name: 'A · Chinatown → LES → Union Sq', lat: 40.7158, lng: -73.9970, category: 'Food',
-        addr: { ko: '~1:30 Chinatown 점심 → 3:00 LES 산책 → 5:00 Union Sq', en: '~1:30 Chinatown lunch → 3:00 LES stroll → 5:00 Union Sq' },
+        addr: { ko: '~2:00 Chinatown 점심 → 3:30 LES 산책 → 5:00 Union Sq', en: '~2:00 Chinatown lunch → 3:30 LES stroll → 5:00 Union Sq' },
         note: { ko: '먹거리 중심. Xi\'an Famous Foods 우육면 + Joe\'s Shanghai 샤오롱바오. 3PM LES (Russ & Daughters / Economy Candy / Tenement Museum). 도보로 천천히 Union Sq → 19th St (Oiji Mi).', en: 'Food-focused. Xi\'an Famous Foods hand-pulled noodles + Joe\'s Shanghai soup dumplings. 3PM LES (Russ & Daughters / Economy Candy / Tenement Museum). Stroll slowly to Union Sq → 19th St (Oiji Mi).' } },
       { name: { ko: 'B · Tribeca + SoHo 슬로우 루프', en: 'B · Tribeca + SoHo slow loop' }, lat: 40.7195, lng: -74.0072, category: 'Shopping',
-        addr: { ko: '~1:30 Tribeca 점심 → 3:00 SoHo 재방문', en: '~1:30 Tribeca lunch → 3:00 SoHo revisit' },
+        addr: { ko: '~2:00 Tribeca 점심 → 3:30 SoHo 재방문', en: '~2:00 Tribeca lunch → 3:30 SoHo revisit' },
         note: { ko: '쇼핑 중심. Frenchette Bakery 또는 Bubby\'s 브런치. 금요일 못 본 SoHo 가게 (Aimé Leon Dore, McNally Jackson) 다시. Union Sq까지 6 train.', en: 'Shopping-focused. Frenchette Bakery or Bubby\'s brunch. Revisit the SoHo shops you missed Friday (Aimé Leon Dore, McNally Jackson). 6 train to Union Sq.' } },
       { name: 'C · Village + Washington Sq', lat: 40.7308, lng: -73.9973, category: 'Books',
-        addr: { ko: '~1:30 Joe\'s Pizza → 2:30 Washington Sq → 4:00 Strand → Union Sq', en: '~1:30 Joe\'s Pizza → 2:30 Washington Sq → 4:00 Strand → Union Sq' },
+        addr: { ko: '~2:00 Joe\'s Pizza → 3:00 Washington Sq → 4:30 Strand → Union Sq', en: '~2:00 Joe\'s Pizza → 3:00 Washington Sq → 4:30 Strand → Union Sq' },
         note: { ko: 'NYC 클래식 무드. Joe\'s Pizza (7 Carmine St) 슬라이스 → Washington Sq 사람 구경 + 즉흥 공연 → Strand 책방 (1시간) → 도보 Union Sq.', en: 'Classic NYC mood. Joe\'s Pizza (7 Carmine St) slice → Washington Sq people-watching + street performances → Strand bookstore (1 hr) → walk to Union Sq.' } },
       { name: 'D · Whitney + Meatpacking', lat: 40.7396, lng: -74.0089, category: 'Design',
-        addr: { ko: '~1:30 Whitney → 3:30 Meatpacking', en: '~1:30 Whitney → 3:30 Meatpacking' },
+        addr: { ko: '~2:00 Whitney → 4:00 Meatpacking', en: '~2:00 Whitney → 4:00 Meatpacking' },
         note: { ko: '아트 중심. Whitney Museum (99 Gansevoort, $30, 2시간). American art + 옥상 데크 뷰. Brooklyn Bridge에서 1/2/3 환승 약간 멀어 — 비 오면 보류.', en: 'Art-focused. Whitney Museum (99 Gansevoort, $30, 2 hrs). American art + rooftop deck views. A bit far via 1/2/3 transfer from Brooklyn Bridge — skip if raining.' } },
 
       // === 개별 픽 — 위 동선에 끼워넣기 (시간/지리 맞춰서) ===
@@ -1953,13 +1956,17 @@ function setupMarkersAndInteraction(opts) {
         iconSize: [32, 32], iconAnchor: [16, 16], popupAnchor: [0, -18],
       });
       const marker = L.marker([stop.lat, stop.lng], { icon }).addTo(map);
+      const dirHref = gmapsDirectionsURL(stop.lat, stop.lng, tr(stop.name));
       const popupHtml = `
         <div class="popup-eyebrow">Day ${stop.day} · ${tr(stop.time)}</div>
         <div class="popup-title">${tr(stop.name)}</div>
         <div class="popup-address">${tr(stop.address)}</div>
         ${stop.transit ? `<div class="popup-transit ko">${tr(stop.transit)}</div>` : ''}
         <div class="popup-note ko">${tr(stop.note)}</div>
-        ${stop.gmaps ? `<a class="popup-link" href="${stop.gmaps}" target="_blank">Google Maps →</a>` : ''}
+        <div class="popup-actions">
+          ${stop.gmaps ? `<a class="popup-link" href="${stop.gmaps}" target="_blank" rel="noopener">Google Maps →</a>` : ''}
+          <a class="popup-link popup-link-dir" href="${dirHref}" target="_blank" rel="noopener">${loc('길찾기 →', 'Directions →')}</a>
+        </div>
       `;
       marker.bindPopup(popupHtml, { closeButton: true, autoPan: true });
       marker.on('click', () => {
@@ -1993,6 +2000,7 @@ function setupMarkersAndInteraction(opts) {
           eyebrow: `${p.category} · ${tr(stop.name)}`,
           title: tr(p.name), addr: tr(p.addr), note: tr(p.note),
           gmapsQ: tr(p.name) + ' ' + tr(p.addr), id: sid,
+          lat: p.lat, lng: p.lng,
         }), { closeButton: true, autoPan: true });
         subMarkers[stop.day].push(subMarker);
       });
@@ -2530,11 +2538,28 @@ document.addEventListener('click', (e) => {
 // React to hash changes (back/forward, external paste)
 window.addEventListener('hashchange', () => applyHashStateFromUrl(false));
 
+// Map trip days to dates so we can auto-select today's tab on load.
+const TRIP_DATES = { 1: '2026-05-29', 2: '2026-05-30', 3: '2026-05-31' };
+function detectCurrentTripDay() {
+  const parts = new Date().toLocaleDateString('en-US', {
+    timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).split('/');
+  if (parts.length !== 3) return null;
+  const todayStr = `${parts[2]}-${parts[0]}-${parts[1]}`;
+  for (const [day, date] of Object.entries(TRIP_DATES)) {
+    if (date === todayStr) return day;
+  }
+  return null;
+}
+
 function applyHashStateFromUrl(isInitial) {
   const state = parseHash();
-  // Day tab
-  if (state.day) {
-    const tab = document.querySelector(`.tab[data-day="${state.day}"]`);
+  // Day tab — explicit hash wins; otherwise on initial load default to today's
+  // trip day so opening the app during the trip lands on the right day.
+  let dayToShow = state.day;
+  if (!dayToShow && isInitial) dayToShow = detectCurrentTripDay();
+  if (dayToShow) {
+    const tab = document.querySelector(`.tab[data-day="${dayToShow}"]`);
     if (tab && !tab.classList.contains('active')) tab.click();
   }
   // Pins
@@ -2985,7 +3010,10 @@ function showOnMap(lat, lng, name) {
           `<div class="popup-title">${name.replace(/[<>&"]/g, '')}</div>` +
           // Search by place name (not lat,lng) so Google Maps shows the
           // place card with reviews / hours instead of a raw coordinate pin.
-          `<a class="popup-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=${encodeURIComponent(name)}">Google Maps →</a>`
+          `<div class="popup-actions">` +
+          `<a class="popup-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=${encodeURIComponent(name)}">Google Maps →</a>` +
+          `<a class="popup-link popup-link-dir" target="_blank" rel="noopener" href="${gmapsDirectionsURL(lat, lng, name)}">${loc('길찾기 →', 'Directions →')}</a>` +
+          `</div>`
         )
         .openOn(map);
     }, 700);
@@ -3019,6 +3047,7 @@ function addCustomPoint(lat, lng, name, opts) {
         title: name,
         note: (cur && cur.note) || '',
         gmapsQ: name, id: key,
+        lat: lat, lng: lng,
       });
     }, { closeButton: true, autoPan: true });
     customMarkers.set(key, marker);
@@ -3207,7 +3236,15 @@ function restorePlace(id) {
 // current state each open (bound as a function). Used by sub-point markers and
 // user-added ★ pins. The decorative leading "★ " in curated names is stripped
 // from the title since favoriting is now an explicit button.
-function buildPlacePopup({ eyebrow, title, addr, note, gmapsQ, id }) {
+// Helper: Google Maps **directions** URL with walking as the default mode.
+function gmapsDirectionsURL(lat, lng, name) {
+  const dest = Number.isFinite(lat) && Number.isFinite(lng)
+    ? `${lat},${lng}`
+    : encodeURIComponent(name || '');
+  return `https://www.google.com/maps/dir/?api=1&destination=${dest}&travelmode=walking`;
+}
+
+function buildPlacePopup({ eyebrow, title, addr, note, gmapsQ, id, lat, lng }) {
   const safeId = String(id).replace(/"/g, '&quot;');
   const isSub = /^\d+-\d+$/.test(String(id));   // only sub-points are favoritable
   const pinned = isSub && parseHash().pin.indexOf(id) !== -1;
@@ -3218,6 +3255,7 @@ function buildPlacePopup({ eyebrow, title, addr, note, gmapsQ, id }) {
     ? `<button type="button" class="popup-icon-btn popup-restore" data-id="${safeId}" title="${loc('다시 표시', 'Restore')}" aria-label="Restore">↩</button>`
     : `<button type="button" class="popup-icon-btn popup-hide" data-id="${safeId}" title="${loc('관심 없음', 'Remove')}" aria-label="Remove">🗑</button>`;
   const cleanTitle = String(title).replace(/^★\s*/, '').replace(/[<>]/g, '');
+  const dirHref = gmapsDirectionsURL(lat, lng, title || gmapsQ);
   return `
     <div class="popup-eyebrow">${eyebrow}</div>
     <div class="popup-title">${cleanTitle}</div>
@@ -3225,6 +3263,7 @@ function buildPlacePopup({ eyebrow, title, addr, note, gmapsQ, id }) {
     ${note ? `<div class="popup-note ko">${note}</div>` : ''}
     <div class="popup-actions">
       <a class="popup-link" href="https://maps.google.com/?q=${encodeURIComponent(gmapsQ)}" target="_blank" rel="noopener">Google Maps →</a>
+      <a class="popup-link popup-link-dir" href="${dirHref}" target="_blank" rel="noopener">${loc('길찾기 →', 'Directions →')}</a>
       ${favBtn}
       ${removeBtn}
     </div>`;
