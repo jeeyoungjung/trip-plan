@@ -2598,14 +2598,14 @@ function applyHashStateFromUrl(isInitial) {
 })();
 
 (function initialJump() {
-  // If the URL hash already targets a stop, let that drive — don't override
-  // with the Now/Next auto-jump.
+  // Always run the hash applier on first load — it handles the day tab
+  // (explicit day in hash OR today's trip day) and any pinned stop.
   const initialHash = parseHash();
-  if (initialHash.stop || initialHash.day) {
-    setTimeout(() => applyHashStateFromUrl(true), 100);
-    return;
-  }
-  // Otherwise, jump to "Now" if we're inside the trip window.
+  setTimeout(() => applyHashStateFromUrl(true), 100);
+  // If the hash already targets a specific stop, applyHashStateFromUrl
+  // will focus it; don't also run the Now/Next auto-jump.
+  if (initialHash.stop) return;
+  // Otherwise jump to "Now" if we're inside the trip window.
   const { active } = findNowNext();
   if (!active || active.lat == null) return;
   setTimeout(() => {
