@@ -609,6 +609,43 @@
   /* Active language highlighted based on <html lang> / body class. */
   body[data-lang="ko"] .lang-toggle .lang-ko { color: var(--ink); font-weight: 500; }
   body[data-lang="en"] .lang-toggle .lang-en { color: var(--ink); font-weight: 500; }
+
+  /* "Locate me" button — top-right, below the zoom +/− controls. */
+  .locate-toggle {
+    position: absolute; top: 132px; right: 24px; z-index: 500;
+    width: 32px; height: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--panel); border: 1px solid var(--rule);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    font-size: 16px; line-height: 1; cursor: pointer; padding: 0;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.18s, background 0.18s;
+  }
+  .locate-toggle:hover { border-color: var(--ink-3); }
+  .locate-toggle.on { border-color: #2563eb; background: #EEF4FF; }
+  .locate-toggle:disabled { opacity: 0.5; cursor: wait; }
+
+  /* User's current location — pulsing blue dot. */
+  .user-location-marker {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: #2563eb; border: 2px solid #fff;
+    box-shadow: 0 0 0 1px rgba(37,99,235,0.4), 0 1px 3px rgba(0,0,0,0.3);
+    position: relative;
+  }
+  .user-location-marker::after {
+    content: ''; position: absolute; inset: -10px;
+    border-radius: 50%; background: rgba(37,99,235,0.20);
+    animation: locPulse 2.2s ease-out infinite;
+    z-index: -1;
+  }
+  @keyframes locPulse {
+    0%   { transform: scale(0.55); opacity: 1; }
+    100% { transform: scale(1.8);  opacity: 0; }
+  }
+
+  /* "Near you" chips row — hidden by default, shown after locate. */
+  .chat-sugg-near { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--rule); }
+  .chat-sugg-near[hidden] { display: none; }
   .leaflet-control-attribution {
     background: rgba(250, 248, 243, 0.8) !important;
     font-family: var(--mono); font-size: 9px !important; color: var(--ink-3) !important;
@@ -724,6 +761,7 @@
        control must clear it (12 top + 32 toggle + 8 gap = 52px). */
     .lang-toggle { top: 12px; right: 12px; }
     .leaflet-control-zoom { margin-top: 52px !important; margin-right: 12px !important; }
+    .locate-toggle { top: 120px; right: 12px; }
 
     /* Smaller popup on mobile */
     .leaflet-popup-content { padding: 20px; width: 220px !important; }
@@ -1243,6 +1281,7 @@
   <main class="map-wrap">
     <div id="map"></div>
     <button type="button" class="lang-toggle" id="langToggle" aria-label="Switch language"><span class="lang-ko">한</span><span class="lang-sep">/</span><span class="lang-en">EN</span></button>
+    <button type="button" class="locate-toggle" id="locateBtn" aria-label="Show my current location" title="Show my current location">📍</button>
     <div class="legend" id="legend">
       <div class="legend-title">Days</div>
       <button type="button" class="legend-item" data-day="1"><span class="legend-swatch" style="background:#2C2924"></span><span>Fri</span></button>
@@ -1315,6 +1354,16 @@
       <button class="chat-sugg" data-q-ko="비 오면 토요일 브루클린 다리 대안은?" data-q-en="If it rains, what's a backup for the Saturday Brooklyn Bridge walk?" data-label-ko="비 오면 대안?" data-label-en="Rainy-day backup?">비 오면 대안?</button>
       <button class="chat-sugg" data-q-ko="토요일 오후 셋 (Chinatown / Tribeca / Whitney) 중 추천?" data-q-en="Which of the three Saturday afternoon routes (Chinatown / Tribeca / Whitney) do you recommend?" data-label-ko="토요일 오후 추천?" data-label-en="Best Sat afternoon?">토요일 오후 추천?</button>
       <button class="chat-sugg" data-q-ko="Cho Dang Gol 오픈런 못 가면 K-Town 백업 어디?" data-q-en="If we miss the Cho Dang Gol open run, what's a good K-Town backup?" data-label-ko="K-Town 백업?" data-label-en="K-Town backup?">K-Town 백업?</button>
+    </div>
+    <!-- Location-aware quick prompts — revealed only after the user shares their location. -->
+    <div class="chat-sugg-near" id="chatSuggNear" hidden>
+      <div class="chat-sugg-label" id="chatSuggNearLabel">📍 Near you</div>
+      <div class="chat-sugg-row">
+        <button class="chat-sugg chat-sugg-loc" data-q-ko="지금 위치 근처에 커피 마실 곳 추천해 주세요 (지금 영업 중인 곳으로). 도보 거리와 한 줄 추천 이유 같이." data-q-en="Recommend a great coffee spot near my current location that's open now. Include walking distance + a one-line why-this." data-label-ko="☕ 커피" data-label-en="☕ Coffee">☕ Coffee</button>
+        <button class="chat-sugg chat-sugg-loc" data-q-ko="지금 위치에서 걸어갈 만한 최고의 피자집 추천해 주세요 (지금 영업 중). 도보 거리 + 시그니처 슬라이스." data-q-en="Recommend the best pizza spot within walking distance from my current location that's open now. Include walking distance + the signature slice." data-label-ko="🍕 피자" data-label-en="🍕 Pizza">🍕 Pizza</button>
+        <button class="chat-sugg chat-sugg-loc" data-q-ko="지금 위치 근처 쇼핑 추천 (지금 영업 중). 도보 거리 + 어떤 종류 + 한 줄 이유." data-q-en="Recommend shopping near my current location that's open now. Include walking distance + category + a one-line why-this." data-label-ko="🛍 쇼핑" data-label-en="🛍 Shopping">🛍 Shopping</button>
+        <button class="chat-sugg chat-sugg-loc" data-q-ko="지금 위치에서 가장 가까운 깨끗한 화장실 알려 주세요 (카페/호텔/공공시설). 도보 거리 + 이용 팁." data-q-en="Where's the closest clean restroom from my current location (cafe / hotel lobby / public)? Walking distance + access tip." data-label-ko="🚻 화장실" data-label-en="🚻 Restroom">🚻 Restroom</button>
+      </div>
     </div>
   </div>
 
@@ -3312,6 +3361,20 @@ async function callAzureResponses(systemPrompt) {
     const langDirective = LANG === 'en'
       ? `\n\nLANGUAGE — IMPORTANT: The user has set the app to English. Reply ONLY in English, no matter what language the question is in. Proper nouns (place names, dish names) may stay in their original form.`
       : `\n\nLANGUAGE — IMPORTANT: 사용자가 앱을 한국어 모드로 설정했습니다. 항상 한국어로 답해주세요. (고유명사는 원어 그대로 사용 가능.)`;
+    // If the user has shared their location (📍 button), pass it + the current
+    // NYC local time so the bot can ground recommendations in proximity + hours.
+    let locDirective = '';
+    if (userLocation) {
+      const t = new Date().toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        weekday: 'short', month: 'short', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true,
+      });
+      locDirective = `\n\nCURRENT CONTEXT:
+- User's current location: lat=${userLocation.lat.toFixed(5)}, lng=${userLocation.lng.toFixed(5)} (±${Math.round(userLocation.accuracy)}m)
+- Current NYC local time: ${t}
+When the user asks for things "nearby" or "near me", prefer places within a 10–15 min walk of that lat/lng AND likely open right now. Always state the walking distance/time and a one-line "why this." If they ask for the closest restroom, suggest practical real options (a specific cafe, hotel lobby, department store, library, or public restroom — name it). Always use the [map:lat,lng,name] protocol to drop a pin for any new place.`;
+    }
     input.push({
       role: 'user',
       content: `Trip itinerary context (source of truth for stops, times, addresses):
@@ -3327,7 +3390,7 @@ Rules:
 - Multiple places → multiple marker lines, each on its own line.
 - For places already in the itinerary, the marker is optional (the user can click the stop card). But for any NEW place not in the itinerary, ALWAYS include the marker so the user can add it to their map.
 - The marker does NOT replace your natural-language reply — it's appended after it. Keep your normal prose unchanged.
-- Use precise decimal coordinates (4+ decimals). Use the place's English name in NAME.${langDirective}`,
+- Use precise decimal coordinates (4+ decimals). Use the place's English name in NAME.${locDirective}${langDirective}`,
     });
     input.push({ role: 'assistant', content: loc(
       '네, 일정 확인했습니다. 새로운 장소를 추천할 때는 [map:위도,경도,이름] 마커도 같이 붙일게요.',
@@ -3502,6 +3565,8 @@ function updateChromeForLang() {
   if (chatToggleEl) chatToggleEl.setAttribute('aria-label', loc(`${name} 챗 열기`, `Open ${name} chat`));
   const suggLabel = document.getElementById('chatSuggLabel');
   if (suggLabel) suggLabel.textContent = loc('이렇게 물어보세요', 'Try asking');
+  const suggNearLabel = document.getElementById('chatSuggNearLabel');
+  if (suggNearLabel) suggNearLabel.textContent = loc('📍 지금 위치 기준', '📍 Near you');
   document.querySelectorAll('.chat-sugg').forEach(b => {
     b.textContent = LANG === 'en' ? b.dataset.labelEn : b.dataset.labelKo;
   });
@@ -3536,6 +3601,52 @@ const langToggleBtn = document.getElementById('langToggle');
 if (langToggleBtn) {
   langToggleBtn.addEventListener('click', () => setLang(LANG === 'ko' ? 'en' : 'ko'));
 }
+
+// =========== USER LOCATION (📍 Locate me) ===========
+// Single-fix geolocation (no continuous tracking). On success: drop a pulsing
+// blue marker, fly the map to it, store userLocation for the chat to use, and
+// reveal the "Near you" suggestion chips.
+let userLocation = null;          // { lat, lng, accuracy, time }
+let userLocationMarker = null;
+const locateBtnEl = document.getElementById('locateBtn');
+
+function revealNearYouChips() {
+  const near = document.getElementById('chatSuggNear');
+  if (near) near.hidden = false;
+}
+
+function locateMe() {
+  if (!navigator.geolocation) {
+    alert(loc('이 브라우저는 위치 정보를 지원하지 않습니다.', 'Geolocation is not supported in this browser.'));
+    return;
+  }
+  if (!map) return;
+  locateBtnEl.disabled = true;
+  navigator.geolocation.getCurrentPosition(pos => {
+    locateBtnEl.disabled = false;
+    const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+    userLocation = { lat, lng, accuracy, time: Date.now() };
+    if (userLocationMarker) map.removeLayer(userLocationMarker);
+    const icon = L.divIcon({
+      className: 'custom-marker',
+      html: '<div class="user-location-marker"></div>',
+      iconSize: [16, 16], iconAnchor: [8, 8],
+    });
+    userLocationMarker = L.marker([lat, lng], { icon, interactive: false }).addTo(map);
+    userLocationMarker.setZIndexOffset(2000);  // above favorites
+    map.flyTo([lat, lng], Math.max(map.getZoom(), 15), { duration: 0.9 });
+    locateBtnEl.classList.add('on');
+    revealNearYouChips();
+  }, err => {
+    locateBtnEl.disabled = false;
+    const msg = err && err.code === 1
+      ? loc('위치 권한이 거부되었어요. 브라우저 설정에서 허용 후 다시 시도해 주세요.', 'Location permission denied. Allow it in your browser settings and try again.')
+      : loc('위치를 가져오지 못했어요. 다시 시도해 주세요.', "Couldn't get your location. Please try again.");
+    alert(msg);
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+}
+
+if (locateBtnEl) locateBtnEl.addEventListener('click', locateMe);
 
 // =========== MAP / LIST RESIZE (mobile) ===========
 // Drag the divider between the map and list to change the split. Updates
