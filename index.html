@@ -386,7 +386,10 @@
   .custom-marker.trashed .custom-pin { box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--t1, #C4314B); }
 
   /* Popup action row (Google Maps link + Hide/Restore button) */
-  .popup-actions { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  /* Two stacked rows: row 1 = Google Maps / Directions links, row 2 = favorite + remove icon buttons. */
+  .popup-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .popup-actions-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .popup-actions-row-btns { gap: 6px; }
   .popup-action {
     font-size: 11px; font-family: var(--mono); letter-spacing: .02em;
     border: 1px solid var(--rule); background: var(--panel); color: var(--ink-3);
@@ -613,14 +616,17 @@
   body[data-lang="ko"] .lang-toggle .lang-ko { color: var(--ink); font-weight: 500; }
   body[data-lang="en"] .lang-toggle .lang-en { color: var(--ink); font-weight: 500; }
 
-  /* "Locate me" button — top-right, below the zoom +/− controls. */
+  /* "Locate me" button — top-right, below the zoom +/− controls.
+     Padding-bottom nudges the 📍 emoji upward to optically center it in
+     the box (emoji glyphs sit slightly low in a flex-centered container). */
   .locate-toggle {
-    position: absolute; top: 132px; right: 24px; z-index: 500;
+    position: absolute; top: 140px; right: 24px; z-index: 500;
     width: 32px; height: 32px;
     display: inline-flex; align-items: center; justify-content: center;
     background: var(--panel); border: 1px solid var(--rule);
     box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-    font-size: 16px; line-height: 1; cursor: pointer; padding: 0;
+    font-size: 16px; line-height: 1; cursor: pointer;
+    padding: 0 0 2px 0;
     -webkit-tap-highlight-color: transparent;
     transition: border-color 0.18s, background 0.18s;
   }
@@ -764,7 +770,7 @@
        control must clear it (12 top + 32 toggle + 8 gap = 52px). */
     .lang-toggle { top: 12px; right: 12px; }
     .leaflet-control-zoom { margin-top: 52px !important; margin-right: 12px !important; }
-    .locate-toggle { top: 120px; right: 12px; }
+    .locate-toggle { top: 128px; right: 12px; }
 
     /* Smaller popup on mobile */
     .leaflet-popup-content { padding: 20px; width: 220px !important; }
@@ -1964,8 +1970,10 @@ function setupMarkersAndInteraction(opts) {
         ${stop.transit ? `<div class="popup-transit ko">${tr(stop.transit)}</div>` : ''}
         <div class="popup-note ko">${tr(stop.note)}</div>
         <div class="popup-actions">
-          ${stop.gmaps ? `<a class="popup-link" href="${stop.gmaps}" target="_blank" rel="noopener">Google Maps →</a>` : ''}
-          <a class="popup-link popup-link-dir" href="${dirHref}" target="_blank" rel="noopener">${loc('길찾기 →', 'Directions →')}</a>
+          <div class="popup-actions-row">
+            ${stop.gmaps ? `<a class="popup-link" href="${stop.gmaps}" target="_blank" rel="noopener">Google Maps →</a>` : ''}
+            <a class="popup-link popup-link-dir" href="${dirHref}" target="_blank" rel="noopener">${loc('길찾기 →', 'Directions →')}</a>
+          </div>
         </div>
       `;
       marker.bindPopup(popupHtml, { closeButton: true, autoPan: true });
@@ -3011,9 +3019,10 @@ function showOnMap(lat, lng, name) {
           // Search by place name (not lat,lng) so Google Maps shows the
           // place card with reviews / hours instead of a raw coordinate pin.
           `<div class="popup-actions">` +
+          `<div class="popup-actions-row">` +
           `<a class="popup-link" target="_blank" rel="noopener" href="https://maps.google.com/?q=${encodeURIComponent(name)}">Google Maps →</a>` +
           `<a class="popup-link popup-link-dir" target="_blank" rel="noopener" href="${gmapsDirectionsURL(lat, lng, name)}">${loc('길찾기 →', 'Directions →')}</a>` +
-          `</div>`
+          `</div></div>`
         )
         .openOn(map);
     }, 700);
@@ -3262,10 +3271,11 @@ function buildPlacePopup({ eyebrow, title, addr, note, gmapsQ, id, lat, lng }) {
     ${addr ? `<div class="popup-address">${addr}</div>` : ''}
     ${note ? `<div class="popup-note ko">${note}</div>` : ''}
     <div class="popup-actions">
-      <a class="popup-link" href="https://maps.google.com/?q=${encodeURIComponent(gmapsQ)}" target="_blank" rel="noopener">Google Maps →</a>
-      <a class="popup-link popup-link-dir" href="${dirHref}" target="_blank" rel="noopener">${loc('길찾기 →', 'Directions →')}</a>
-      ${favBtn}
-      ${removeBtn}
+      <div class="popup-actions-row">
+        <a class="popup-link" href="https://maps.google.com/?q=${encodeURIComponent(gmapsQ)}" target="_blank" rel="noopener">Google Maps →</a>
+        <a class="popup-link popup-link-dir" href="${dirHref}" target="_blank" rel="noopener">${loc('길찾기 →', 'Directions →')}</a>
+      </div>
+      ${(favBtn || removeBtn) ? `<div class="popup-actions-row popup-actions-row-btns">${favBtn}${removeBtn}</div>` : ''}
     </div>`;
 }
 
