@@ -66,10 +66,23 @@ export default {
       return new Response(null, { status: 204, headers: baseHeaders });
     }
 
+    // Universal origin gate — applies to /state, chat POST, and any future
+    // route. When ALLOWED_ORIGIN is configured, every non-OPTIONS request
+    // must carry an Origin header that matches exactly. A direct curl/fetch
+    // without an Origin header is rejected (closes the previous bypass).
+    // The /health GET is exempt so the user can manually verify config.
+    const url = new URL(request.url);
+    const isHealthCheck = request.method === 'GET' && (url.pathname === '/' || url.pathname === '');
+    if (!isHealthCheck && allowed !== '*' && (!origin || origin !== allowed)) {
+      return new Response(
+        JSON.stringify({ error: { message: 'Origin not allowed' } }),
+        { status: 403, headers: baseHeaders }
+      );
+    }
+
     // Shared trip state (saved/hidden pins) — persisted in KV so all devices
     // sharing this trip see the same map. Single shared bucket; this is a
     // private 4-person trip app, not multi-tenant.
-    const url = new URL(request.url);
     if (url.pathname === '/state' || url.pathname === '/state/') {
       return handleState(request, env, baseHeaders);
     }
@@ -87,13 +100,6 @@ export default {
       return new Response(
         JSON.stringify({ error: { message: 'Method not allowed. Use POST.' } }),
         { status: 405, headers: baseHeaders }
-      );
-    }
-
-    if (allowed !== '*' && origin && origin !== allowed) {
-      return new Response(
-        JSON.stringify({ error: { message: 'Origin not allowed' } }),
-        { status: 403, headers: baseHeaders }
       );
     }
 
