@@ -1387,12 +1387,56 @@
 
   /* All places table */
   .brief-places-toolbar {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px; flex-wrap: wrap;
   }
+  .brief-places-spacer { flex: 1; }
   .brief-places-count {
     font-family: var(--mono); font-size: 11px; color: var(--ink-3);
     letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .brief-places-btn {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 6px;
+    padding: 7px 12px; font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.06em; color: var(--ink-2); cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .brief-places-btn:hover { color: var(--ink); border-color: var(--ink-3); }
+  .brief-places-hint {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    margin-bottom: 12px; padding: 8px 12px;
+    background: var(--surface-2, #FAF9F8); border: 1px dashed var(--rule); border-radius: 6px;
+    display: none;
+  }
+  .brief-places-hint.show { display: block; }
+  .brief-places-hint.error { color: #C4314B; border-color: #C4314B; background: #FDF3F4; }
+  .brief-places-hint.success { color: #107C41; border-color: #CDE8D5; background: #F1F8F3; }
+
+  /* Editable Favorites row — replaces the read-only grid with input fields. */
+  .brief-places-row.editable {
+    display: grid;
+    grid-template-columns: 40px 1.4fr 1.6fr 90px 90px 40px;
+    gap: 8px; padding: 8px 0;
+  }
+  .brief-places-row.editable .col-icon { color: var(--cat-saved); font-size: 14px; padding-top: 8px; }
+  .brief-places-row.editable input {
+    width: 100%; box-sizing: border-box;
+    font: 13px/1.4 var(--sans); color: var(--ink);
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 5px;
+    padding: 6px 8px; outline: none; transition: border-color .15s;
+  }
+  .brief-places-row.editable input:focus { border-color: var(--ink-3); }
+  .brief-places-row.editable input.col-coord { font-family: var(--mono); font-size: 11px; }
+  .brief-places-row.editable .col-del {
+    background: transparent; border: 1px solid var(--rule); border-radius: 5px;
+    color: var(--ink-4); cursor: pointer; font-size: 13px;
+    transition: color .15s, border-color .15s;
+  }
+  .brief-places-row.editable .col-del:hover { color: #C4314B; border-color: #C4314B; }
+  .brief-places-row.editable.invalid input.col-coord { border-color: #C4314B; }
+  .brief-places-empty {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-4);
+    padding: 12px 0; font-style: italic;
   }
   .brief-places-section {
     margin-bottom: 28px;
@@ -1624,7 +1668,12 @@
     <section class="brief-pane" data-pane="places">
       <div class="brief-places-toolbar">
         <span class="brief-places-count" id="briefPlacesCount"></span>
+        <span class="brief-places-spacer"></span>
+        <button type="button" class="brief-places-btn" id="briefExportCsv">↓ Download CSV</button>
+        <button type="button" class="brief-places-btn" id="briefImportCsv">↑ Upload CSV</button>
+        <input type="file" id="briefImportCsvFile" accept=".csv,text/csv" hidden />
       </div>
+      <div class="brief-places-hint" id="briefPlacesHint"></div>
       <div class="brief-places-table" id="briefPlacesTable"></div>
     </section>
   </div>
@@ -4370,24 +4419,48 @@ let voiceAbort = () => {};
       }
     });
 
-    if (Array.isArray(tripState.added) && tripState.added.length) {
-      const rows = tripState.added.map(p => {
-        const key = `${p.lat.toFixed(5)},${p.lng.toFixed(5)},${p.name}`;
-        return buildPlaceRow({
-          time: '★',
-          name: p.name,
-          cat: 'SAVED',
-          addr: p.note || '',
-          pinned: false,
-          hidden: isHidden(key),
-        });
-      });
-      sections.push(sectionHTML(loc('즐겨찾기','Favorites'), rows));
-      total += rows.length;
-    }
+    // Favorites: editable inline. Each row becomes name + note + lat + lng
+    // inputs with a delete button. Empty state shown when no favorites yet.
+    const favRows = (Array.isArray(tripState.added) ? tripState.added : [])
+      .map((p, idx) => buildEditableFavoriteRow(p, idx))
+      .join('');
+    sections.push(favoritesSectionHTML(favRows, (tripState.added || []).length));
+    total += (tripState.added || []).length;
 
     if (countEl) countEl.textContent = `${total} ${loc('곳','places')}`;
     root.innerHTML = sections.join('');
+  }
+
+  function buildEditableFavoriteRow(p, idx) {
+    const lat = Number.isFinite(p.lat) ? p.lat : '';
+    const lng = Number.isFinite(p.lng) ? p.lng : '';
+    return `<div class="brief-places-row editable" data-fav-idx="${idx}">
+      <div class="col-icon">★</div>
+      <input class="col-name" data-field="name" value="${escHtml(p.name || '')}" placeholder="${loc('이름','Name')}" />
+      <input class="col-note" data-field="note" value="${escHtml(p.note || '')}" placeholder="${loc('메모','Note')}" />
+      <input class="col-coord" data-field="lat" value="${lat}" placeholder="lat" inputmode="decimal" />
+      <input class="col-coord" data-field="lng" value="${lng}" placeholder="lng" inputmode="decimal" />
+      <button type="button" class="col-del" data-fav-del="${idx}" aria-label="Delete favorite">✕</button>
+    </div>`;
+  }
+
+  function favoritesSectionHTML(rowsHtml, count) {
+    const empty = count === 0
+      ? `<div class="brief-places-empty">${loc('아직 추가된 즐겨찾기가 없습니다. 위의 "Upload CSV"로 한번에 추가하거나 채팅에서 ★ 표시하세요.', 'No favorites yet. Use "Upload CSV" above to add a batch, or ★ a place from chat.')}</div>`
+      : '';
+    return `<div class="brief-places-section">
+      <h4 class="brief-places-section-h">${loc('즐겨찾기','Favorites')} <span class="count">${count}</span></h4>
+      ${count ? `<div class="brief-places-row editable" style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-4);padding:6px 0;border-bottom:1px solid var(--rule)">
+        <div></div>
+        <div>${loc('이름','Name')}</div>
+        <div>${loc('메모','Note')}</div>
+        <div>Lat</div>
+        <div>Lng</div>
+        <div></div>
+      </div>` : ''}
+      ${rowsHtml}
+      ${empty}
+    </div>`;
   }
 
   function buildPlaceRow({ time, name, cat, addr, pinned, hidden }) {
@@ -4414,6 +4487,219 @@ let voiceAbort = () => {};
       </div>
       ${rows.join('')}
     </div>`;
+  }
+
+  // ----- CSV export / import -----
+  // NYC bounding box for a permissive validation. Tight enough to reject
+  // garbage; loose enough not to falsely reject neighborhoods we forget.
+  const NYC_BOUNDS = { latMin: 40.45, latMax: 41.00, lngMin: -74.30, lngMax: -73.60 };
+  function isValidNYCCoord(lat, lng) {
+    return Number.isFinite(lat) && Number.isFinite(lng)
+      && lat >= NYC_BOUNDS.latMin && lat <= NYC_BOUNDS.latMax
+      && lng >= NYC_BOUNDS.lngMin && lng <= NYC_BOUNDS.lngMax;
+  }
+
+  function csvEscape(v) {
+    const s = String(v == null ? '' : v);
+    if (s.includes('"') || s.includes(',') || s.includes('\n')) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  }
+
+  function exportPlacesCSV() {
+    const pinned = new Set(parseHash().pin);
+    const lines = ['day,time,name,category,address,note,lat,lng,type,status'];
+    itinerary.forEach(s => {
+      if (s.lat != null && s.lng != null) {
+        lines.push([
+          s.day, tr(s.time) || '', tr(s.name) || '', 'STOP',
+          tr(s.address) || '', '', s.lat, s.lng, 'stop', '',
+        ].map(csvEscape).join(','));
+      }
+      (s.points || []).forEach((p, i) => {
+        const id = `${s.num}-${i}`;
+        const status = (pinned.has(id) ? 'pinned ' : '') + (isHidden(id) ? 'hidden' : '');
+        lines.push([
+          s.day, '', String(tr(p.name) || '').replace(/^★\s*/, ''),
+          p.category || '', tr(p.addr) || '', tr(p.note) || '',
+          p.lat, p.lng, 'sub', status.trim(),
+        ].map(csvEscape).join(','));
+      });
+    });
+    (tripState.added || []).forEach(p => {
+      const key = `${p.lat.toFixed(5)},${p.lng.toFixed(5)},${p.name}`;
+      lines.push([
+        '', '', p.name || '', 'SAVED', '', p.note || '',
+        p.lat, p.lng, 'favorite', isHidden(key) ? 'hidden' : '',
+      ].map(csvEscape).join(','));
+    });
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.download = `trip-places-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // Minimal RFC-4180-ish CSV parser. Handles quoted fields + escaped quotes.
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], field = '', inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (inQuotes) {
+        if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+        else if (c === '"') { inQuotes = false; }
+        else { field += c; }
+      } else {
+        if (c === '"') { inQuotes = true; }
+        else if (c === ',') { row.push(field); field = ''; }
+        else if (c === '\n' || c === '\r') {
+          if (c === '\r' && text[i + 1] === '\n') i++;
+          row.push(field); field = '';
+          if (row.length > 1 || row[0] !== '') rows.push(row);
+          row = [];
+        } else { field += c; }
+      }
+    }
+    if (field || row.length) { row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  function importPlacesCSV(text) {
+    const rows = parseCSV(text);
+    if (!rows.length) return { added: 0, skipped: 0, error: 'Empty file' };
+    const header = rows[0].map(h => h.trim().toLowerCase());
+    const idx = (key) => header.indexOf(key);
+    const iName = idx('name'), iLat = idx('lat'), iLng = idx('lng'), iNote = idx('note'), iType = idx('type');
+    if (iName === -1 || iLat === -1 || iLng === -1) {
+      return { added: 0, skipped: 0, error: 'CSV must include name, lat, lng columns' };
+    }
+    let added = 0, skipped = 0;
+    for (let r = 1; r < rows.length; r++) {
+      const row = rows[r];
+      if (!row || row.every(c => !c || !c.trim())) continue;
+      // If type column exists, only import rows marked 'favorite' (lets users
+      // export the full list, edit, and re-upload without re-importing stops).
+      // If no type column, accept any valid row.
+      const type = iType !== -1 ? String(row[iType] || '').trim().toLowerCase() : 'favorite';
+      if (iType !== -1 && type && type !== 'favorite' && type !== 'saved') continue;
+      const name = String(row[iName] || '').trim();
+      const lat = parseFloat(row[iLat]);
+      const lng = parseFloat(row[iLng]);
+      const note = iNote !== -1 ? String(row[iNote] || '').trim() : '';
+      if (!name || !isValidNYCCoord(lat, lng)) { skipped++; continue; }
+      addCustomPoint(lat, lng, name, { note, focus: false });
+      added++;
+    }
+    return { added, skipped };
+  }
+
+  // ----- Live edit of favorites -----
+  function rebuildCustomMarkersFromState() {
+    if (typeof customMarkers === 'undefined' || !map) return;
+    customMarkers.forEach(m => map.removeLayer(m));
+    customMarkers.clear();
+    (tripState.added || []).forEach(p => {
+      if (p && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {
+        addCustomPoint(p.lat, p.lng, p.name, { persist: false, focus: false, note: p.note });
+      }
+    });
+  }
+
+  function syncAllPlacesViewsAfterFavoriteChange() {
+    saveTripState();
+    rebuildCustomMarkersFromState();
+    if (typeof renderAddedList === 'function') renderAddedList();
+    if (typeof applyMapFilters === 'function') applyMapFilters();
+    if (typeof applyListFilters === 'function') applyListFilters();
+    renderPlacesTable();
+  }
+
+  // Delegated input handler on the places table — only fires inside editable
+  // favorite rows. Updates tripState.added[idx] for the changed field;
+  // re-renders are deferred until blur so we don't yank the user mid-edit.
+  const tableRoot = document.getElementById('briefPlacesTable');
+  const placesHint = document.getElementById('briefPlacesHint');
+  function showHint(msg, kind) {
+    if (!placesHint) return;
+    placesHint.textContent = msg;
+    placesHint.className = 'brief-places-hint show ' + (kind || '');
+    setTimeout(() => { placesHint.className = 'brief-places-hint'; }, 5000);
+  }
+
+  if (tableRoot) {
+    tableRoot.addEventListener('input', e => {
+      const row = e.target.closest('.brief-places-row.editable[data-fav-idx]');
+      if (!row) return;
+      const idx = parseInt(row.dataset.favIdx, 10);
+      const field = e.target.dataset.field;
+      if (!Array.isArray(tripState.added) || !tripState.added[idx] || !field) return;
+      const p = tripState.added[idx];
+      if (field === 'name' || field === 'note') {
+        p[field] = e.target.value;
+      } else if (field === 'lat' || field === 'lng') {
+        const n = parseFloat(e.target.value);
+        if (Number.isFinite(n)) p[field] = n;
+      }
+      saveTripState();   // debounced
+    });
+    // Validate + sync map/list on blur (avoids re-rendering while typing).
+    tableRoot.addEventListener('blur', e => {
+      if (!e.target.matches('.brief-places-row.editable input')) return;
+      const row = e.target.closest('.brief-places-row.editable[data-fav-idx]');
+      if (!row) return;
+      const idx = parseInt(row.dataset.favIdx, 10);
+      const p = tripState.added && tripState.added[idx];
+      if (!p) return;
+      const valid = isValidNYCCoord(p.lat, p.lng) && (p.name || '').trim();
+      row.classList.toggle('invalid', !valid);
+      if (valid) syncAllPlacesViewsAfterFavoriteChange();
+    }, true);
+    // Delete row
+    tableRoot.addEventListener('click', e => {
+      const del = e.target.closest('[data-fav-del]');
+      if (!del) return;
+      const idx = parseInt(del.dataset.favDel, 10);
+      if (!Array.isArray(tripState.added) || !tripState.added[idx]) return;
+      tripState.added.splice(idx, 1);
+      syncAllPlacesViewsAfterFavoriteChange();
+    });
+  }
+
+  // Toolbar buttons
+  const exportBtn = document.getElementById('briefExportCsv');
+  const importBtn = document.getElementById('briefImportCsv');
+  const importFile = document.getElementById('briefImportCsvFile');
+  if (exportBtn) exportBtn.addEventListener('click', exportPlacesCSV);
+  if (importBtn && importFile) {
+    importBtn.addEventListener('click', () => importFile.click());
+    importFile.addEventListener('change', async e => {
+      const f = e.target.files && e.target.files[0];
+      if (!f) return;
+      try {
+        const text = await f.text();
+        const res = importPlacesCSV(text);
+        if (res.error) {
+          showHint(loc('CSV 형식 오류: ', 'CSV error: ') + res.error, 'error');
+        } else {
+          showHint(loc(
+            `${res.added}개 추가, ${res.skipped}개 스킵 (잘못된 좌표/이름).`,
+            `Added ${res.added} · skipped ${res.skipped} (missing name or coords outside NYC).`
+          ), 'success');
+          syncAllPlacesViewsAfterFavoriteChange();
+        }
+      } catch (err) {
+        showHint(loc('파일을 읽지 못했어요.', "Couldn't read the file."), 'error');
+      } finally {
+        importFile.value = '';   // allow re-uploading the same file
+      }
+    });
   }
 
   // Expose a re-render hook so language toggle + state updates can refresh
