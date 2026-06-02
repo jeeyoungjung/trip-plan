@@ -1404,7 +1404,7 @@ const MODE_ICON = { walk: '🚶', subway: '🚇', uber: '🚗', bike: '🚲', fe
 // Korean is the default. Any translatable text can be either a plain string
 // (shown as-is in both languages) or a { ko, en } object (switches with LANG).
 // tr() is forgiving so content can be translated field-by-field.
-let LANG = (location.hash.match(/(?:^|&)lang=(en|ko)/) || [])[1] || 'ko';
+let LANG = (location.hash.match(/(?:^|&)lang=(en|ko)/) || [])[1] || 'en';
 function tr(v) {
   if (v == null) return '';
   if (typeof v === 'object') return v[LANG] != null ? v[LANG] : (v.ko != null ? v.ko : (v.en || ''));
@@ -2473,7 +2473,7 @@ function parseHash() {
 
 function writeHash(state) {
   const parts = [];
-  if (state.lang === 'en') parts.push('lang=en');  // ko is default → omitted
+  if (state.lang === 'ko') parts.push('lang=ko');  // en is default → omitted
   if (state.stop) parts.push('stop=' + state.stop);
   if (state.day) parts.push('day=' + state.day);
   if (state.pin && state.pin.length) parts.push('pin=' + state.pin.join(','));
@@ -3631,7 +3631,7 @@ function updateChromeForLang() {
 function setLang(lang) {
   LANG = (lang === 'en') ? 'en' : 'ko';
   document.body.dataset.lang = LANG;
-  patchHash({ lang: LANG === 'en' ? 'en' : null });
+  patchHash({ lang: LANG === 'ko' ? 'ko' : null });
   renderList();
   rebuildMarkersForLang();
   if (typeof applyListFilters === 'function') applyListFilters();
