@@ -1366,10 +1366,22 @@
     display: grid; grid-template-columns: 1fr 2fr auto; gap: 10px;
     margin-top: 8px; align-items: start;
   }
-  .brief-traveler input { width: 100%; box-sizing: border-box; }
+  /* Traveler inputs inherit the same look as .brief-field input. */
+  .brief-traveler input {
+    width: 100%; box-sizing: border-box;
+    font: 14px/1.5 var(--sans); color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--rule); border-radius: 6px;
+    padding: 10px 12px; outline: none;
+    transition: border-color .15s;
+  }
+  .brief-traveler input::placeholder { color: var(--ink-4); }
+  .brief-traveler input:focus { border-color: var(--ink-3); }
   .brief-traveler-remove {
-    width: 28px; height: 34px; background: transparent; border: 1px solid var(--rule);
-    border-radius: 5px; color: var(--ink-4); cursor: pointer; font-size: 13px;
+    width: 44px; height: 44px; background: var(--panel); border: 1px solid var(--rule);
+    border-radius: 6px; color: var(--ink-4); cursor: pointer; font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: color .15s, border-color .15s;
   }
   .brief-traveler-remove:hover { color: #C4314B; border-color: #C4314B; }
 
