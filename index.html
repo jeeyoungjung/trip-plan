@@ -3633,6 +3633,10 @@ function setLang(lang) {
   patchHash({ lang: LANG === 'ko' ? 'ko' : null });
   renderList();
   rebuildMarkersForLang();
+  // renderList() wipes the sidebar (incl. the added-favorites section);
+  // re-render the favorites + trash panel in the new language.
+  if (typeof renderAddedList === 'function') renderAddedList();
+  if (typeof renderTrashPanel === 'function') renderTrashPanel();
   if (typeof applyListFilters === 'function') applyListFilters();
   if (typeof applyMapFilters === 'function') applyMapFilters();
   if (typeof syncLegendUI === 'function') syncLegendUI();
