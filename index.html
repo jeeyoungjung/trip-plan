@@ -2070,6 +2070,30 @@ function scrollListToStop(num) {
   stopEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
+// Tracks the most-recently focused marker so we can reset it when a different
+// one is focused next. Without this, every click would leave a stale elevated
+// marker behind.
+let lastFocusedMarker = null;
+function rederiveBaseOffset(marker) {
+  if (!marker) return 0;
+  if (marker.customKey) return 1000;                                   // ★ added pins
+  if (marker.subId) {
+    const pinned = new Set(parseHash().pin);
+    return pinned.has(marker.subId) ? 1000 : 0;                        // favorited sub-points
+  }
+  return 0;                                                            // main stop markers
+}
+function bringMarkerToFront(marker) {
+  if (!marker || typeof marker.setZIndexOffset !== 'function') return;
+  if (lastFocusedMarker && lastFocusedMarker !== marker) {
+    lastFocusedMarker.setZIndexOffset(rederiveBaseOffset(lastFocusedMarker));
+  }
+  // 3000 = above favorites (1000) and the user-location marker (2000), so a
+  // freshly clicked spot is never occluded by neighboring pins.
+  marker.setZIndexOffset(3000);
+  lastFocusedMarker = marker;
+}
+
 function focusSubPoint(subId) {
   // subId format: "parentNum-index"
   const [parentNumStr, idxStr] = subId.split('-');
@@ -2084,6 +2108,7 @@ function focusSubPoint(subId) {
     return el && el.querySelector(`[data-sub="${subId}"]`);
   });
   if (!sub) return;
+  bringMarkerToFront(sub);
   if (isMobile()) {
     document.querySelector('.map-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
     setTimeout(() => {
@@ -2101,6 +2126,7 @@ function focusStop(num) {
   const stop = itinerary.find(s => s.num === num);
   setActiveStop(num);
   if (stop.lat === null) return;
+  bringMarkerToFront(markers[num]);
 
   // On mobile, scroll page so sticky map+tabs are visible at top first.
   // Then fly map, then open popup with extra delay so user sees the motion.
