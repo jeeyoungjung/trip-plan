@@ -1466,6 +1466,54 @@
     padding: 16px 4px; font-style: italic; text-align: center;
     border: 1px dashed var(--rule); border-radius: 6px;
   }
+
+  /* Search popover — anchored under the "+ Add a place" button. */
+  .bsp-anchor { position: relative; }
+  .bsp-popover {
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 100;
+    width: min(420px, calc(100vw - 40px));
+    background: #fff; border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.14), 0 4px 12px rgba(0,0,0,.06);
+    padding: 14px;
+  }
+  .bsp-popover[hidden] { display: none; }
+  .bsp-row { display: flex; gap: 8px; }
+  .bsp-input {
+    flex: 1; box-sizing: border-box;
+    font: 14px/1.4 var(--sans); color: var(--ink);
+    background: #fff; border: 1px solid var(--rule); border-radius: 6px;
+    padding: 9px 12px; outline: none; transition: border-color .15s;
+  }
+  .bsp-input:focus { border-color: var(--ink-3); }
+  .bsp-go {
+    background: var(--ink); color: #fff; border: 1px solid var(--ink);
+    border-radius: 6px; padding: 9px 14px; cursor: pointer;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+    transition: background .15s;
+  }
+  .bsp-go:hover { background: var(--ink-2); }
+  .bsp-go:disabled { opacity: 0.5; cursor: wait; }
+  .bsp-status {
+    margin-top: 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-4);
+    min-height: 14px;
+  }
+  .bsp-status.error { color: #C4314B; }
+  .bsp-results { margin-top: 6px; display: flex; flex-direction: column; gap: 6px; }
+  .bsp-result {
+    text-align: left; width: 100%; cursor: pointer;
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 7px;
+    padding: 10px 12px; transition: border-color .15s, background .15s;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .bsp-result:hover { border-color: var(--ink-3); background: #fff; }
+  .bsp-result-name { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .bsp-result-addr { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+  .bsp-result-coords { font-family: var(--mono); font-size: 10.5px; color: var(--ink-4); margin-top: 2px; }
+
+  @media (max-width: 540px) {
+    .bsp-popover { right: auto; left: 0; }
+  }
   .brief-places-section {
     margin-bottom: 28px;
   }
@@ -1697,7 +1745,18 @@
       <div class="brief-places-toolbar">
         <span class="brief-places-count" id="briefPlacesCount"></span>
         <span class="brief-places-spacer"></span>
-        <button type="button" class="brief-places-btn brief-places-btn-primary" id="briefAddPlace">+ Add a place</button>
+        <div class="bsp-anchor">
+          <button type="button" class="brief-places-btn brief-places-btn-primary" id="briefAddPlace" aria-haspopup="dialog" aria-expanded="false">+ Add a place</button>
+          <!-- Search popover anchored to the button -->
+          <div class="bsp-popover" id="briefSearchPopover" hidden role="dialog" aria-label="Search a place">
+            <div class="bsp-row">
+              <input type="text" class="bsp-input" id="bspInput" placeholder="Search a place — e.g. 'Caffe Reggio' or 'Times Sq'" autocomplete="off" />
+              <button type="button" class="bsp-go" id="bspSearchBtn">Search</button>
+            </div>
+            <div class="bsp-status" id="bspStatus"></div>
+            <div class="bsp-results" id="bspResults"></div>
+          </div>
+        </div>
       </div>
       <div class="brief-places-hint" id="briefPlacesHint"></div>
       <div class="brief-places-table" id="briefPlacesTable"></div>
@@ -4624,23 +4683,144 @@ let voiceAbort = () => {};
     });
   }
 
-  // "+ Add a place" — pushes an empty entry, re-renders, and focuses the new
-  // card's name input so the user can start typing immediately.
+  // "+ Add a place" → opens a search popover. User types a place name,
+  // hits Search, the chat agent returns up to 3 NYC matches as
+  // [map:lat,lng,name · addr] tokens; clicking a result adds it as a favorite
+  // with name + coords + address pre-filled.
   const addPlaceBtn = document.getElementById('briefAddPlace');
+  const searchPopover = document.getElementById('briefSearchPopover');
+  const bspInput = document.getElementById('bspInput');
+  const bspSearchBtn = document.getElementById('bspSearchBtn');
+  const bspResults = document.getElementById('bspResults');
+  const bspStatus = document.getElementById('bspStatus');
+
+  function openSearchPopover() {
+    if (!searchPopover) return;
+    searchPopover.hidden = false;
+    addPlaceBtn.setAttribute('aria-expanded', 'true');
+    bspInput.value = '';
+    bspResults.innerHTML = '';
+    bspStatus.textContent = '';
+    bspStatus.className = 'bsp-status';
+    setTimeout(() => bspInput.focus(), 80);
+  }
+  function closeSearchPopover() {
+    if (!searchPopover) return;
+    searchPopover.hidden = true;
+    addPlaceBtn.setAttribute('aria-expanded', 'false');
+  }
   if (addPlaceBtn) addPlaceBtn.addEventListener('click', () => {
-    if (!Array.isArray(tripState.added)) tripState.added = [];
-    tripState.added.push({ name: '', note: '', lat: undefined, lng: undefined });
-    renderPlacesTable();
-    // Switch to the All places tab if we weren't there already.
-    document.querySelectorAll('.brief-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'places'));
-    document.querySelectorAll('.brief-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === 'places'));
-    const cards = tableRoot.querySelectorAll('.fav-card[data-fav-idx]');
-    const last = cards[cards.length - 1];
-    if (last) {
-      last.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const nameInput = last.querySelector('.fav-name-input');
-      if (nameInput) setTimeout(() => nameInput.focus(), 200);
+    if (searchPopover.hidden) openSearchPopover();
+    else closeSearchPopover();
+  });
+
+  // Click outside to close
+  document.addEventListener('click', e => {
+    if (!searchPopover || searchPopover.hidden) return;
+    if (searchPopover.contains(e.target) || addPlaceBtn.contains(e.target)) return;
+    closeSearchPopover();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && searchPopover && !searchPopover.hidden) closeSearchPopover();
+  });
+
+  // Ask the chat agent for matches. Uses the existing proxy + agent + the
+  // [map:lat,lng,name] protocol the agent already knows, with a directive
+  // to return tokens only (no prose).
+  async function searchPlacesViaAgent(query) {
+    const body = {
+      input: [{
+        role: 'user',
+        content: `Find up to 3 NYC places matching this query: "${query}".\n\n` +
+          `Return ONLY map tokens, ONE PER LINE, no prose or explanation:\n` +
+          `[map:LATITUDE,LONGITUDE,NAME · ADDRESS]\n\n` +
+          `Use real, accurate NYC coordinates (4+ decimals). Use English names. ` +
+          `If nothing reasonable matches, respond with exactly: NO_MATCHES`,
+      }],
+    };
+    const r = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    // Extract text from the Responses API shape (handles both output_text and
+    // the nested output[].content[].text walk).
+    let text = d.output_text || '';
+    if (!text && Array.isArray(d.output)) {
+      d.output.forEach(item => {
+        if (item && Array.isArray(item.content)) {
+          item.content.forEach(c => { if (c && typeof c.text === 'string') text += c.text + '\n'; });
+        }
+      });
     }
+    if (!text || text.includes('NO_MATCHES')) return [];
+    // Parse [map:lat,lng,name · addr] tokens. The third group may contain
+    // "Name · Address" — split on the bullet.
+    const re = /\[map:\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*,\s*([^\]]+?)\s*\]/g;
+    const results = [];
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+      const parts = String(m[3] || '').split('·').map(s => s.trim()).filter(Boolean);
+      const name = parts[0] || 'Untitled';
+      const addr = parts.slice(1).join(' · ');
+      results.push({ lat, lng, name, addr });
+    }
+    return results;
+  }
+
+  function renderSearchResults(results) {
+    if (!results.length) {
+      bspResults.innerHTML = '';
+      bspStatus.textContent = loc('일치하는 장소를 찾지 못했어요. 다르게 입력해 보세요.', "No matches found — try a different query.");
+      bspStatus.className = 'bsp-status';
+      return;
+    }
+    bspStatus.textContent = '';
+    bspResults.innerHTML = results.map((r, i) => `
+      <button type="button" class="bsp-result" data-bsp-idx="${i}">
+        <span class="bsp-result-name">${escHtml(r.name)}</span>
+        ${r.addr ? `<span class="bsp-result-addr">${escHtml(r.addr)}</span>` : ''}
+        <span class="bsp-result-coords">${r.lat.toFixed(4)}, ${r.lng.toFixed(4)}</span>
+      </button>
+    `).join('');
+    // Wire click handlers — each match becomes a favorite.
+    bspResults.querySelectorAll('[data-bsp-idx]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const r = results[+btn.dataset.bspIdx];
+        if (!r) return;
+        addCustomPoint(r.lat, r.lng, r.name, { note: r.addr, focus: false });
+        renderPlacesTable();
+        if (typeof renderAddedList === 'function') renderAddedList();
+        closeSearchPopover();
+      });
+    });
+  }
+
+  async function runSearch() {
+    const query = (bspInput.value || '').trim();
+    if (!query) return;
+    bspSearchBtn.disabled = true;
+    bspStatus.textContent = loc('검색 중…', 'Searching…');
+    bspStatus.className = 'bsp-status';
+    bspResults.innerHTML = '';
+    try {
+      const results = await searchPlacesViaAgent(query);
+      renderSearchResults(results);
+    } catch (err) {
+      bspStatus.textContent = loc('검색 실패: ', 'Search failed: ') + (err.message || 'unknown');
+      bspStatus.className = 'bsp-status error';
+    } finally {
+      bspSearchBtn.disabled = false;
+    }
+  }
+
+  if (bspSearchBtn) bspSearchBtn.addEventListener('click', runSearch);
+  if (bspInput) bspInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); runSearch(); }
   });
 
   // Expose a re-render hook so language toggle + state updates can refresh
