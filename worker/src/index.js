@@ -15,10 +15,10 @@
 const REQUIRED = ['AZURE_ENDPOINT', 'AZURE_KEY', 'AGENT_NAME', 'AGENT_VERSION'];
 
 const STATE_KEY = 'shared';        // single shared bucket for this trip
-const EMPTY_STATE = { added: [], hidden: [] };
+const EMPTY_STATE = { added: [], hidden: [], brief: {} };
 
-// GET  /state → current { added, hidden }
-// POST /state → overwrite with the posted { added, hidden }
+// GET  /state → current { added, hidden, brief }
+// POST /state → overwrite with the posted { added, hidden, brief }
 // Backed by the KV namespace bound as TRIP_STATE. If the binding is missing
 // (not yet created), GET returns empty state and POST is a no-op so the client
 // degrades gracefully instead of erroring.
@@ -26,7 +26,15 @@ async function handleState(request, env, headers) {
   if (request.method === 'GET') {
     if (!env.TRIP_STATE) return new Response(JSON.stringify(EMPTY_STATE), { status: 200, headers });
     const raw = await env.TRIP_STATE.get(STATE_KEY);
-    return new Response(raw || JSON.stringify(EMPTY_STATE), { status: 200, headers });
+    // Patch missing brief on older stored payloads so the client always sees the field.
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (!parsed.brief || typeof parsed.brief !== 'object') parsed.brief = {};
+        return new Response(JSON.stringify(parsed), { status: 200, headers });
+      } catch { /* fall through to empty */ }
+    }
+    return new Response(JSON.stringify(EMPTY_STATE), { status: 200, headers });
   }
   if (request.method === 'POST') {
     let body;
@@ -34,10 +42,18 @@ async function handleState(request, env, headers) {
     if (!body || typeof body !== 'object') {
       return new Response(JSON.stringify({ error: { message: 'Invalid body' } }), { status: 400, headers });
     }
+    // Trip brief — free-form object with size cap; reject anything > 16 KB
+    // to keep KV writes bounded.
+    let brief = (body.brief && typeof body.brief === 'object') ? body.brief : {};
+    const briefStr = JSON.stringify(brief);
+    if (briefStr.length > 16 * 1024) {
+      return new Response(JSON.stringify({ error: { message: 'brief exceeds 16 KB' } }), { status: 413, headers });
+    }
     const clean = {
       added: Array.isArray(body.added) ? body.added.slice(0, 300) : [],
       hidden: Array.isArray(body.hidden) ? body.hidden.slice(0, 1000) : [],
-      v: 1,
+      brief,
+      v: 2,
       updated: Date.now(),
     };
     if (env.TRIP_STATE) await env.TRIP_STATE.put(STATE_KEY, JSON.stringify(clean));

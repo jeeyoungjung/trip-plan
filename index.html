@@ -1265,6 +1265,300 @@
   @media (min-width: 901px) and (max-width: 1200px) {
     .chat-panel { width: 400px; }
   }
+
+  /* ============ TRIP BRIEF — open button + modal ============ */
+  .brief-open-btn {
+    margin-top: 16px;
+    display: inline-flex; align-items: center; gap: 7px;
+    background: transparent; border: 1px solid var(--rule);
+    border-radius: 999px; padding: 6px 14px;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-3);
+    cursor: pointer; transition: color .18s, border-color .18s, background .18s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .brief-open-btn:hover { color: var(--ink); border-color: var(--ink-3); }
+  .brief-open-icon { font-size: 12px; color: #5C2E91; }
+  .brief-open-label { font-weight: 600; }
+
+  .brief-modal {
+    position: fixed; inset: 0; z-index: 99990;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
+  .brief-modal.open { opacity: 1; pointer-events: auto; }
+  .brief-modal[aria-hidden="false"] { opacity: 1; pointer-events: auto; }
+
+  .brief-modal-bar {
+    flex: none; display: flex; align-items: center; gap: 18px;
+    padding: 20px 32px; border-bottom: 1px solid var(--rule);
+    background: var(--panel);
+  }
+  .brief-modal-title {
+    font-family: var(--display); font-variation-settings: 'opsz' 36;
+    font-weight: 380; font-size: 24px; letter-spacing: -0.01em; color: var(--ink);
+  }
+  .brief-modal-tabs { display: flex; gap: 4px; margin-left: 12px; }
+  .brief-tab {
+    background: transparent; border: 0; padding: 8px 14px; cursor: pointer;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-4); border-radius: 4px;
+    transition: color .15s, background .15s;
+  }
+  .brief-tab:hover { color: var(--ink-2); }
+  .brief-tab.active { color: var(--ink); background: var(--rule-soft); }
+  .brief-modal-status {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px;
+    color: var(--ink-4); letter-spacing: 0.06em;
+  }
+  .brief-close {
+    background: transparent; border: 1px solid var(--rule); border-radius: 4px;
+    width: 36px; height: 36px; cursor: pointer; font-size: 16px;
+    color: var(--ink-3); display: inline-flex; align-items: center; justify-content: center;
+    transition: color .15s, border-color .15s;
+  }
+  .brief-close:hover { color: var(--ink); border-color: var(--ink-3); }
+
+  .brief-modal-body {
+    flex: 1; overflow-y: auto;
+    padding: 32px 32px 80px;
+    background: var(--bg);
+  }
+  .brief-pane { display: none; max-width: 720px; margin: 0 auto; }
+  .brief-pane.active { display: block; }
+
+  .brief-form { display: flex; flex-direction: column; gap: 22px; }
+  .brief-field { display: flex; flex-direction: column; gap: 6px; }
+  .brief-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .brief-label-row { display: flex; align-items: center; justify-content: space-between; }
+  .brief-label {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-3);
+  }
+  .brief-hint {
+    font-family: var(--mono); font-size: 10.5px; color: var(--ink-4);
+    margin-top: -2px; margin-bottom: 4px; letter-spacing: 0.02em;
+  }
+  .brief-field input,
+  .brief-field textarea {
+    font: 14px/1.5 var(--sans); color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--rule); border-radius: 6px;
+    padding: 10px 12px; outline: none;
+    transition: border-color .15s, background .15s;
+    resize: vertical;
+  }
+  .brief-field input:focus,
+  .brief-field textarea:focus { border-color: var(--ink-3); }
+  .brief-field input::placeholder,
+  .brief-field textarea::placeholder { color: var(--ink-4); }
+  .brief-field input[type="date"] { font-family: var(--mono); }
+
+  .brief-add-traveler {
+    background: transparent; border: 0; cursor: pointer;
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em;
+    color: var(--ink-3); padding: 2px 6px;
+  }
+  .brief-add-traveler:hover { color: var(--ink); }
+  .brief-traveler {
+    display: grid; grid-template-columns: 1fr 2fr auto; gap: 10px;
+    margin-top: 8px; align-items: start;
+  }
+  /* Traveler inputs inherit the same look as .brief-field input. */
+  .brief-traveler input {
+    width: 100%; box-sizing: border-box;
+    font: 14px/1.5 var(--sans); color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--rule); border-radius: 6px;
+    padding: 10px 12px; outline: none;
+    transition: border-color .15s;
+  }
+  .brief-traveler input::placeholder { color: var(--ink-4); }
+  .brief-traveler input:focus { border-color: var(--ink-3); }
+  .brief-traveler-remove {
+    width: 44px; height: 44px; background: var(--panel); border: 1px solid var(--rule);
+    border-radius: 6px; color: var(--ink-4); cursor: pointer; font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: color .15s, border-color .15s;
+  }
+  .brief-traveler-remove:hover { color: #C4314B; border-color: #C4314B; }
+
+  /* All places table */
+  .brief-places-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .brief-places-spacer { flex: 1; }
+  .brief-places-count {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .brief-places-btn {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 6px;
+    padding: 7px 12px; font-family: var(--mono); font-size: 11px;
+    letter-spacing: 0.06em; color: var(--ink-2); cursor: pointer;
+    transition: border-color .15s, color .15s, background .15s;
+  }
+  .brief-places-btn:hover { color: var(--ink); border-color: var(--ink-3); }
+  .brief-places-hint {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    margin-bottom: 12px; padding: 8px 12px;
+    background: var(--surface-2, #FAF9F8); border: 1px dashed var(--rule); border-radius: 6px;
+    display: none;
+  }
+  .brief-places-hint.show { display: block; }
+  .brief-places-hint.error { color: #C4314B; border-color: #C4314B; background: #FDF3F4; }
+  .brief-places-hint.success { color: #107C41; border-color: #CDE8D5; background: #F1F8F3; }
+
+  .brief-places-btn-primary {
+    background: var(--ink); color: #fff; border-color: var(--ink);
+  }
+  .brief-places-btn-primary:hover { background: var(--ink-2); border-color: var(--ink-2); color: #fff; }
+
+  /* Editable Favorite card — replaces the cramped grid with a small card per
+     entry. Row 1 = name + delete; row 2 = note; row 3 = lat/lng + status. */
+  .fav-card {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 8px;
+    padding: 14px; margin-bottom: 10px;
+    display: flex; flex-direction: column; gap: 10px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .fav-card:focus-within { border-color: var(--ink-3); box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+  .fav-card-row { display: flex; gap: 10px; align-items: center; }
+  .fav-star { color: var(--cat-saved); font-size: 16px; line-height: 1; width: 18px; text-align: center; flex: none; }
+  .fav-card input {
+    box-sizing: border-box;
+    font: 13.5px/1.4 var(--sans); color: var(--ink);
+    background: #fff; border: 1px solid var(--rule); border-radius: 6px;
+    padding: 8px 10px; outline: none;
+    transition: border-color .15s, background .15s;
+  }
+  .fav-card input::placeholder { color: var(--ink-4); }
+  .fav-card input:focus { border-color: var(--ink-3); }
+  .fav-name-input { flex: 1; font-weight: 500; }
+  .fav-note-input { flex: 1; }
+  .fav-coord-input { width: 132px; font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.02em; }
+  .fav-card .fav-coord-label {
+    font-family: var(--mono); font-size: 10px; color: var(--ink-4);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .fav-card-status {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px;
+    letter-spacing: 0.04em; color: var(--ink-4);
+  }
+  .fav-card-status.error { color: #C4314B; }
+  .fav-card-status.saved { color: #107C41; }
+  .fav-del {
+    flex: none; width: 36px; height: 36px;
+    background: transparent; border: 1px solid var(--rule); border-radius: 6px;
+    color: var(--ink-4); cursor: pointer; font-size: 14px;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  .fav-del:hover { color: #C4314B; border-color: #C4314B; background: #FDF3F4; }
+  .fav-card.invalid { border-color: #F3D2D7; background: #FDF8F9; }
+  .fav-card.invalid .fav-coord-input { border-color: #E8B4BC; }
+
+  .brief-places-empty {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-4);
+    padding: 16px 4px; font-style: italic; text-align: center;
+    border: 1px dashed var(--rule); border-radius: 6px;
+  }
+
+  /* Search popover — anchored under the "+ Add a place" button. */
+  .bsp-anchor { position: relative; }
+  .bsp-popover {
+    position: absolute; top: calc(100% + 8px); right: 0; z-index: 100;
+    width: min(420px, calc(100vw - 40px));
+    background: #fff; border: 1px solid var(--rule); border-radius: 10px;
+    box-shadow: 0 12px 32px rgba(0,0,0,.14), 0 4px 12px rgba(0,0,0,.06);
+    padding: 14px;
+  }
+  .bsp-popover[hidden] { display: none; }
+  .bsp-row { display: flex; gap: 8px; }
+  .bsp-input {
+    flex: 1; box-sizing: border-box;
+    font: 14px/1.4 var(--sans); color: var(--ink);
+    background: #fff; border: 1px solid var(--rule); border-radius: 6px;
+    padding: 9px 12px; outline: none; transition: border-color .15s;
+  }
+  .bsp-input:focus { border-color: var(--ink-3); }
+  .bsp-go {
+    background: var(--ink); color: #fff; border: 1px solid var(--ink);
+    border-radius: 6px; padding: 9px 14px; cursor: pointer;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+    transition: background .15s;
+  }
+  .bsp-go:hover { background: var(--ink-2); }
+  .bsp-go:disabled { opacity: 0.5; cursor: wait; }
+  .bsp-status {
+    margin-top: 8px;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-4);
+    min-height: 14px;
+  }
+  .bsp-status.error { color: #C4314B; }
+  .bsp-results { margin-top: 6px; display: flex; flex-direction: column; gap: 6px; }
+  .bsp-result {
+    text-align: left; width: 100%; cursor: pointer;
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 7px;
+    padding: 10px 12px; transition: border-color .15s, background .15s;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .bsp-result:hover { border-color: var(--ink-3); background: #fff; }
+  .bsp-result-name { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+  .bsp-result-addr { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+  .bsp-result-coords { font-family: var(--mono); font-size: 10.5px; color: var(--ink-4); margin-top: 2px; }
+
+  @media (max-width: 540px) {
+    .bsp-popover { right: auto; left: 0; }
+  }
+  .brief-places-section {
+    margin-bottom: 28px;
+  }
+  .brief-places-section-h {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-3); margin: 0 0 10px;
+    padding-bottom: 8px; border-bottom: 1px dashed var(--rule);
+  }
+  .brief-places-section-h .count { color: var(--ink-4); margin-left: 8px; }
+  .brief-places-row {
+    display: grid;
+    grid-template-columns: 70px 1.6fr 90px 2fr 80px;
+    gap: 12px; align-items: start;
+    padding: 10px 0; border-bottom: 1px solid var(--rule-soft);
+    font-size: 12px; line-height: 1.45;
+  }
+  .brief-places-row.header {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-4); font-weight: 600;
+    border-bottom: 1px solid var(--rule);
+  }
+  .brief-places-row .col-time { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+  .brief-places-row .col-name { font-weight: 600; color: var(--ink); }
+  .brief-places-row .col-cat { font-family: var(--mono); font-size: 10px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.04em; }
+  .brief-places-row .col-addr { color: var(--ink-2); font-size: 11.5px; }
+  .brief-places-row .col-status { font-family: var(--mono); font-size: 10px; color: var(--ink-4); }
+  .brief-places-row .col-status .status-dot { display: inline-block; margin-right: 4px; }
+  .brief-places-row .col-status .pinned { color: var(--cat-saved); }
+  .brief-places-row .col-status .hidden-flag { color: #C4314B; }
+
+  @media (max-width: 760px) {
+    .brief-modal-bar { padding: 14px 16px; gap: 8px; flex-wrap: wrap; }
+    .brief-modal-title { font-size: 20px; }
+    .brief-modal-body { padding: 20px 16px 80px; }
+    .brief-field-row { grid-template-columns: 1fr; }
+    .brief-traveler { grid-template-columns: 1fr; }
+    .brief-traveler-remove { width: auto; }
+    .brief-places-row { grid-template-columns: 60px 1fr; gap: 6px; }
+    .brief-places-row .col-cat,
+    .brief-places-row .col-addr,
+    .brief-places-row .col-status { grid-column: 2; font-size: 11px; }
+    .brief-places-row.header .col-cat,
+    .brief-places-row.header .col-addr,
+    .brief-places-row.header .col-status { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -1277,6 +1571,7 @@
       <span>May 28—31, 2026</span>
     </div>
     <h1 class="title">New York.</h1>
+    <button type="button" class="brief-open-btn" id="briefOpenBtn" aria-label="Open trip brief"><span class="brief-open-icon">✦</span><span class="brief-open-label">Trip Brief</span></button>
   </section>
 
   <nav class="tabs">
@@ -1390,6 +1685,84 @@
     </button>
   </form>
 </aside>
+
+<!-- ========= TRIP BRIEF MODAL ========= -->
+<div class="brief-modal" id="briefModal" aria-hidden="true" role="dialog" aria-labelledby="briefModalTitle">
+  <div class="brief-modal-bar">
+    <div class="brief-modal-title" id="briefModalTitle">Trip Brief</div>
+    <div class="brief-modal-tabs">
+      <button class="brief-tab active" data-tab="brief" id="briefTabBrief">Brief</button>
+      <button class="brief-tab" data-tab="places" id="briefTabPlaces">All places</button>
+    </div>
+    <div class="brief-modal-status" id="briefSaveStatus" aria-live="polite"></div>
+    <button class="brief-close" id="briefClose" aria-label="Close trip brief">✕</button>
+  </div>
+  <div class="brief-modal-body">
+    <!-- Brief tab -->
+    <section class="brief-pane active" data-pane="brief">
+      <div class="brief-form">
+        <label class="brief-field">
+          <span class="brief-label">Trip title</span>
+          <input type="text" id="briefTitle" placeholder="e.g., NYC · May 2026" />
+        </label>
+        <div class="brief-field-row">
+          <label class="brief-field">
+            <span class="brief-label">Start date</span>
+            <input type="date" id="briefDateStart" />
+          </label>
+          <label class="brief-field">
+            <span class="brief-label">End date</span>
+            <input type="date" id="briefDateEnd" />
+          </label>
+        </div>
+        <label class="brief-field">
+          <span class="brief-label">Purpose</span>
+          <span class="brief-hint">Why this trip? What does success look like?</span>
+          <textarea id="briefPurpose" rows="3" placeholder="Reunion trip; first NYC visit for two of us. We want a mix of food, design, and walking."></textarea>
+        </label>
+        <div class="brief-travelers">
+          <div class="brief-label-row">
+            <span class="brief-label">Travelers</span>
+            <button type="button" class="brief-add-traveler" id="briefAddTraveler">+ Add traveler</button>
+          </div>
+          <div id="briefTravelersList"></div>
+        </div>
+        <label class="brief-field">
+          <span class="brief-label">Preferences</span>
+          <span class="brief-hint">Cuisines, vibe, must-do, budget. The chat assistant uses this.</span>
+          <textarea id="briefPreferences" rows="3" placeholder="Korean food, indie design shops, good coffee. Avoid touristy chains. Budget mid-range."></textarea>
+        </label>
+        <label class="brief-field">
+          <span class="brief-label">Constraints</span>
+          <span class="brief-hint">Allergies, mobility, dietary, anything to avoid.</span>
+          <textarea id="briefConstraints" rows="3" placeholder="Sarah is vegetarian. ~3mi/day walking comfortable. No alcohol-heavy bars."></textarea>
+        </label>
+      </div>
+    </section>
+
+    <!-- All places tab -->
+    <section class="brief-pane" data-pane="places">
+      <div class="brief-places-toolbar">
+        <span class="brief-places-count" id="briefPlacesCount"></span>
+        <span class="brief-places-spacer"></span>
+        <div class="bsp-anchor">
+          <button type="button" class="brief-places-btn brief-places-btn-primary" id="briefAddPlace" aria-haspopup="dialog" aria-expanded="false">+ Add a place</button>
+          <!-- Search popover anchored to the button -->
+          <div class="bsp-popover" id="briefSearchPopover" hidden role="dialog" aria-label="Search a place">
+            <div class="bsp-row">
+              <input type="text" class="bsp-input" id="bspInput" placeholder="Search a place — e.g. 'Caffe Reggio' or 'Times Sq'" autocomplete="off" />
+              <button type="button" class="bsp-go" id="bspSearchBtn">Search</button>
+            </div>
+            <div class="bsp-status" id="bspStatus"></div>
+            <div class="bsp-results" id="bspResults"></div>
+          </div>
+        </div>
+      </div>
+      <div class="brief-places-hint" id="briefPlacesHint"></div>
+      <div class="brief-places-table" id="briefPlacesTable"></div>
+    </section>
+  </div>
+</div>
 
 <!-- Local config — gitignored. Provides window.TRIP_CONFIG with endpoint + key. -->
 <!-- If absent (e.g., on a public host), the chat falls back to a "paste your key" UI. -->
@@ -3135,7 +3508,12 @@ function revealSavedLegend() { syncFavoriteLegend(); }
 function renderAddedList() {
   if (typeof itineraryEl === 'undefined' || !itineraryEl) return;
   let section = document.getElementById('addedSection');
-  if (!tripState.added.length) {
+  // Only show favorites that are complete (have name + valid coords) — pending
+  // / in-progress entries live in the Trip Brief modal until ready.
+  const ready = (tripState.added || []).filter(p =>
+    p && (p.name || '').trim() && Number.isFinite(p.lat) && Number.isFinite(p.lng)
+  );
+  if (!ready.length) {
     if (section) section.remove();
     return;
   }
@@ -3146,7 +3524,7 @@ function renderAddedList() {
     section.className = 'day-section added-section';
     itineraryEl.insertBefore(section, itineraryEl.firstChild);
   }
-  const rows = tripState.added.map(p => {
+  const rows = ready.map(p => {
     const key = addedKey(p);
     const safeKey = key.replace(/"/g, '&quot;');
     const safeName = String(p.name || '').replace(/[<>&"]/g, '');
@@ -3166,7 +3544,7 @@ function renderAddedList() {
         </div>
       </div>`;
   }).join('');
-  const n = tripState.added.length;
+  const n = ready.length;
   const countLabel = LANG === 'en' ? `${n} place${n === 1 ? '' : 's'}` : `${n}곳`;
   section.innerHTML = `
     <div class="day-header">
@@ -3195,7 +3573,7 @@ function renderAddedList() {
 // group sees the same map on every device. Degrades to in-session only if the
 // backend is unreachable (fetch failures are swallowed).
 const STATE_API = PROXY_URL + '/state';
-const tripState = { added: [], hidden: [] };
+const tripState = { added: [], hidden: [], brief: {} };
 let stateSaveTimer = null;
 
 function isHidden(id) { return tripState.hidden.indexOf(id) !== -1; }
@@ -3207,6 +3585,7 @@ async function loadTripState() {
       const d = await r.json();
       if (Array.isArray(d.added))  tripState.added  = d.added;
       if (Array.isArray(d.hidden)) tripState.hidden = d.hidden;
+      if (d.brief && typeof d.brief === 'object') tripState.brief = d.brief;
     }
   } catch (_) { /* offline / not yet deployed — in-session only */ }
   applyTripState();
@@ -3218,7 +3597,7 @@ function saveTripState() {
     fetch(STATE_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ added: tripState.added, hidden: tripState.hidden }),
+      body: JSON.stringify({ added: tripState.added, hidden: tripState.hidden, brief: tripState.brief }),
     }).catch(() => {});
   }, 600);
 }
@@ -3464,7 +3843,7 @@ Rules:
 - Multiple places → multiple marker lines, each on its own line.
 - For places already in the itinerary, the marker is optional (the user can click the stop card). But for any NEW place not in the itinerary, ALWAYS include the marker so the user can add it to their map.
 - The marker does NOT replace your natural-language reply — it's appended after it. Keep your normal prose unchanged.
-- Use precise decimal coordinates (4+ decimals). Use the place's English name in NAME.${locDirective}${langDirective}`,
+- Use precise decimal coordinates (4+ decimals). Use the place's English name in NAME.${buildBriefContext()}${locDirective}${langDirective}`,
     });
     input.push({ role: 'assistant', content: loc(
       '네, 일정 확인했습니다. 새로운 장소를 추천할 때는 [map:위도,경도,이름] 마커도 같이 붙일게요.',
@@ -3663,6 +4042,7 @@ function setLang(lang) {
   // re-render the favorites + trash panel in the new language.
   if (typeof renderAddedList === 'function') renderAddedList();
   if (typeof renderTrashPanel === 'function') renderTrashPanel();
+  if (typeof window.refreshBriefModal === 'function') window.refreshBriefModal();
   if (typeof applyListFilters === 'function') applyListFilters();
   if (typeof applyMapFilters === 'function') applyMapFilters();
   if (typeof syncLegendUI === 'function') syncLegendUI();
@@ -3955,6 +4335,549 @@ let voiceAbort = () => {};
     if (e.key === 'Escape' && listening) stop();
   });
 })();
+
+// =========== TRIP BRIEF MODAL ===========
+// Full-screen modal with two tabs:
+//   Brief — structured form (title/dates/purpose/travelers/preferences/constraints)
+//   All places — read-only metadata table grouped by Day + Favorites
+// Brief auto-saves to KV via saveTripState (debounced). The chat agent
+// reads tripState.brief on every turn (see callAzureResponses).
+(function tripBriefModule() {
+  const briefModal = document.getElementById('briefModal');
+  const briefOpenBtn = document.getElementById('briefOpenBtn');
+  const briefCloseBtn = document.getElementById('briefClose');
+  const briefStatusEl = document.getElementById('briefSaveStatus');
+  if (!briefModal || !briefOpenBtn) return;
+
+  const briefFields = {
+    title: document.getElementById('briefTitle'),
+    dateStart: document.getElementById('briefDateStart'),
+    dateEnd: document.getElementById('briefDateEnd'),
+    purpose: document.getElementById('briefPurpose'),
+    preferences: document.getElementById('briefPreferences'),
+    constraints: document.getElementById('briefConstraints'),
+  };
+  const travelersList = document.getElementById('briefTravelersList');
+  const addTravelerBtn = document.getElementById('briefAddTraveler');
+
+  // --- open / close ---
+  // Seed sensible defaults derived from what we already know about this trip
+  // (dates, hotel, reservations, vibe) the first time the modal opens with an
+  // empty brief. The user can edit anything; auto-save persists once a field
+  // is touched.
+  function seedBriefDefaultsIfEmpty() {
+    const b = tripState.brief || {};
+    const hasAnyContent = !!(b.title || b.purpose || b.preferences || b.constraints
+      || b.dateStart || b.dateEnd
+      || (Array.isArray(b.travelers) && b.travelers.length));
+    if (hasAnyContent) return;
+    tripState.brief = {
+      title: 'NYC · May 2026',
+      dateStart: '2026-05-29',
+      dateEnd: '2026-05-31',
+      purpose: 'Long-weekend reunion in NYC for four friends. Mix of design, food, and walking — Broadway Friday night, full Brooklyn day Saturday, museums + Central Park Sunday. First NYC visit for some of the group.',
+      travelers: [
+        { name: 'Jee', notes: 'Product designer at Microsoft; loves indie design stores, coffee, Korean food.' },
+        { name: 'Friend 2', notes: '' },
+        { name: 'Friend 3', notes: '' },
+        { name: 'Friend 4', notes: '' },
+      ],
+      preferences: 'Korean and Japanese food, indie design stores, coffee culture, pizza, vintage bookshops. Lean toward locally-loved over touristy. Walking-first; willing to splurge for reservations and design pilgrimages.',
+      constraints: 'Light packing — one carry-on + one backpack per person. Reservations locked: Raku Soho Fri 5:30 PM, Belasco (Maybe Happy Ending) Fri 7:00 PM, Oiji Mi Sat 7:30 PM. 9:00 AM brunch at hotel Saturday, depart 9:45.',
+    };
+    saveTripState();   // persists to KV (active once the Worker is redeployed with brief support)
+  }
+
+  function openBriefModal() {
+    briefModal.classList.add('open');
+    briefModal.setAttribute('aria-hidden', 'false');
+    seedBriefDefaultsIfEmpty();
+    renderBriefForm();
+    renderPlacesTable();
+    document.body.style.overflow = 'hidden';
+  }
+  function closeBriefModal() {
+    briefModal.classList.remove('open');
+    briefModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+  briefOpenBtn.addEventListener('click', openBriefModal);
+  briefCloseBtn.addEventListener('click', closeBriefModal);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && briefModal.classList.contains('open')) closeBriefModal();
+  });
+
+  // --- tab switching ---
+  document.querySelectorAll('.brief-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const target = tab.dataset.tab;
+      document.querySelectorAll('.brief-tab').forEach(t => t.classList.toggle('active', t === tab));
+      document.querySelectorAll('.brief-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === target));
+      if (target === 'places') renderPlacesTable();
+    });
+  });
+
+  // --- form render ---
+  function renderBriefForm() {
+    if (!tripState.brief || typeof tripState.brief !== 'object') tripState.brief = {};
+    const b = tripState.brief;
+    briefFields.title.value = b.title || '';
+    briefFields.dateStart.value = b.dateStart || '';
+    briefFields.dateEnd.value = b.dateEnd || '';
+    briefFields.purpose.value = b.purpose || '';
+    briefFields.preferences.value = b.preferences || '';
+    briefFields.constraints.value = b.constraints || '';
+    renderTravelers();
+    if (briefStatusEl) briefStatusEl.textContent = '';
+  }
+
+  function escHtml(s) {
+    return String(s == null ? '' : s).replace(/[<>&"']/g, m => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;','\'':'&#39;'}[m]));
+  }
+
+  function renderTravelers() {
+    const travelers = Array.isArray(tripState.brief.travelers) ? tripState.brief.travelers : [];
+    travelersList.innerHTML = travelers.map((t, i) => `
+      <div class="brief-traveler">
+        <input type="text" placeholder="${loc('이름','Name')}" data-trv-name="${i}" value="${escHtml(t.name)}" />
+        <input type="text" placeholder="${loc('메모 (선호, 식이, 알아둘 점)','Notes (preferences, dietary, anything to know)')}" data-trv-notes="${i}" value="${escHtml(t.notes)}" />
+        <button type="button" class="brief-traveler-remove" data-trv-remove="${i}" aria-label="Remove traveler">✕</button>
+      </div>
+    `).join('');
+  }
+
+  addTravelerBtn.addEventListener('click', () => {
+    if (!tripState.brief) tripState.brief = {};
+    if (!Array.isArray(tripState.brief.travelers)) tripState.brief.travelers = [];
+    tripState.brief.travelers.push({ name: '', notes: '' });
+    renderTravelers();
+    flagBriefDirty();
+  });
+
+  travelersList.addEventListener('input', e => {
+    const ni = e.target.dataset.trvName;
+    const noi = e.target.dataset.trvNotes;
+    if (!Array.isArray(tripState.brief.travelers)) tripState.brief.travelers = [];
+    if (ni !== undefined && tripState.brief.travelers[+ni]) {
+      tripState.brief.travelers[+ni].name = e.target.value;
+      flagBriefDirty();
+    } else if (noi !== undefined && tripState.brief.travelers[+noi]) {
+      tripState.brief.travelers[+noi].notes = e.target.value;
+      flagBriefDirty();
+    }
+  });
+  travelersList.addEventListener('click', e => {
+    const rem = e.target.dataset.trvRemove;
+    if (rem !== undefined) {
+      tripState.brief.travelers.splice(+rem, 1);
+      renderTravelers();
+      flagBriefDirty();
+    }
+  });
+
+  // --- field auto-save ---
+  let dirtyResetTimer = null;
+  function flagBriefDirty() {
+    if (briefStatusEl) briefStatusEl.textContent = loc('저장 중…', 'Saving…');
+    saveTripState();
+    if (dirtyResetTimer) clearTimeout(dirtyResetTimer);
+    dirtyResetTimer = setTimeout(() => {
+      if (briefStatusEl) briefStatusEl.textContent = loc('✓ 저장됨', '✓ Saved');
+      setTimeout(() => { if (briefStatusEl) briefStatusEl.textContent = ''; }, 1500);
+    }, 900);
+  }
+
+  Object.entries(briefFields).forEach(([key, el]) => {
+    if (!el) return;
+    el.addEventListener('input', () => {
+      if (!tripState.brief) tripState.brief = {};
+      tripState.brief[key] = el.value;
+      flagBriefDirty();
+    });
+  });
+
+  // --- All places table (read-only) ---
+  function renderPlacesTable() {
+    const root = document.getElementById('briefPlacesTable');
+    const countEl = document.getElementById('briefPlacesCount');
+    if (!root) return;
+    const pinned = new Set(parseHash().pin);
+    let total = 0;
+    const sections = [];
+
+    [1,2,3].forEach(d => {
+      const rows = [];
+      itinerary.filter(s => s.day === d).forEach(s => {
+        if (s.lat !== null && s.lat !== undefined) {
+          rows.push(buildPlaceRow({
+            time: tr(s.time) || '—',
+            name: tr(s.name),
+            cat: 'STOP',
+            addr: tr(s.address) || '',
+            pinned: false, hidden: false,
+          }));
+        }
+        (s.points || []).forEach((p, i) => {
+          const id = `${s.num}-${i}`;
+          rows.push(buildPlaceRow({
+            time: '·',
+            name: String(tr(p.name) || '').replace(/^★\s*/, ''),
+            cat: p.category || '',
+            addr: tr(p.addr) || '',
+            pinned: pinned.has(id),
+            hidden: isHidden(id),
+          }));
+        });
+      });
+      if (rows.length) {
+        sections.push(sectionHTML(`Day ${d}`, rows));
+        total += rows.length;
+      }
+    });
+
+    // Favorites: editable inline. Each row becomes name + note + lat + lng
+    // inputs with a delete button. Empty state shown when no favorites yet.
+    const favRows = (Array.isArray(tripState.added) ? tripState.added : [])
+      .map((p, idx) => buildEditableFavoriteRow(p, idx))
+      .join('');
+    sections.push(favoritesSectionHTML(favRows, (tripState.added || []).length));
+    total += (tripState.added || []).length;
+
+    if (countEl) countEl.textContent = `${total} ${loc('곳','places')}`;
+    root.innerHTML = sections.join('');
+  }
+
+  function buildEditableFavoriteRow(p, idx) {
+    const lat = Number.isFinite(p.lat) ? p.lat : '';
+    const lng = Number.isFinite(p.lng) ? p.lng : '';
+    const valid = isValidNYCCoord(p.lat, p.lng) && (p.name || '').trim();
+    const statusText = valid
+      ? ''   // empty in steady state; flips to "✓ saved" briefly on blur
+      : loc('이름과 좌표를 입력해 주세요', 'Needs name + valid NYC coords');
+    return `<div class="fav-card${valid ? '' : ' invalid'}" data-fav-idx="${idx}">
+      <div class="fav-card-row">
+        <span class="fav-star">★</span>
+        <input class="fav-name-input" data-field="name" value="${escHtml(p.name || '')}" placeholder="${loc('장소 이름','Place name')}" />
+        <button type="button" class="fav-del" data-fav-del="${idx}" aria-label="Delete favorite" title="${loc('삭제','Delete')}">✕</button>
+      </div>
+      <div class="fav-card-row">
+        <input class="fav-note-input" data-field="note" value="${escHtml(p.note || '')}" placeholder="${loc('메모 (한 줄)','Note (one line)')}" />
+      </div>
+      <div class="fav-card-row">
+        <input class="fav-coord-input" data-field="lat" value="${lat}" placeholder="lat" inputmode="decimal" aria-label="Latitude" />
+        <input class="fav-coord-input" data-field="lng" value="${lng}" placeholder="lng" inputmode="decimal" aria-label="Longitude" />
+        <span class="fav-card-status${valid ? '' : ' error'}">${escHtml(statusText)}</span>
+      </div>
+    </div>`;
+  }
+
+  function favoritesSectionHTML(rowsHtml, count) {
+    if (count === 0) {
+      const empty = `<div class="brief-places-empty">${loc(
+        '아직 추가된 즐겨찾기가 없습니다. "+ Add a place"로 새로 만들거나 채팅의 ★로 추가하세요.',
+        'No favorites yet. Use "+ Add a place" to create one, or ★ a place from chat.'
+      )}</div>`;
+      return `<div class="brief-places-section">
+        <h4 class="brief-places-section-h">${loc('즐겨찾기','Favorites')} <span class="count">0</span></h4>
+        ${empty}
+      </div>`;
+    }
+    return `<div class="brief-places-section">
+      <h4 class="brief-places-section-h">${loc('즐겨찾기','Favorites')} <span class="count">${count}</span></h4>
+      ${rowsHtml}
+    </div>`;
+  }
+
+  function buildPlaceRow({ time, name, cat, addr, pinned, hidden }) {
+    const status = (pinned ? `<span class="pinned">★ ${loc('찜','Pinned')}</span> ` : '')
+                 + (hidden ? `<span class="hidden-flag">🗑 ${loc('숨김','Hidden')}</span>` : '');
+    return `<div class="brief-places-row">
+      <div class="col-time">${escHtml(time)}</div>
+      <div class="col-name">${escHtml(name)}</div>
+      <div class="col-cat">${escHtml(cat)}</div>
+      <div class="col-addr">${escHtml(addr)}</div>
+      <div class="col-status">${status}</div>
+    </div>`;
+  }
+
+  function sectionHTML(title, rows) {
+    return `<div class="brief-places-section">
+      <h4 class="brief-places-section-h">${escHtml(title)}<span class="count">${rows.length}</span></h4>
+      <div class="brief-places-row header">
+        <div class="col-time">${loc('시간','Time')}</div>
+        <div class="col-name">${loc('이름','Name')}</div>
+        <div class="col-cat">${loc('카테고리','Cat')}</div>
+        <div class="col-addr">${loc('주소','Address')}</div>
+        <div class="col-status">${loc('상태','Status')}</div>
+      </div>
+      ${rows.join('')}
+    </div>`;
+  }
+
+  // ----- Validation + map sync for editable favorites -----
+  // NYC bounding box for permissive validation. Tight enough to reject
+  // garbage; loose enough not to falsely reject neighborhoods we forget.
+  const NYC_BOUNDS = { latMin: 40.45, latMax: 41.00, lngMin: -74.30, lngMax: -73.60 };
+  function isValidNYCCoord(lat, lng) {
+    return Number.isFinite(lat) && Number.isFinite(lng)
+      && lat >= NYC_BOUNDS.latMin && lat <= NYC_BOUNDS.latMax
+      && lng >= NYC_BOUNDS.lngMin && lng <= NYC_BOUNDS.lngMax;
+  }
+
+  function rebuildCustomMarkersFromState() {
+    if (typeof customMarkers === 'undefined' || !map) return;
+    customMarkers.forEach(m => map.removeLayer(m));
+    customMarkers.clear();
+    (tripState.added || []).forEach(p => {
+      if (p && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {
+        addCustomPoint(p.lat, p.lng, p.name, { persist: false, focus: false, note: p.note });
+      }
+    });
+  }
+
+  function syncAllPlacesViewsAfterFavoriteChange() {
+    saveTripState();
+    rebuildCustomMarkersFromState();
+    if (typeof renderAddedList === 'function') renderAddedList();
+    if (typeof applyMapFilters === 'function') applyMapFilters();
+    if (typeof applyListFilters === 'function') applyListFilters();
+    renderPlacesTable();
+  }
+
+  // Delegated input handler on the places table — only fires inside editable
+  // favorite rows. Updates tripState.added[idx] for the changed field;
+  // re-renders are deferred until blur so we don't yank the user mid-edit.
+  const tableRoot = document.getElementById('briefPlacesTable');
+  const placesHint = document.getElementById('briefPlacesHint');
+  function showHint(msg, kind) {
+    if (!placesHint) return;
+    placesHint.textContent = msg;
+    placesHint.className = 'brief-places-hint show ' + (kind || '');
+    setTimeout(() => { placesHint.className = 'brief-places-hint'; }, 5000);
+  }
+
+  if (tableRoot) {
+    // Live edits update tripState.added but DON'T re-render — that would
+    // yank the user out of the input they're typing in.
+    tableRoot.addEventListener('input', e => {
+      const card = e.target.closest('.fav-card[data-fav-idx]');
+      if (!card) return;
+      const idx = parseInt(card.dataset.favIdx, 10);
+      const field = e.target.dataset.field;
+      if (!Array.isArray(tripState.added) || !tripState.added[idx] || !field) return;
+      const p = tripState.added[idx];
+      if (field === 'name' || field === 'note') {
+        p[field] = e.target.value;
+      } else if (field === 'lat' || field === 'lng') {
+        const n = parseFloat(e.target.value);
+        // Allow empty (clearing) — store undefined so it stops being valid.
+        p[field] = Number.isFinite(n) ? n : undefined;
+      }
+      saveTripState();   // debounced
+    });
+    // On blur: validate + sync map/list. Reflect validity on the card.
+    tableRoot.addEventListener('blur', e => {
+      if (!e.target.matches('.fav-card input')) return;
+      const card = e.target.closest('.fav-card[data-fav-idx]');
+      if (!card) return;
+      const idx = parseInt(card.dataset.favIdx, 10);
+      const p = tripState.added && tripState.added[idx];
+      if (!p) return;
+      const valid = isValidNYCCoord(p.lat, p.lng) && (p.name || '').trim();
+      card.classList.toggle('invalid', !valid);
+      const statusEl = card.querySelector('.fav-card-status');
+      if (statusEl) {
+        if (valid) {
+          statusEl.textContent = loc('✓ 저장됨', '✓ Saved');
+          statusEl.className = 'fav-card-status saved';
+          setTimeout(() => { if (statusEl) { statusEl.textContent = ''; statusEl.className = 'fav-card-status'; } }, 1500);
+        } else {
+          statusEl.textContent = loc('이름과 좌표를 입력해 주세요', 'Needs name + valid NYC coords');
+          statusEl.className = 'fav-card-status error';
+        }
+      }
+      if (valid) syncAllPlacesViewsAfterFavoriteChange();
+    }, true);
+    // Delete card
+    tableRoot.addEventListener('click', e => {
+      const del = e.target.closest('[data-fav-del]');
+      if (!del) return;
+      const idx = parseInt(del.dataset.favDel, 10);
+      if (!Array.isArray(tripState.added) || !tripState.added[idx]) return;
+      tripState.added.splice(idx, 1);
+      syncAllPlacesViewsAfterFavoriteChange();
+    });
+  }
+
+  // "+ Add a place" → opens a search popover. User types a place name,
+  // hits Search, the chat agent returns up to 3 NYC matches as
+  // [map:lat,lng,name · addr] tokens; clicking a result adds it as a favorite
+  // with name + coords + address pre-filled.
+  const addPlaceBtn = document.getElementById('briefAddPlace');
+  const searchPopover = document.getElementById('briefSearchPopover');
+  const bspInput = document.getElementById('bspInput');
+  const bspSearchBtn = document.getElementById('bspSearchBtn');
+  const bspResults = document.getElementById('bspResults');
+  const bspStatus = document.getElementById('bspStatus');
+
+  function openSearchPopover() {
+    if (!searchPopover) return;
+    searchPopover.hidden = false;
+    addPlaceBtn.setAttribute('aria-expanded', 'true');
+    bspInput.value = '';
+    bspResults.innerHTML = '';
+    bspStatus.textContent = '';
+    bspStatus.className = 'bsp-status';
+    setTimeout(() => bspInput.focus(), 80);
+  }
+  function closeSearchPopover() {
+    if (!searchPopover) return;
+    searchPopover.hidden = true;
+    addPlaceBtn.setAttribute('aria-expanded', 'false');
+  }
+  if (addPlaceBtn) addPlaceBtn.addEventListener('click', () => {
+    if (searchPopover.hidden) openSearchPopover();
+    else closeSearchPopover();
+  });
+
+  // Click outside to close
+  document.addEventListener('click', e => {
+    if (!searchPopover || searchPopover.hidden) return;
+    if (searchPopover.contains(e.target) || addPlaceBtn.contains(e.target)) return;
+    closeSearchPopover();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && searchPopover && !searchPopover.hidden) closeSearchPopover();
+  });
+
+  // Ask the chat agent for matches. Uses the existing proxy + agent + the
+  // [map:lat,lng,name] protocol the agent already knows, with a directive
+  // to return tokens only (no prose).
+  async function searchPlacesViaAgent(query) {
+    const body = {
+      input: [{
+        role: 'user',
+        content: `Find up to 3 NYC places matching this query: "${query}".\n\n` +
+          `Return ONLY map tokens, ONE PER LINE, no prose or explanation:\n` +
+          `[map:LATITUDE,LONGITUDE,NAME · ADDRESS]\n\n` +
+          `Use real, accurate NYC coordinates (4+ decimals). Use English names. ` +
+          `If nothing reasonable matches, respond with exactly: NO_MATCHES`,
+      }],
+    };
+    const r = await fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    // Extract text from the Responses API shape (handles both output_text and
+    // the nested output[].content[].text walk).
+    let text = d.output_text || '';
+    if (!text && Array.isArray(d.output)) {
+      d.output.forEach(item => {
+        if (item && Array.isArray(item.content)) {
+          item.content.forEach(c => { if (c && typeof c.text === 'string') text += c.text + '\n'; });
+        }
+      });
+    }
+    if (!text || text.includes('NO_MATCHES')) return [];
+    // Parse [map:lat,lng,name · addr] tokens. The third group may contain
+    // "Name · Address" — split on the bullet.
+    const re = /\[map:\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*,\s*([^\]]+?)\s*\]/g;
+    const results = [];
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+      const parts = String(m[3] || '').split('·').map(s => s.trim()).filter(Boolean);
+      const name = parts[0] || 'Untitled';
+      const addr = parts.slice(1).join(' · ');
+      results.push({ lat, lng, name, addr });
+    }
+    return results;
+  }
+
+  function renderSearchResults(results) {
+    if (!results.length) {
+      bspResults.innerHTML = '';
+      bspStatus.textContent = loc('일치하는 장소를 찾지 못했어요. 다르게 입력해 보세요.', "No matches found — try a different query.");
+      bspStatus.className = 'bsp-status';
+      return;
+    }
+    bspStatus.textContent = '';
+    bspResults.innerHTML = results.map((r, i) => `
+      <button type="button" class="bsp-result" data-bsp-idx="${i}">
+        <span class="bsp-result-name">${escHtml(r.name)}</span>
+        ${r.addr ? `<span class="bsp-result-addr">${escHtml(r.addr)}</span>` : ''}
+        <span class="bsp-result-coords">${r.lat.toFixed(4)}, ${r.lng.toFixed(4)}</span>
+      </button>
+    `).join('');
+    // Wire click handlers — each match becomes a favorite.
+    bspResults.querySelectorAll('[data-bsp-idx]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const r = results[+btn.dataset.bspIdx];
+        if (!r) return;
+        addCustomPoint(r.lat, r.lng, r.name, { note: r.addr, focus: false });
+        renderPlacesTable();
+        if (typeof renderAddedList === 'function') renderAddedList();
+        closeSearchPopover();
+      });
+    });
+  }
+
+  async function runSearch() {
+    const query = (bspInput.value || '').trim();
+    if (!query) return;
+    bspSearchBtn.disabled = true;
+    bspStatus.textContent = loc('검색 중…', 'Searching…');
+    bspStatus.className = 'bsp-status';
+    bspResults.innerHTML = '';
+    try {
+      const results = await searchPlacesViaAgent(query);
+      renderSearchResults(results);
+    } catch (err) {
+      bspStatus.textContent = loc('검색 실패: ', 'Search failed: ') + (err.message || 'unknown');
+      bspStatus.className = 'bsp-status error';
+    } finally {
+      bspSearchBtn.disabled = false;
+    }
+  }
+
+  if (bspSearchBtn) bspSearchBtn.addEventListener('click', runSearch);
+  if (bspInput) bspInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); runSearch(); }
+  });
+
+  // Expose a re-render hook so language toggle + state updates can refresh
+  // the open modal's table without re-opening.
+  window.refreshBriefModal = () => {
+    if (briefModal.classList.contains('open')) {
+      renderBriefForm();
+      renderPlacesTable();
+    }
+  };
+})();
+
+// Build the "TRIP BRIEF" context string for the chat agent.
+function buildBriefContext() {
+  const b = tripState && tripState.brief;
+  if (!b || typeof b !== 'object') return '';
+  const parts = [];
+  if (b.title) parts.push(`Trip title: ${b.title}`);
+  if (b.dateStart || b.dateEnd) parts.push(`Dates: ${b.dateStart || '?'} → ${b.dateEnd || '?'}`);
+  if (b.purpose) parts.push(`Purpose: ${b.purpose}`);
+  if (Array.isArray(b.travelers) && b.travelers.length) {
+    const list = b.travelers.filter(t => t && (t.name || t.notes))
+      .map(t => `${t.name || '(unnamed)'} — ${t.notes || 'no notes'}`)
+      .join('; ');
+    if (list) parts.push(`Travelers: ${list}`);
+  }
+  if (b.preferences) parts.push(`Preferences: ${b.preferences}`);
+  if (b.constraints) parts.push(`Constraints: ${b.constraints}`);
+  if (!parts.length) return '';
+  return `\n\nTRIP BRIEF (use this to shape every recommendation):\n${parts.map(p => '- ' + p).join('\n')}`;
+}
 </script>
 
 </body>
