@@ -4184,9 +4184,37 @@ let voiceAbort = () => {};
   const addTravelerBtn = document.getElementById('briefAddTraveler');
 
   // --- open / close ---
+  // Seed sensible defaults derived from what we already know about this trip
+  // (dates, hotel, reservations, vibe) the first time the modal opens with an
+  // empty brief. The user can edit anything; auto-save persists once a field
+  // is touched.
+  function seedBriefDefaultsIfEmpty() {
+    const b = tripState.brief || {};
+    const hasAnyContent = !!(b.title || b.purpose || b.preferences || b.constraints
+      || b.dateStart || b.dateEnd
+      || (Array.isArray(b.travelers) && b.travelers.length));
+    if (hasAnyContent) return;
+    tripState.brief = {
+      title: 'NYC · May 2026',
+      dateStart: '2026-05-29',
+      dateEnd: '2026-05-31',
+      purpose: 'Long-weekend reunion in NYC for four friends. Mix of design, food, and walking — Broadway Friday night, full Brooklyn day Saturday, museums + Central Park Sunday. First NYC visit for some of the group.',
+      travelers: [
+        { name: 'Jee', notes: 'Product designer at Microsoft; loves indie design stores, coffee, Korean food.' },
+        { name: 'Friend 2', notes: '' },
+        { name: 'Friend 3', notes: '' },
+        { name: 'Friend 4', notes: '' },
+      ],
+      preferences: 'Korean and Japanese food, indie design stores, coffee culture, pizza, vintage bookshops. Lean toward locally-loved over touristy. Walking-first; willing to splurge for reservations and design pilgrimages.',
+      constraints: 'Light packing — one carry-on + one backpack per person. Reservations locked: Raku Soho Fri 5:30 PM, Belasco (Maybe Happy Ending) Fri 7:00 PM, Oiji Mi Sat 7:30 PM. 9:00 AM brunch at hotel Saturday, depart 9:45.',
+    };
+    saveTripState();   // persists to KV (active once the Worker is redeployed with brief support)
+  }
+
   function openBriefModal() {
     briefModal.classList.add('open');
     briefModal.setAttribute('aria-hidden', 'false');
+    seedBriefDefaultsIfEmpty();
     renderBriefForm();
     renderPlacesTable();
     document.body.style.overflow = 'hidden';
