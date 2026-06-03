@@ -540,6 +540,26 @@
     padding: 14px 16px; z-index: 500; font-family: var(--mono);
     box-shadow: 0 4px 12px rgba(0,0,0,0.06); max-width: 180px;
   }
+  /* Collapsible header — click to toggle the body. Default open on desktop,
+     default collapsed on mobile (set by JS init). */
+  .legend-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; padding: 0; margin: 0 0 10px;
+    background: transparent; border: 0; cursor: pointer;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-2); font-weight: 600;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .legend-header:hover { color: var(--ink); }
+  .legend-header-title { line-height: 1; }
+  .legend-toggle-icon {
+    font-size: 11px; color: var(--ink-3); line-height: 1;
+    transition: transform .2s ease;
+  }
+  .legend.collapsed { padding: 8px 12px; max-width: none; }
+  .legend.collapsed .legend-body { display: none; }
+  .legend.collapsed .legend-header { margin-bottom: 0; }
+  .legend.collapsed .legend-toggle-icon { transform: rotate(-90deg); }
   .legend-title { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px; }
   /* Legend items are now clickable filters. Each toggles its day or
      category on the map (multi-select for both). */
@@ -1586,20 +1606,26 @@
     <button type="button" class="lang-toggle" id="langToggle" aria-label="Switch language"><span class="lang-ko">한</span><span class="lang-sep">/</span><span class="lang-en">EN</span></button>
     <button type="button" class="locate-toggle" id="locateBtn" aria-label="Show my current location" title="Show my current location">📍</button>
     <div class="legend" id="legend">
-      <div class="legend-title">Days</div>
-      <button type="button" class="legend-item" data-day="1"><span class="legend-swatch" style="background:#2C2924"></span><span>Fri</span></button>
-      <button type="button" class="legend-item" data-day="2"><span class="legend-swatch" style="background:#7A7367"></span><span>Sat</span></button>
-      <button type="button" class="legend-item" data-day="3"><span class="legend-swatch" style="background:#B5AEA1"></span><span>Sun</span></button>
-      <div class="legend-title" style="margin-top:12px">Spots</div>
-      <button type="button" class="legend-item" data-cat="Coffee"><span class="legend-swatch legend-ring" style="border-color:var(--cat-coffee)"></span><span>Coffee</span></button>
-      <button type="button" class="legend-item" data-cat="Food"><span class="legend-swatch legend-ring" style="border-color:var(--cat-food)"></span><span>Food</span></button>
-      <button type="button" class="legend-item" data-cat="Shopping"><span class="legend-swatch legend-ring" style="border-color:var(--cat-shopping)"></span><span>Shopping</span></button>
-      <button type="button" class="legend-item" data-cat="Books"><span class="legend-swatch legend-ring" style="border-color:var(--cat-books)"></span><span>Books</span></button>
-      <button type="button" class="legend-item" data-cat="Design"><span class="legend-swatch legend-ring" style="border-color:var(--cat-design)"></span><span>Design</span></button>
-      <button type="button" class="legend-item" id="legendSaved" data-cat="Saved" hidden><span class="legend-star">★</span><span>Favorite</span></button>
-      <div class="legend-reset-row">
-        <button type="button" class="legend-reset" id="legendReset">Reset</button>
-        <button type="button" class="legend-reset legend-deleted" id="legendTrash" hidden>Deleted</button>
+      <button type="button" class="legend-header" id="legendHeader" aria-expanded="true" aria-controls="legendBody">
+        <span class="legend-header-title">Legend</span>
+        <span class="legend-toggle-icon" aria-hidden="true">▾</span>
+      </button>
+      <div class="legend-body" id="legendBody">
+        <div class="legend-title">Days</div>
+        <button type="button" class="legend-item" data-day="1"><span class="legend-swatch" style="background:#2C2924"></span><span>Fri</span></button>
+        <button type="button" class="legend-item" data-day="2"><span class="legend-swatch" style="background:#7A7367"></span><span>Sat</span></button>
+        <button type="button" class="legend-item" data-day="3"><span class="legend-swatch" style="background:#B5AEA1"></span><span>Sun</span></button>
+        <div class="legend-title" style="margin-top:12px">Spots</div>
+        <button type="button" class="legend-item" data-cat="Coffee"><span class="legend-swatch legend-ring" style="border-color:var(--cat-coffee)"></span><span>Coffee</span></button>
+        <button type="button" class="legend-item" data-cat="Food"><span class="legend-swatch legend-ring" style="border-color:var(--cat-food)"></span><span>Food</span></button>
+        <button type="button" class="legend-item" data-cat="Shopping"><span class="legend-swatch legend-ring" style="border-color:var(--cat-shopping)"></span><span>Shopping</span></button>
+        <button type="button" class="legend-item" data-cat="Books"><span class="legend-swatch legend-ring" style="border-color:var(--cat-books)"></span><span>Books</span></button>
+        <button type="button" class="legend-item" data-cat="Design"><span class="legend-swatch legend-ring" style="border-color:var(--cat-design)"></span><span>Design</span></button>
+        <button type="button" class="legend-item" id="legendSaved" data-cat="Saved" hidden><span class="legend-star">★</span><span>Favorite</span></button>
+        <div class="legend-reset-row">
+          <button type="button" class="legend-reset" id="legendReset">Reset</button>
+          <button type="button" class="legend-reset legend-deleted" id="legendTrash" hidden>Deleted</button>
+        </div>
       </div>
     </div>
     <div class="trash-panel" id="trashPanel" hidden></div>
@@ -2766,6 +2792,23 @@ if (legendResetBtn) {
     syncLegendUI();
   });
 }
+
+// Collapsible legend — click the header to toggle. Default open on desktop,
+// default collapsed on mobile (small screen real estate).
+const legendEl = document.getElementById('legend');
+const legendHeaderEl = document.getElementById('legendHeader');
+function setLegendCollapsed(collapsed) {
+  if (!legendEl) return;
+  legendEl.classList.toggle('collapsed', collapsed);
+  if (legendHeaderEl) legendHeaderEl.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+}
+if (legendHeaderEl) {
+  legendHeaderEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setLegendCollapsed(!legendEl.classList.contains('collapsed'));
+  });
+}
+if (isMobile()) setLegendCollapsed(true);
 
 // =========== INITIAL VIEW handled inside setupMarkersAndInteraction ===========
 
