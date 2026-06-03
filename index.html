@@ -2794,21 +2794,34 @@ if (legendResetBtn) {
 }
 
 // Collapsible legend — click the header to toggle. Default open on desktop,
-// default collapsed on mobile (small screen real estate).
+// default collapsed on mobile (small screen real estate). The default
+// follows window size on resize too, unless the user has manually toggled
+// (in which case their choice sticks for the session).
 const legendEl = document.getElementById('legend');
 const legendHeaderEl = document.getElementById('legendHeader');
+let userToggledLegend = false;
 function setLegendCollapsed(collapsed) {
   if (!legendEl) return;
   legendEl.classList.toggle('collapsed', collapsed);
   if (legendHeaderEl) legendHeaderEl.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
 }
+function applyMobileLegendDefault() {
+  if (userToggledLegend) return;
+  setLegendCollapsed(isMobile());
+}
 if (legendHeaderEl) {
   legendHeaderEl.addEventListener('click', (e) => {
     e.stopPropagation();
+    userToggledLegend = true;
     setLegendCollapsed(!legendEl.classList.contains('collapsed'));
   });
 }
-if (isMobile()) setLegendCollapsed(true);
+applyMobileLegendDefault();
+let legendResizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(legendResizeTimer);
+  legendResizeTimer = setTimeout(applyMobileLegendDefault, 150);
+});
 
 // =========== INITIAL VIEW handled inside setupMarkersAndInteraction ===========
 
