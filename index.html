@@ -2679,6 +2679,41 @@ renderList();
 
 // =========== MAP ===========
 let map;
+let currentTileLayer = null;
+
+// Multilingual map tiles. If a MapTiler key is provided via config, use it
+// with `language=` for English/Korean labels everywhere. Otherwise fall back
+// to CARTO Positron, which is neutral but shows local-language labels.
+function buildTileLayer(lang) {
+  const cfg = (typeof window !== 'undefined' && window.TRIP_CONFIG) || {};
+  const key = cfg.tileKey || '';
+  if (key) {
+    const langCode = lang === 'ko' ? 'ko' : 'en';
+    return L.tileLayer(
+      `https://api.maptiler.com/maps/streets-v2-light/{z}/{x}/{y}.png?key=${encodeURIComponent(key)}&language=${langCode}`,
+      {
+        maxZoom: 19,
+        attribution: '© MapTiler · © OpenStreetMap contributors',
+        crossOrigin: true,
+      }
+    );
+  }
+  return L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    subdomains: 'abcd',
+    attribution: '© CARTO · © OpenStreetMap contributors',
+  });
+}
+
+// Swap the tile layer when the language toggle changes. Only meaningful when
+// a MapTiler key is configured (otherwise both layers are identical).
+function refreshMapTileLayer() {
+  if (!map || !currentTileLayer) return;
+  map.removeLayer(currentTileLayer);
+  currentTileLayer = buildTileLayer(LANG);
+  currentTileLayer.addTo(map);
+}
+
 function initMap() {
   // Home view = trip-list dashboard, no map needed. Skip Leaflet init entirely.
   if (IS_HOME_VIEW) return;
@@ -2694,25 +2729,12 @@ function initMap() {
     L.control.attribution({ position: 'bottomleft', prefix: false })
       .addAttribution('© OpenStreetMap · CARTO').addTo(map);
 
-    // Primary tile: CARTO Positron (neutral). Fall back to OSM if it fails.
-    const cartoLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      subdomains: 'abcd',
-    });
-
-    let cartoErrors = 0;
-    let fellBack = false;
-    cartoLayer.on('tileerror', () => {
-      cartoErrors++;
-      if (cartoErrors >= 3 && !fellBack) {
-        fellBack = true;
-        map.removeLayer(cartoLayer);
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-        }).addTo(map);
-      }
-    });
-    cartoLayer.addTo(map);
+    // Tile layer chooses between MapTiler (multilingual, requires API key) and
+    // CARTO Positron (neutral, but shows local-language labels e.g. Japanese
+    // for Tokyo). To unlock English/Korean labels everywhere, add a MapTiler
+    // key to config.local.js as window.TRIP_CONFIG.tileKey.
+    currentTileLayer = buildTileLayer(LANG);
+    currentTileLayer.addTo(map);
 
     // Add markers, routes, and wire interaction (defined below)
     setupMarkersAndInteraction();
@@ -4031,6 +4053,36 @@ function isHidden(id) { return tripState.hidden.indexOf(id) !== -1; }
 
 let activeTripMeta = null;   // for custom trips: { slug, title, destination, center, dates, ... }
 
+// Custom trips: replace the hardcoded "New York." title + "May 28—31, 2026"
+// meta-row with the active trip's title and date range. NYC keeps the
+// hardcoded markup since its content is correct for that trip.
+function applyActiveTripToHero() {
+  if (!IS_CUSTOM_TRIP || !activeTripMeta) return;
+  const titleEl = document.querySelector('.hero .title');
+  if (titleEl && activeTripMeta.title) {
+    titleEl.textContent = activeTripMeta.title + '.';
+  }
+  const metaSpans = document.querySelectorAll('.hero .meta-row span');
+  if (metaSpans.length >= 2 && activeTripMeta.dateStart && activeTripMeta.dateEnd) {
+    metaSpans[1].textContent = formatTripDateRange(activeTripMeta.dateStart, activeTripMeta.dateEnd);
+  }
+  document.title = activeTripMeta.title + ' · Trip Plan';
+}
+
+function formatTripDateRange(startStr, endStr) {
+  const start = new Date(startStr + 'T00:00:00');
+  const end = new Date(endStr + 'T00:00:00');
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return '';
+  const startMo = start.toLocaleDateString('en-US', { month: 'long' });
+  const endMo = end.toLocaleDateString('en-US', { month: 'long' });
+  const startDay = start.getDate();
+  const endDay = end.getDate();
+  const year = end.getFullYear();
+  return startMo === endMo
+    ? `${startMo} ${startDay}—${endDay}, ${year}`
+    : `${startMo} ${startDay}—${endMo} ${endDay}, ${year}`;
+}
+
 async function loadTripState() {
   // Home view doesn't need per-trip state; it loads the trip index instead.
   if (IS_HOME_VIEW) return loadTripIndex();
@@ -4059,6 +4111,7 @@ async function loadTripState() {
     if (activeTripMeta && activeTripMeta.center && map) {
       map.flyTo([activeTripMeta.center.lat, activeTripMeta.center.lng], 13, { duration: 0.6 });
     }
+    applyActiveTripToHero();
   }
 
   try {
@@ -4824,6 +4877,7 @@ function setLang(lang) {
   LANG = (lang === 'en') ? 'en' : 'ko';
   document.body.dataset.lang = LANG;
   patchHash({ lang: LANG === 'ko' ? 'ko' : null });
+  if (typeof refreshMapTileLayer === 'function') refreshMapTileLayer();
   renderList();
   rebuildMarkersForLang();
   // renderList() wipes the sidebar (incl. the added-favorites section);
@@ -5154,9 +5208,29 @@ let voiceAbort = () => {};
   // empty brief. The user can edit anything; auto-save persists once a field
   // is touched.
   function seedBriefDefaultsIfEmpty() {
-    // Only seed NYC-specific defaults when on the NYC trip. Custom trips
-    // start from whatever was set during creation (title, destination,
-    // dates) — they must never inherit NYC content.
+    // Custom trips: seed only basic info (title + dates) from the trip's
+    // metadata if the brief is empty. Lets sample-trip / fresh-trip views
+    // open with the right title pre-filled without inheriting NYC content.
+    if (IS_CUSTOM_TRIP) {
+      const b = tripState.brief || {};
+      const empty = !(b.title || b.purpose || b.preferences || b.constraints
+        || b.dateStart || b.dateEnd
+        || (Array.isArray(b.travelers) && b.travelers.length));
+      if (empty && activeTripMeta) {
+        tripState.brief = {
+          title: activeTripMeta.title || '',
+          dateStart: activeTripMeta.dateStart || '',
+          dateEnd: activeTripMeta.dateEnd || '',
+          purpose: '',
+          travelers: [],
+          preferences: '',
+          constraints: '',
+        };
+        saveTripState();
+      }
+      return;
+    }
+    // Only seed NYC-specific defaults when on the NYC trip.
     if (!IS_NYC_TRIP) return;
     const b = tripState.brief || {};
     const hasAnyContent = !!(b.title || b.purpose || b.preferences || b.constraints
