@@ -1654,6 +1654,112 @@
     border: 1px dashed var(--rule); border-radius: 6px;
   }
 
+  /* Itinerary tab — editable day cards (custom) / read-only (NYC) */
+  .itin-toolbar {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .itin-mode {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .itin-hint {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-4);
+    margin-bottom: 16px; padding: 10px 14px;
+    background: var(--surface-2, #FAF9F8); border: 1px dashed var(--rule); border-radius: 6px;
+    display: none;
+  }
+  .itin-hint.show { display: block; }
+  .itin-day {
+    margin-bottom: 24px; background: var(--panel);
+    border: 1px solid var(--rule); border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .itin-day-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 10px; border-bottom: 1px dashed var(--rule);
+  }
+  .itin-day-num {
+    font-family: var(--display); font-variation-settings: 'opsz' 30;
+    font-size: 22px; font-weight: 380; color: var(--ink); letter-spacing: -0.01em;
+  }
+  .itin-day-meta { font-family: var(--mono); font-size: 11px; color: var(--ink-3); letter-spacing: 0.04em; }
+  .itin-day-actions { margin-left: auto; display: flex; gap: 6px; }
+  .itin-day-btn {
+    background: transparent; border: 1px solid var(--rule); border-radius: 6px;
+    padding: 5px 10px; cursor: pointer;
+    font-family: var(--mono); font-size: 10.5px; color: var(--ink-3);
+    letter-spacing: 0.06em;
+  }
+  .itin-day-btn:hover { color: var(--ink); border-color: var(--ink-3); }
+  .itin-day-btn.danger:hover { color: #C4314B; border-color: #C4314B; }
+  .itin-stops { display: flex; flex-direction: column; gap: 10px; }
+  .itin-stop {
+    background: #fff; border: 1px solid var(--rule); border-radius: 8px;
+    padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .itin-stop:focus-within { border-color: var(--ink-3); box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+  .itin-stop-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .itin-stop input,
+  .itin-stop textarea {
+    box-sizing: border-box;
+    font: 13px/1.4 var(--sans); color: var(--ink);
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 5px;
+    padding: 7px 10px; outline: none;
+    transition: border-color .15s;
+  }
+  .itin-stop input:focus, .itin-stop textarea:focus { border-color: var(--ink-3); }
+  .itin-stop input::placeholder, .itin-stop textarea::placeholder { color: var(--ink-4); }
+  .itin-stop-time   { width: 110px; font-family: var(--mono); font-size: 11.5px; }
+  .itin-stop-name   { flex: 1; font-weight: 500; min-width: 160px; }
+  .itin-stop-addr   { flex: 1; min-width: 160px; }
+  .itin-stop-coord  { width: 110px; font-family: var(--mono); font-size: 11px; }
+  .itin-stop-note   { width: 100%; }
+  .itin-stop-del {
+    flex: none; width: 32px; height: 32px;
+    background: transparent; border: 1px solid var(--rule); border-radius: 6px;
+    color: var(--ink-4); cursor: pointer; font-size: 13px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .itin-stop-del:hover { color: #C4314B; border-color: #C4314B; }
+  .itin-stop.invalid { border-color: #F3D2D7; background: #FDF8F9; }
+  .itin-status {
+    margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--ink-4);
+  }
+  .itin-status.saved { color: #107C41; }
+  .itin-status.error { color: #C4314B; }
+  .itin-add-stop {
+    align-self: flex-start;
+    background: transparent; border: 1px dashed var(--rule); border-radius: 6px;
+    padding: 8px 14px; cursor: pointer;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    letter-spacing: 0.06em;
+  }
+  .itin-add-stop:hover { color: var(--ink); border-color: var(--ink-3); border-style: solid; }
+  .itin-day-empty {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-4);
+    padding: 8px 0; font-style: italic; text-align: center;
+  }
+  .itin-readonly-stop {
+    background: var(--panel); border: 1px solid var(--rule-soft); border-radius: 6px;
+    padding: 10px 12px;
+    display: grid; grid-template-columns: 70px 1fr; gap: 12px;
+    font-size: 12.5px;
+  }
+  .itin-readonly-stop .ro-time {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+  }
+  .itin-readonly-stop .ro-name { font-weight: 600; color: var(--ink); }
+  .itin-readonly-stop .ro-addr { font-size: 11px; color: var(--ink-3); margin-top: 2px; }
+
+  @media (max-width: 760px) {
+    .itin-stop-time, .itin-stop-coord { width: calc(50% - 4px); }
+    .itin-stop-name, .itin-stop-addr { width: 100%; }
+  }
+
   /* Search popover — anchored under the "+ Add a place" button. */
   .bsp-anchor { position: relative; }
   .bsp-popover {
@@ -1949,6 +2055,7 @@
     <div class="brief-modal-title" id="briefModalTitle">Trip Brief</div>
     <div class="brief-modal-tabs">
       <button class="brief-tab active" data-tab="brief" id="briefTabBrief">Brief</button>
+      <button class="brief-tab" data-tab="itinerary" id="briefTabItinerary">Itinerary</button>
       <button class="brief-tab" data-tab="places" id="briefTabPlaces">All places</button>
     </div>
     <div class="brief-modal-status" id="briefSaveStatus" aria-live="polite"></div>
@@ -1995,6 +2102,17 @@
           <textarea id="briefConstraints" rows="3" placeholder="Sarah is vegetarian. ~3mi/day walking comfortable. No alcohol-heavy bars."></textarea>
         </label>
       </div>
+    </section>
+
+    <!-- Itinerary tab — editable for custom trips, read-only for NYC -->
+    <section class="brief-pane" data-pane="itinerary">
+      <div class="itin-toolbar">
+        <span class="itin-mode" id="itinMode"></span>
+        <span class="brief-places-spacer"></span>
+        <button type="button" class="brief-places-btn brief-places-btn-primary" id="itinAddDay" hidden>+ Add day</button>
+      </div>
+      <div class="itin-hint" id="itinHint"></div>
+      <div class="itin-body" id="itinBody"></div>
     </section>
 
     <!-- All places tab -->
@@ -3884,7 +4002,7 @@ function renderAddedList() {
 // 'nyc-may-2026' (or no slug) to the legacy 'shared' KV key.
 const STATE_API = PROXY_URL + '/state' + (ACTIVE_TRIP_SLUG ? '?trip=' + encodeURIComponent(ACTIVE_TRIP_SLUG) : '');
 const TRIPS_API = PROXY_URL + '/trips';
-const tripState = { added: [], hidden: [], brief: {} };
+const tripState = { added: [], hidden: [], brief: {}, itinerary: [] };
 let stateSaveTimer = null;
 
 function isHidden(id) { return tripState.hidden.indexOf(id) !== -1; }
@@ -3917,9 +4035,16 @@ async function loadTripState() {
       if (Array.isArray(d.added))  tripState.added  = d.added;
       if (Array.isArray(d.hidden)) tripState.hidden = d.hidden;
       if (d.brief && typeof d.brief === 'object') tripState.brief = d.brief;
+      if (Array.isArray(d.itinerary)) tripState.itinerary = d.itinerary;
     }
   } catch (_) { /* offline / not yet deployed — in-session only */ }
   await metaPromise;
+  // For custom trips, the global `itinerary` mirrors tripState.itinerary so
+  // existing rendering (renderList, setupMarkersAndInteraction) works.
+  if (IS_CUSTOM_TRIP && Array.isArray(tripState.itinerary)) {
+    itinerary.length = 0;
+    tripState.itinerary.forEach(s => itinerary.push(s));
+  }
   applyTripState();
 }
 
@@ -4187,7 +4312,12 @@ function saveTripState() {
     fetch(STATE_API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ added: tripState.added, hidden: tripState.hidden, brief: tripState.brief }),
+      body: JSON.stringify({
+        added: tripState.added,
+        hidden: tripState.hidden,
+        brief: tripState.brief,
+        itinerary: tripState.itinerary,
+      }),
     }).catch(() => {});
   }, 600);
 }
@@ -4983,6 +5113,7 @@ let voiceAbort = () => {};
     briefModal.setAttribute('aria-hidden', 'false');
     seedBriefDefaultsIfEmpty();
     renderBriefForm();
+    renderItineraryPane();
     renderPlacesTable();
     document.body.style.overflow = 'hidden';
   }
@@ -5004,6 +5135,7 @@ let voiceAbort = () => {};
       document.querySelectorAll('.brief-tab').forEach(t => t.classList.toggle('active', t === tab));
       document.querySelectorAll('.brief-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === target));
       if (target === 'places') renderPlacesTable();
+      if (target === 'itinerary') renderItineraryPane();
     });
   });
 
@@ -5136,6 +5268,226 @@ let voiceAbort = () => {};
     if (countEl) countEl.textContent = `${total} ${loc('곳','places')}`;
     root.innerHTML = sections.join('');
   }
+
+  // ===== ITINERARY TAB =====
+  // For custom trips: editable day cards with stops (time, name, addr, lat, lng, note).
+  // For NYC: read-only display of the existing hardcoded itinerary.
+  function renderItineraryPane() {
+    const body = document.getElementById('itinBody');
+    const modeEl = document.getElementById('itinMode');
+    const hintEl = document.getElementById('itinHint');
+    const addDayBtn = document.getElementById('itinAddDay');
+    if (!body) return;
+
+    if (IS_NYC_TRIP) {
+      modeEl.textContent = loc('읽기 전용 (NYC 프리셋)', 'Read-only (NYC preset)');
+      addDayBtn.hidden = true;
+      hintEl.textContent = loc('NYC 일정은 코드로 관리됩니다. 변경이 필요하면 알려주세요.', 'The NYC itinerary is managed in code. Tell me what you want changed.');
+      hintEl.className = 'itin-hint show';
+      // Group by day, render read-only rows.
+      const byDay = { 1: [], 2: [], 3: [] };
+      itinerary.forEach(s => {
+        if (s && s.day && byDay[s.day]) byDay[s.day].push(s);
+      });
+      const sectionsHtml = [1, 2, 3].map(d => {
+        const stops = byDay[d];
+        const rows = stops.map(s => `
+          <div class="itin-readonly-stop">
+            <div class="ro-time">${escHtml(tr(s.time) || '—')}</div>
+            <div>
+              <div class="ro-name">${escHtml(String(tr(s.name) || '').replace(/^★\s*/, ''))}</div>
+              ${s.address ? `<div class="ro-addr">${escHtml(tr(s.address))}</div>` : ''}
+            </div>
+          </div>`).join('');
+        return `<div class="itin-day">
+          <div class="itin-day-header">
+            <div class="itin-day-num">Day ${d}</div>
+            <div class="itin-day-meta">${stops.length} ${loc('곳','stops')}</div>
+          </div>
+          <div class="itin-stops">${rows || `<div class="itin-day-empty">${loc('일정 없음','No stops')}</div>`}</div>
+        </div>`;
+      }).join('');
+      body.innerHTML = sectionsHtml;
+      return;
+    }
+
+    // Custom trip — editable.
+    modeEl.textContent = loc('편집 가능', 'Editable');
+    addDayBtn.hidden = false;
+    hintEl.className = 'itin-hint';
+    hintEl.textContent = '';
+
+    const items = Array.isArray(tripState.itinerary) ? tripState.itinerary : [];
+    // Group stops by day; ensure days are sequential starting at 1.
+    const byDay = {};
+    items.forEach(s => {
+      if (!s) return;
+      const d = s.day || 1;
+      if (!byDay[d]) byDay[d] = [];
+      byDay[d].push(s);
+    });
+    const dayNums = Object.keys(byDay).map(Number).sort((a, b) => a - b);
+    if (dayNums.length === 0) {
+      body.innerHTML = `<div class="itin-day-empty" style="padding:32px 0">${loc('아직 일정이 없습니다. "+ Add day"로 시작하세요.', 'No itinerary yet. Click "+ Add day" to start.')}</div>`;
+      return;
+    }
+    body.innerHTML = dayNums.map(d => buildEditableDayHTML(d, byDay[d])).join('');
+  }
+
+  function buildEditableDayHTML(day, stops) {
+    const rows = stops.map(s => buildEditableStopHTML(s)).join('');
+    return `<div class="itin-day" data-day="${day}">
+      <div class="itin-day-header">
+        <div class="itin-day-num">Day ${day}</div>
+        <div class="itin-day-meta">${stops.length} ${loc('곳','stops')}</div>
+        <div class="itin-day-actions">
+          <button type="button" class="itin-day-btn danger" data-day-del="${day}">${loc('일자 삭제','Delete day')}</button>
+        </div>
+      </div>
+      <div class="itin-stops">${rows}</div>
+      <button type="button" class="itin-add-stop" data-add-stop="${day}">+ ${loc('일정 추가','Add stop')}</button>
+    </div>`;
+  }
+
+  function buildEditableStopHTML(s) {
+    const lat = Number.isFinite(s.lat) ? s.lat : '';
+    const lng = Number.isFinite(s.lng) ? s.lng : '';
+    const valid = isValidStopCoord(s.lat, s.lng) && (s.name || '').trim();
+    return `<div class="itin-stop${valid ? '' : ' invalid'}" data-stop-num="${s.num}">
+      <div class="itin-stop-row">
+        <input type="text" class="itin-stop-time" data-field="time" value="${escHtml(s.time || '')}" placeholder="9:00 AM" />
+        <input type="text" class="itin-stop-name" data-field="name" value="${escHtml(s.name || '')}" placeholder="${loc('장소 이름','Place name')}" />
+        <button type="button" class="itin-stop-del" data-stop-del="${s.num}" aria-label="Delete stop">✕</button>
+      </div>
+      <div class="itin-stop-row">
+        <input type="text" class="itin-stop-addr" data-field="address" value="${escHtml(s.address || '')}" placeholder="${loc('주소','Address')}" />
+        <input type="text" class="itin-stop-coord" data-field="lat" value="${lat}" placeholder="lat" inputmode="decimal" />
+        <input type="text" class="itin-stop-coord" data-field="lng" value="${lng}" placeholder="lng" inputmode="decimal" />
+      </div>
+      <textarea class="itin-stop-note" data-field="note" rows="2" placeholder="${loc('메모','Note')}">${escHtml(s.note || '')}</textarea>
+    </div>`;
+  }
+
+  // Loose coord validation for custom trips (worldwide, not just NYC).
+  function isValidStopCoord(lat, lng) {
+    return Number.isFinite(lat) && Number.isFinite(lng)
+      && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+  }
+
+  function nextStopNum() {
+    const items = Array.isArray(tripState.itinerary) ? tripState.itinerary : [];
+    return items.reduce((m, s) => Math.max(m, s && s.num ? s.num : 0), 0) + 1;
+  }
+
+  function syncItineraryToMap() {
+    // Mirror tripState.itinerary into the global `itinerary` array, then
+    // rebuild markers + sidebar list to reflect changes.
+    itinerary.length = 0;
+    (tripState.itinerary || []).forEach(s => itinerary.push(s));
+    if (typeof renderList === 'function') renderList();
+    if (typeof rebuildMarkersForLang === 'function') rebuildMarkersForLang();
+    if (typeof applyMapFilters === 'function') applyMapFilters();
+    if (typeof applyListFilters === 'function') applyListFilters();
+  }
+
+  // Itinerary edit handlers (custom trips only) — delegated on itinBody.
+  const itinBody = document.getElementById('itinBody');
+  const itinAddDayBtn = document.getElementById('itinAddDay');
+
+  function findStopByNum(num) {
+    return (tripState.itinerary || []).find(s => s && s.num === num);
+  }
+
+  if (itinBody) {
+    // Field edits — update tripState; debounced save; sync on blur.
+    itinBody.addEventListener('input', e => {
+      const stopEl = e.target.closest('.itin-stop[data-stop-num]');
+      if (!stopEl) return;
+      const num = parseInt(stopEl.dataset.stopNum, 10);
+      const s = findStopByNum(num);
+      const field = e.target.dataset.field;
+      if (!s || !field) return;
+      if (field === 'time' || field === 'name' || field === 'address' || field === 'note') {
+        s[field] = e.target.value;
+      } else if (field === 'lat' || field === 'lng') {
+        const n = parseFloat(e.target.value);
+        s[field] = Number.isFinite(n) ? n : undefined;
+      }
+      saveTripState();
+    });
+    itinBody.addEventListener('blur', e => {
+      if (!e.target.matches('.itin-stop input, .itin-stop textarea')) return;
+      const stopEl = e.target.closest('.itin-stop[data-stop-num]');
+      if (!stopEl) return;
+      const num = parseInt(stopEl.dataset.stopNum, 10);
+      const s = findStopByNum(num);
+      if (!s) return;
+      const valid = isValidStopCoord(s.lat, s.lng) && (s.name || '').trim();
+      stopEl.classList.toggle('invalid', !valid);
+      if (valid) syncItineraryToMap();
+    }, true);
+    // Add stop within a day
+    itinBody.addEventListener('click', e => {
+      const add = e.target.closest('[data-add-stop]');
+      if (add) {
+        const day = parseInt(add.dataset.addStop, 10);
+        if (!Array.isArray(tripState.itinerary)) tripState.itinerary = [];
+        tripState.itinerary.push({
+          day, num: nextStopNum(),
+          time: '', name: '', address: '', note: '',
+          lat: undefined, lng: undefined,
+        });
+        saveTripState();
+        renderItineraryPane();
+        // Focus the new stop's name input
+        setTimeout(() => {
+          const cards = itinBody.querySelectorAll(`.itin-day[data-day="${day}"] .itin-stop`);
+          const last = cards[cards.length - 1];
+          if (last) last.querySelector('.itin-stop-name')?.focus();
+        }, 60);
+        return;
+      }
+      // Delete stop
+      const del = e.target.closest('[data-stop-del]');
+      if (del) {
+        const num = parseInt(del.dataset.stopDel, 10);
+        tripState.itinerary = (tripState.itinerary || []).filter(s => s.num !== num);
+        saveTripState();
+        renderItineraryPane();
+        syncItineraryToMap();
+        return;
+      }
+      // Delete day (and all its stops)
+      const dayDel = e.target.closest('[data-day-del]');
+      if (dayDel) {
+        const day = parseInt(dayDel.dataset.dayDel, 10);
+        const ok = confirm(loc(`Day ${day}와 모든 일정을 삭제할까요?`, `Delete Day ${day} and all its stops?`));
+        if (!ok) return;
+        tripState.itinerary = (tripState.itinerary || []).filter(s => s.day !== day);
+        saveTripState();
+        renderItineraryPane();
+        syncItineraryToMap();
+        return;
+      }
+    });
+  }
+
+  if (itinAddDayBtn) itinAddDayBtn.addEventListener('click', () => {
+    const items = Array.isArray(tripState.itinerary) ? tripState.itinerary : [];
+    const days = items.map(s => s.day || 0);
+    const nextDay = Math.max(0, ...days) + 1;
+    items.push({
+      day: nextDay, num: nextStopNum(),
+      time: '', name: '', address: '', note: '',
+      lat: undefined, lng: undefined,
+    });
+    tripState.itinerary = items;
+    saveTripState();
+    renderItineraryPane();
+    // Switch to itinerary tab if not already
+    document.querySelectorAll('.brief-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'itinerary'));
+    document.querySelectorAll('.brief-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === 'itinerary'));
+  });
 
   function buildEditableFavoriteRow(p, idx) {
     const lat = Number.isFinite(p.lat) ? p.lat : '';
