@@ -4049,11 +4049,16 @@ async function loadTripState() {
       if (r.ok) {
         const list = await r.json();
         activeTripMeta = (Array.isArray(list) ? list : []).find(t => t && t.slug === ACTIVE_TRIP_SLUG) || null;
-        if (activeTripMeta && activeTripMeta.center && map) {
-          map.flyTo([activeTripMeta.center.lat, activeTripMeta.center.lng], 13, { duration: 0.6 });
-        }
       }
     } catch (_) { /* no /trips on old workers */ }
+    // Built-in client-side presets aren't stored on the server, so fall back
+    // to the hardcoded entry if we couldn't find it in /trips.
+    if (!activeTripMeta && ACTIVE_TRIP_SLUG === SAMPLE_TRIP_SLUG) {
+      activeTripMeta = { ...SAMPLE_TRIP_ENTRY };
+    }
+    if (activeTripMeta && activeTripMeta.center && map) {
+      map.flyTo([activeTripMeta.center.lat, activeTripMeta.center.lng], 13, { duration: 0.6 });
+    }
   }
 
   try {
@@ -4107,6 +4112,21 @@ const NYC_TRIP_ENTRY = {
   preset: 'nyc',
 };
 
+// Sample upcoming trip — a blank Tokyo trip pre-listed on the homepage so the
+// multi-trip flow (custom map center, blank brief/itinerary, search popover)
+// is testable without going through the "+ New trip" form.
+const SAMPLE_TRIP_SLUG = 'tokyo-sample';
+const SAMPLE_TRIP_ENTRY = {
+  slug: SAMPLE_TRIP_SLUG,
+  title: 'Tokyo Weekend',
+  destination: 'Tokyo, Japan',
+  center: { lat: 35.6762, lng: 139.6503 },
+  dateStart: '2026-08-15',
+  dateEnd: '2026-08-17',
+  travelerCount: 2,
+  preset: 'sample',
+};
+
 async function loadTripIndex() {
   try {
     const r = await fetch(TRIPS_API);
@@ -4116,8 +4136,13 @@ async function loadTripIndex() {
     }
   } catch (_) { /* offline */ }
   // Always ensure NYC is the first entry — it's a built-in preset.
-  const hasNyc = tripIndex.some(t => t && t.slug === NYC_TRIP_SLUG);
-  if (!hasNyc) tripIndex.unshift({ ...NYC_TRIP_ENTRY });
+  if (!tripIndex.some(t => t && t.slug === NYC_TRIP_SLUG)) {
+    tripIndex.unshift({ ...NYC_TRIP_ENTRY });
+  }
+  // And a Tokyo sample trip for testing the custom-trip flow.
+  if (!tripIndex.some(t => t && t.slug === SAMPLE_TRIP_SLUG)) {
+    tripIndex.push({ ...SAMPLE_TRIP_ENTRY });
+  }
   renderHomeView();
 }
 
