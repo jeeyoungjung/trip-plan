@@ -16,7 +16,7 @@ const REQUIRED = ['AZURE_ENDPOINT', 'AZURE_KEY', 'AGENT_NAME', 'AGENT_VERSION'];
 
 const STATE_KEY_DEFAULT = 'shared';    // legacy bucket (NYC trip)
 const TRIPS_INDEX_KEY = 'trips:index'; // JSON array of trip metadata
-const EMPTY_STATE = { added: [], hidden: [], brief: {} };
+const EMPTY_STATE = { added: [], hidden: [], brief: {}, itinerary: [] };
 
 // Maps a trip slug to its KV state key. The NYC trip keeps the legacy
 // 'shared' key for backward compatibility; new trips use 'trip:<slug>'.
@@ -43,6 +43,7 @@ async function handleState(request, env, headers) {
       try {
         const parsed = JSON.parse(raw);
         if (!parsed.brief || typeof parsed.brief !== 'object') parsed.brief = {};
+        if (!Array.isArray(parsed.itinerary)) parsed.itinerary = [];
         return new Response(JSON.stringify(parsed), { status: 200, headers });
       } catch { /* fall through to empty */ }
     }
@@ -59,11 +60,17 @@ async function handleState(request, env, headers) {
     if (briefStr.length > 16 * 1024) {
       return new Response(JSON.stringify({ error: { message: 'brief exceeds 16 KB' } }), { status: 413, headers });
     }
+    const itinerary = Array.isArray(body.itinerary) ? body.itinerary.slice(0, 200) : [];
+    const itineraryStr = JSON.stringify(itinerary);
+    if (itineraryStr.length > 64 * 1024) {
+      return new Response(JSON.stringify({ error: { message: 'itinerary exceeds 64 KB' } }), { status: 413, headers });
+    }
     const clean = {
       added: Array.isArray(body.added) ? body.added.slice(0, 300) : [],
       hidden: Array.isArray(body.hidden) ? body.hidden.slice(0, 1000) : [],
       brief,
-      v: 2,
+      itinerary,
+      v: 3,
       updated: Date.now(),
     };
     if (env.TRIP_STATE) await env.TRIP_STATE.put(key, JSON.stringify(clean));
