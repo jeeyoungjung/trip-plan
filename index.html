@@ -1286,6 +1286,173 @@
     .chat-panel { width: 400px; }
   }
 
+  /* ============ HOMEPAGE — trip list dashboard ============ */
+  .home-container { display: none; }
+  body.home-view .app { display: none; }
+  body.home-view .home-container {
+    display: flex; flex-direction: column;
+    min-height: 100vh; max-width: 960px;
+    margin: 0 auto; padding: 56px 32px 96px;
+    background: var(--bg);
+  }
+  body.home-view .chat-toggle { display: none; }
+  .home-eyebrow {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.16em;
+    color: var(--ink-3); font-weight: 600;
+  }
+  .home-title {
+    font-family: var(--display); font-variation-settings: 'opsz' 80;
+    font-weight: 380; font-size: 56px; line-height: 1.04;
+    color: var(--ink); margin: 10px 0 8px; letter-spacing: -0.025em;
+  }
+  .home-sub {
+    font-size: 15px; color: var(--ink-2); margin: 0 0 36px; max-width: 540px;
+  }
+  .home-section-h {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink-3); font-weight: 600;
+    margin: 32px 0 14px;
+    padding-bottom: 8px; border-bottom: 1px dashed var(--rule);
+  }
+  .home-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+  }
+  .home-card {
+    background: var(--panel); border: 1px solid var(--rule); border-radius: 12px;
+    padding: 20px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 10px;
+    transition: border-color .18s, box-shadow .18s, transform .18s;
+  }
+  .home-card:hover {
+    border-color: var(--ink-3);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+    transform: translateY(-1px);
+  }
+  .home-card-title {
+    font-family: var(--display); font-variation-settings: 'opsz' 30;
+    font-size: 22px; font-weight: 380; color: var(--ink); letter-spacing: -0.01em;
+    line-height: 1.1;
+  }
+  .home-card-dest {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .home-card-meta {
+    display: flex; gap: 12px; font-size: 12px; color: var(--ink-3);
+    margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--rule-soft);
+    flex-wrap: wrap;
+  }
+  .home-card-meta .home-card-dot {
+    width: 4px; height: 4px; border-radius: 50%; background: var(--ink-4);
+    align-self: center;
+  }
+  .home-card-badge {
+    align-self: flex-start;
+    font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink-3);
+    padding: 3px 8px; border: 1px solid var(--rule); border-radius: 999px;
+  }
+  .home-card-badge.preset { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .home-card-badge.past { color: var(--ink-4); }
+  .home-card-badge.upcoming { color: var(--brand, #0F6CBD); border-color: var(--brand, #0F6CBD); }
+  .home-card-badge.in-progress { color: var(--cat-saved); border-color: var(--cat-saved); }
+  .home-new-row { margin-top: 36px; }
+  .home-new-btn {
+    background: var(--ink); color: #fff; border: 1px solid var(--ink);
+    border-radius: 999px; padding: 12px 24px; cursor: pointer;
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
+    text-transform: uppercase; font-weight: 600;
+    transition: background .15s, transform .15s;
+  }
+  .home-new-btn:hover { background: var(--ink-2); transform: translateY(-1px); }
+  .home-empty {
+    grid-column: 1 / -1; text-align: center; padding: 24px 0;
+    font-family: var(--mono); font-size: 12px; color: var(--ink-4); font-style: italic;
+  }
+
+  /* ============ NEW TRIP MODAL ============ */
+  .newtrip-modal {
+    position: fixed; inset: 0; z-index: 99995;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
+  .newtrip-modal[aria-hidden="false"] { opacity: 1; pointer-events: auto; }
+  .newtrip-bar {
+    flex: none; display: flex; align-items: center; gap: 18px;
+    padding: 20px 32px; border-bottom: 1px solid var(--rule);
+    background: var(--panel);
+  }
+  .newtrip-title {
+    font-family: var(--display); font-variation-settings: 'opsz' 36;
+    font-weight: 380; font-size: 24px; color: var(--ink);
+  }
+  .newtrip-close {
+    margin-left: auto;
+    background: transparent; border: 1px solid var(--rule); border-radius: 4px;
+    width: 36px; height: 36px; cursor: pointer; font-size: 16px;
+    color: var(--ink-3); display: inline-flex; align-items: center; justify-content: center;
+  }
+  .newtrip-close:hover { color: var(--ink); border-color: var(--ink-3); }
+  .newtrip-body {
+    flex: 1; overflow-y: auto;
+    padding: 32px 32px 80px;
+    background: var(--bg);
+  }
+  .newtrip-form { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+  .newtrip-field { display: flex; flex-direction: column; gap: 5px; }
+  .newtrip-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .newtrip-label {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-3);
+  }
+  .newtrip-hint, .newtrip-hint-inline {
+    font-family: var(--mono); font-size: 10.5px; color: var(--ink-4);
+    margin-top: -2px; letter-spacing: 0.02em;
+  }
+  .newtrip-hint-inline { margin-top: 0; text-transform: none; letter-spacing: 0; }
+  .newtrip-field input,
+  .newtrip-field textarea {
+    font: 14px/1.5 var(--sans); color: var(--ink);
+    background: var(--panel);
+    border: 1px solid var(--rule); border-radius: 6px;
+    padding: 10px 12px; outline: none;
+    transition: border-color .15s;
+    resize: vertical;
+  }
+  .newtrip-field input:focus,
+  .newtrip-field textarea:focus { border-color: var(--ink-3); }
+  .newtrip-field input[type="date"] { font-family: var(--mono); }
+  .newtrip-status {
+    min-height: 18px;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-4);
+  }
+  .newtrip-status.error { color: #C4314B; }
+  .newtrip-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+  .newtrip-cancel {
+    background: transparent; border: 1px solid var(--rule); border-radius: 999px;
+    padding: 10px 20px; cursor: pointer;
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; color: var(--ink-2);
+  }
+  .newtrip-submit {
+    background: var(--ink); color: #fff; border: 1px solid var(--ink); border-radius: 999px;
+    padding: 10px 24px; cursor: pointer;
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; font-weight: 600;
+  }
+  .newtrip-submit:hover { background: var(--ink-2); }
+  .newtrip-submit:disabled { opacity: 0.5; cursor: wait; }
+
+  @media (max-width: 760px) {
+    body.home-view .home-container { padding: 36px 20px 80px; }
+    .home-title { font-size: 42px; }
+    .home-sub { font-size: 14px; }
+    .newtrip-body { padding: 20px 16px 80px; }
+    .newtrip-field-row { grid-template-columns: 1fr; }
+  }
+
   /* ============ TRIP BRIEF — open button + modal ============ */
   .brief-open-btn {
     margin-top: 16px;
@@ -1583,6 +1750,70 @@
 </head>
 <body>
 
+<!-- ========= HOME VIEW (trip list dashboard) ========= -->
+<main class="home-container" id="homeContainer">
+  <header class="home-header">
+    <div class="home-eyebrow">TRIP PLAN</div>
+    <h1 class="home-title">Your trips</h1>
+    <p class="home-sub">Pick a trip to open, or start a new one.</p>
+  </header>
+  <section class="home-section" id="homeUpcoming">
+    <h2 class="home-section-h">Upcoming &amp; in progress</h2>
+    <div class="home-grid" id="homeUpcomingGrid"></div>
+  </section>
+  <section class="home-section" id="homePast" hidden>
+    <h2 class="home-section-h">Past</h2>
+    <div class="home-grid" id="homePastGrid"></div>
+  </section>
+  <div class="home-new-row">
+    <button type="button" class="home-new-btn" id="homeNewTripBtn">+ New trip</button>
+  </div>
+</main>
+
+<!-- ========= NEW TRIP MODAL ========= -->
+<div class="newtrip-modal" id="newTripModal" aria-hidden="true" role="dialog" aria-labelledby="newTripTitle">
+  <div class="newtrip-bar">
+    <div class="newtrip-title" id="newTripTitle">New trip</div>
+    <button type="button" class="newtrip-close" id="newTripClose" aria-label="Close">✕</button>
+  </div>
+  <div class="newtrip-body">
+    <form class="newtrip-form" id="newTripForm">
+      <label class="newtrip-field">
+        <span class="newtrip-label">Trip title</span>
+        <input type="text" id="newTripTitleInput" placeholder="e.g., Tokyo Long Weekend" required />
+      </label>
+      <label class="newtrip-field">
+        <span class="newtrip-label">Destination</span>
+        <span class="newtrip-hint">City + country. We'll geocode it for the map.</span>
+        <input type="text" id="newTripDest" placeholder="e.g., Tokyo, Japan" required />
+      </label>
+      <div class="newtrip-field-row">
+        <label class="newtrip-field">
+          <span class="newtrip-label">Start date</span>
+          <input type="date" id="newTripStart" />
+        </label>
+        <label class="newtrip-field">
+          <span class="newtrip-label">End date</span>
+          <input type="date" id="newTripEnd" />
+        </label>
+      </div>
+      <label class="newtrip-field">
+        <span class="newtrip-label">Travelers</span>
+        <input type="number" id="newTripTravelers" min="1" max="20" value="2" />
+      </label>
+      <label class="newtrip-field">
+        <span class="newtrip-label">Purpose <span class="newtrip-hint-inline">(optional)</span></span>
+        <textarea id="newTripPurpose" rows="2" placeholder="What's this trip about?"></textarea>
+      </label>
+      <div class="newtrip-status" id="newTripStatus"></div>
+      <div class="newtrip-actions">
+        <button type="button" class="newtrip-cancel" id="newTripCancel">Cancel</button>
+        <button type="submit" class="newtrip-submit" id="newTripSubmit">Create trip</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="app">
 
   <section class="hero">
@@ -1797,6 +2028,18 @@
 <script>
 // Transport mode glyphs for the per-stop "How to get here" route options.
 const MODE_ICON = { walk: '🚶', subway: '🚇', uber: '🚗', bike: '🚲', ferry: '⛴️' };
+
+// =========== ROUTING ===========
+// Multi-trip support: /?trip=<slug> selects a trip; absence shows the home view.
+// 'nyc-may-2026' is the legacy slug for the hardcoded NYC itinerary; its KV
+// state is the original 'shared' bucket (server maps it transparently).
+const NYC_TRIP_SLUG = 'nyc-may-2026';
+const ACTIVE_TRIP_SLUG = new URLSearchParams(location.search).get('trip') || '';
+const IS_HOME_VIEW = !ACTIVE_TRIP_SLUG;
+const IS_NYC_TRIP = ACTIVE_TRIP_SLUG === NYC_TRIP_SLUG;
+const IS_CUSTOM_TRIP = !!ACTIVE_TRIP_SLUG && !IS_NYC_TRIP;
+if (IS_HOME_VIEW) document.body.classList.add('home-view');
+if (IS_CUSTOM_TRIP) document.body.classList.add('custom-trip-view');
 
 // =========== i18n ===========
 // Korean is the default. Any translatable text can be either a plain string
@@ -2183,6 +2426,13 @@ const dayLabels = {
   3: { name: 'A half day, then home', date: 'Sunday · May 31' },
 };
 
+// Custom (non-NYC) trips inherit none of the hardcoded NYC stops — they start
+// with an empty itinerary and grow through favorites. Empty the array in
+// place so the rest of the script (renderList, markers) sees no stops.
+if (IS_CUSTOM_TRIP || IS_HOME_VIEW) {
+  itinerary.length = 0;
+}
+
 const isMobile = () => window.innerWidth <= 900;
 const isHotelStop = (s) => s.address === '111 E 48th St';
 
@@ -2290,6 +2540,8 @@ renderList();
 // =========== MAP ===========
 let map;
 function initMap() {
+  // Home view = trip-list dashboard, no map needed. Skip Leaflet init entirely.
+  if (IS_HOME_VIEW) return;
   try {
     if (typeof L === 'undefined') {
       throw new Error('Leaflet failed to load');
@@ -3112,7 +3364,7 @@ async function loadWeather() {
     });
   } catch (_) { /* silent — no network or out of forecast range */ }
 }
-loadWeather();
+if (!IS_HOME_VIEW && IS_NYC_TRIP) loadWeather();
 
 // =========== CHAT (LLM) ===========
 // Three backends supported:
@@ -3628,13 +3880,36 @@ function renderAddedList() {
 // Persisted via the Worker's /state endpoint (Cloudflare KV) so the whole
 // group sees the same map on every device. Degrades to in-session only if the
 // backend is unreachable (fetch failures are swallowed).
-const STATE_API = PROXY_URL + '/state';
+// STATE_API includes ?trip=<slug> when an active trip is set; the Worker maps
+// 'nyc-may-2026' (or no slug) to the legacy 'shared' KV key.
+const STATE_API = PROXY_URL + '/state' + (ACTIVE_TRIP_SLUG ? '?trip=' + encodeURIComponent(ACTIVE_TRIP_SLUG) : '');
+const TRIPS_API = PROXY_URL + '/trips';
 const tripState = { added: [], hidden: [], brief: {} };
 let stateSaveTimer = null;
 
 function isHidden(id) { return tripState.hidden.indexOf(id) !== -1; }
 
+let activeTripMeta = null;   // for custom trips: { slug, title, destination, center, dates, ... }
+
 async function loadTripState() {
+  // Home view doesn't need per-trip state; it loads the trip index instead.
+  if (IS_HOME_VIEW) return loadTripIndex();
+
+  // For custom trips, fetch trip metadata so we can center the map on the
+  // user's destination instead of NYC. Done in parallel with state load.
+  let metaPromise = Promise.resolve();
+  if (IS_CUSTOM_TRIP) {
+    metaPromise = fetch(TRIPS_API)
+      .then(r => r.ok ? r.json() : [])
+      .then(list => {
+        activeTripMeta = (Array.isArray(list) ? list : []).find(t => t && t.slug === ACTIVE_TRIP_SLUG) || null;
+        if (activeTripMeta && activeTripMeta.center && map) {
+          map.flyTo([activeTripMeta.center.lat, activeTripMeta.center.lng], 13, { duration: 0.6 });
+        }
+      })
+      .catch(() => {});
+  }
+
   try {
     const r = await fetch(STATE_API, { method: 'GET' });
     if (r.ok) {
@@ -3644,7 +3919,266 @@ async function loadTripState() {
       if (d.brief && typeof d.brief === 'object') tripState.brief = d.brief;
     }
   } catch (_) { /* offline / not yet deployed — in-session only */ }
+  await metaPromise;
   applyTripState();
+}
+
+// =========== TRIPS INDEX (homepage) ===========
+// Loads the array of trips from the Worker (/trips). If the array is empty,
+// seeds it with the NYC trip so the user always has at least one entry.
+let tripIndex = [];
+
+const NYC_TRIP_ENTRY = {
+  slug: NYC_TRIP_SLUG,
+  title: 'New York',
+  destination: 'New York, NY',
+  center: { lat: 40.75, lng: -73.98 },
+  dateStart: '2026-05-29',
+  dateEnd: '2026-05-31',
+  travelerCount: 4,
+  preset: 'nyc',
+};
+
+async function loadTripIndex() {
+  try {
+    const r = await fetch(TRIPS_API);
+    if (r.ok) {
+      const d = await r.json();
+      if (Array.isArray(d)) tripIndex = d;
+    }
+  } catch (_) { /* offline */ }
+  // Always ensure NYC is the first entry — it's a built-in preset.
+  const hasNyc = tripIndex.some(t => t && t.slug === NYC_TRIP_SLUG);
+  if (!hasNyc) tripIndex.unshift({ ...NYC_TRIP_ENTRY });
+  renderHomeView();
+}
+
+function saveTripIndex() {
+  // Don't persist the NYC entry — it's a client-side built-in. Save only user trips.
+  const userTrips = tripIndex.filter(t => t && t.slug !== NYC_TRIP_SLUG);
+  fetch(TRIPS_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(userTrips),
+  }).catch(() => {});
+}
+
+// Categorize a trip as upcoming / in-progress / past based on its dates and today.
+function tripStatus(t) {
+  if (!t || !t.dateStart || !t.dateEnd) return 'upcoming';
+  const today = new Date().toISOString().slice(0, 10);
+  if (today < t.dateStart) return 'upcoming';
+  if (today > t.dateEnd) return 'past';
+  return 'in-progress';
+}
+
+function formatTripDates(t) {
+  if (!t.dateStart && !t.dateEnd) return '';
+  if (t.dateStart === t.dateEnd) return t.dateStart;
+  const fmt = d => {
+    if (!d) return '?';
+    const [y, m, dd] = d.split('-');
+    return `${m}/${dd}`;
+  };
+  const startYr = (t.dateStart || '').slice(0, 4);
+  const endYr = (t.dateEnd || '').slice(0, 4);
+  const yr = endYr || startYr;
+  return `${fmt(t.dateStart)} – ${fmt(t.dateEnd)}${yr ? ' · ' + yr : ''}`;
+}
+
+function tripCardHTML(t) {
+  const status = tripStatus(t);
+  const isPreset = t.slug === NYC_TRIP_SLUG;
+  const badge = isPreset ? '<span class="home-card-badge preset">Preset</span>'
+              : status === 'upcoming' ? '<span class="home-card-badge upcoming">Upcoming</span>'
+              : status === 'in-progress' ? '<span class="home-card-badge in-progress">In progress</span>'
+              : '<span class="home-card-badge past">Past</span>';
+  const dates = formatTripDates(t);
+  const travelers = t.travelerCount ? `${t.travelerCount} ${t.travelerCount === 1 ? 'traveler' : 'travelers'}` : '';
+  const dest = (t.destination || '').replace(/[<>&"]/g, m => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[m]));
+  const title = (t.title || '(untitled)').replace(/[<>&"]/g, m => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[m]));
+  return `<button type="button" class="home-card" data-trip-slug="${t.slug}">
+    ${badge}
+    <div class="home-card-title">${title}</div>
+    ${dest ? `<div class="home-card-dest">${dest}</div>` : ''}
+    <div class="home-card-meta">
+      ${dates ? `<span>${dates}</span>` : ''}
+      ${dates && travelers ? '<span class="home-card-dot"></span>' : ''}
+      ${travelers ? `<span>${travelers}</span>` : ''}
+    </div>
+  </button>`;
+}
+
+function renderHomeView() {
+  if (!IS_HOME_VIEW) return;
+  const upcomingGrid = document.getElementById('homeUpcomingGrid');
+  const pastGrid = document.getElementById('homePastGrid');
+  const pastSection = document.getElementById('homePast');
+  if (!upcomingGrid) return;
+
+  const upcoming = [];
+  const past = [];
+  tripIndex.forEach(t => {
+    if (!t || !t.slug) return;
+    (tripStatus(t) === 'past' ? past : upcoming).push(t);
+  });
+
+  upcomingGrid.innerHTML = upcoming.length
+    ? upcoming.map(tripCardHTML).join('')
+    : '<div class="home-empty">No trips yet — start one below.</div>';
+  pastGrid.innerHTML = past.map(tripCardHTML).join('');
+  pastSection.hidden = past.length === 0;
+
+  // Wire card clicks → navigate to the trip
+  document.querySelectorAll('.home-card[data-trip-slug]').forEach(card => {
+    card.addEventListener('click', () => {
+      const slug = card.dataset.tripSlug;
+      location.search = '?trip=' + encodeURIComponent(slug);
+    });
+  });
+}
+
+// ----- New trip modal -----
+const newTripModal = document.getElementById('newTripModal');
+const newTripBtn = document.getElementById('homeNewTripBtn');
+const newTripCloseBtn = document.getElementById('newTripClose');
+const newTripCancelBtn = document.getElementById('newTripCancel');
+const newTripForm = document.getElementById('newTripForm');
+const newTripStatusEl = document.getElementById('newTripStatus');
+
+function openNewTripModal() {
+  if (!newTripModal) return;
+  newTripModal.setAttribute('aria-hidden', 'false');
+  setTimeout(() => {
+    const ti = document.getElementById('newTripTitleInput');
+    if (ti) ti.focus();
+  }, 80);
+}
+function closeNewTripModal() {
+  if (!newTripModal) return;
+  newTripModal.setAttribute('aria-hidden', 'true');
+  if (newTripStatusEl) { newTripStatusEl.textContent = ''; newTripStatusEl.className = 'newtrip-status'; }
+}
+
+function slugify(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60) || 'trip';
+}
+
+// Geocode a destination via the chat agent — same pattern as the search popover.
+// Returns { lat, lng, label } or null.
+async function geocodeDestination(query) {
+  const body = {
+    input: [{
+      role: 'user',
+      content: `Return the geographic center of this destination as ONE map token, nothing else:\n` +
+        `Query: "${query}"\n` +
+        `Format: [map:LATITUDE,LONGITUDE,SHORT NAME]\n` +
+        `Use 4+ decimals. If unclear, return: NO_MATCH`,
+    }],
+  };
+  const r = await fetch(PROXY_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const d = await r.json();
+  let text = d.output_text || '';
+  if (!text && Array.isArray(d.output)) {
+    d.output.forEach(item => {
+      if (item && Array.isArray(item.content)) {
+        item.content.forEach(c => { if (c && typeof c.text === 'string') text += c.text + '\n'; });
+      }
+    });
+  }
+  if (!text || text.includes('NO_MATCH')) return null;
+  const m = /\[map:\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*,\s*([^\]]+?)\s*\]/.exec(text);
+  if (!m) return null;
+  const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng, label: m[3].trim() };
+}
+
+async function handleNewTripSubmit(e) {
+  e.preventDefault();
+  const title = document.getElementById('newTripTitleInput').value.trim();
+  const dest = document.getElementById('newTripDest').value.trim();
+  const dateStart = document.getElementById('newTripStart').value;
+  const dateEnd = document.getElementById('newTripEnd').value;
+  const travelerCount = parseInt(document.getElementById('newTripTravelers').value, 10) || 1;
+  const purpose = document.getElementById('newTripPurpose').value.trim();
+  if (!title || !dest) return;
+
+  const submitBtn = document.getElementById('newTripSubmit');
+  submitBtn.disabled = true;
+  newTripStatusEl.textContent = 'Locating destination…';
+  newTripStatusEl.className = 'newtrip-status';
+
+  let center = null;
+  try {
+    center = await geocodeDestination(dest);
+  } catch (err) {
+    newTripStatusEl.textContent = 'Geocoding failed: ' + (err.message || 'unknown');
+    newTripStatusEl.className = 'newtrip-status error';
+    submitBtn.disabled = false;
+    return;
+  }
+  if (!center) {
+    newTripStatusEl.textContent = "Couldn't locate that destination. Try a more specific name.";
+    newTripStatusEl.className = 'newtrip-status error';
+    submitBtn.disabled = false;
+    return;
+  }
+
+  // Generate a unique slug
+  let baseSlug = slugify(title);
+  let slug = baseSlug;
+  let n = 2;
+  const taken = new Set(tripIndex.map(t => t.slug));
+  while (taken.has(slug)) { slug = baseSlug + '-' + n; n++; }
+
+  const trip = {
+    slug, title, destination: dest,
+    center: { lat: center.lat, lng: center.lng },
+    dateStart, dateEnd, travelerCount,
+    createdAt: Date.now(),
+  };
+  tripIndex.push(trip);
+  saveTripIndex();
+
+  // Seed the brief for the new trip
+  try {
+    await fetch(PROXY_URL + '/state?trip=' + encodeURIComponent(slug), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        added: [], hidden: [],
+        brief: { title, dateStart, dateEnd, purpose, travelerCount },
+      }),
+    });
+  } catch (_) { /* in-session only if the proxy is down */ }
+
+  newTripStatusEl.textContent = 'Created — opening trip…';
+  setTimeout(() => {
+    location.search = '?trip=' + encodeURIComponent(slug);
+  }, 350);
+}
+
+if (newTripBtn) newTripBtn.addEventListener('click', openNewTripModal);
+if (newTripCloseBtn) newTripCloseBtn.addEventListener('click', closeNewTripModal);
+if (newTripCancelBtn) newTripCancelBtn.addEventListener('click', closeNewTripModal);
+if (newTripForm) newTripForm.addEventListener('submit', handleNewTripSubmit);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && newTripModal && newTripModal.getAttribute('aria-hidden') === 'false') closeNewTripModal();
+});
+
+// In home mode, kick off the trip-index load (skips the trip view init entirely).
+if (IS_HOME_VIEW) {
+  setTimeout(loadTripIndex, 0);
 }
 
 function saveTripState() {

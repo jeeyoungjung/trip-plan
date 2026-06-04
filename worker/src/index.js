@@ -14,19 +14,31 @@
 
 const REQUIRED = ['AZURE_ENDPOINT', 'AZURE_KEY', 'AGENT_NAME', 'AGENT_VERSION'];
 
-const STATE_KEY = 'shared';        // single shared bucket for this trip
+const STATE_KEY_DEFAULT = 'shared';    // legacy bucket (NYC trip)
+const TRIPS_INDEX_KEY = 'trips:index'; // JSON array of trip metadata
 const EMPTY_STATE = { added: [], hidden: [], brief: {} };
 
-// GET  /state → current { added, hidden, brief }
-// POST /state → overwrite with the posted { added, hidden, brief }
-// Backed by the KV namespace bound as TRIP_STATE. If the binding is missing
-// (not yet created), GET returns empty state and POST is a no-op so the client
-// degrades gracefully instead of erroring.
+// Maps a trip slug to its KV state key. The NYC trip keeps the legacy
+// 'shared' key for backward compatibility; new trips use 'trip:<slug>'.
+function stateKeyForTrip(slug) {
+  if (!slug || slug === 'nyc-may-2026') return STATE_KEY_DEFAULT;
+  // Strict slug shape — kebab-case alnum, max 64 chars.
+  if (!/^[a-z0-9][a-z0-9-]{0,63}$/i.test(slug)) return null;
+  return 'trip:' + slug.toLowerCase();
+}
+
+// GET  /state[?trip=<slug>] → current { added, hidden, brief }
+// POST /state[?trip=<slug>] → overwrite with the posted { added, hidden, brief }
 async function handleState(request, env, headers) {
+  const url = new URL(request.url);
+  const slug = url.searchParams.get('trip');
+  const key = stateKeyForTrip(slug);
+  if (key === null) {
+    return new Response(JSON.stringify({ error: { message: 'Invalid trip slug' } }), { status: 400, headers });
+  }
   if (request.method === 'GET') {
     if (!env.TRIP_STATE) return new Response(JSON.stringify(EMPTY_STATE), { status: 200, headers });
-    const raw = await env.TRIP_STATE.get(STATE_KEY);
-    // Patch missing brief on older stored payloads so the client always sees the field.
+    const raw = await env.TRIP_STATE.get(key);
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
@@ -42,8 +54,6 @@ async function handleState(request, env, headers) {
     if (!body || typeof body !== 'object') {
       return new Response(JSON.stringify({ error: { message: 'Invalid body' } }), { status: 400, headers });
     }
-    // Trip brief — free-form object with size cap; reject anything > 16 KB
-    // to keep KV writes bounded.
     let brief = (body.brief && typeof body.brief === 'object') ? body.brief : {};
     const briefStr = JSON.stringify(brief);
     if (briefStr.length > 16 * 1024) {
@@ -56,7 +66,32 @@ async function handleState(request, env, headers) {
       v: 2,
       updated: Date.now(),
     };
-    if (env.TRIP_STATE) await env.TRIP_STATE.put(STATE_KEY, JSON.stringify(clean));
+    if (env.TRIP_STATE) await env.TRIP_STATE.put(key, JSON.stringify(clean));
+    return new Response(JSON.stringify({ ok: true, stored: !!env.TRIP_STATE, key }), { status: 200, headers });
+  }
+  return new Response(JSON.stringify({ error: { message: 'Method not allowed' } }), { status: 405, headers });
+}
+
+// GET  /trips → list of trip metadata (array of { slug, title, ... })
+// POST /trips → overwrite the index with the posted array
+async function handleTrips(request, env, headers) {
+  if (request.method === 'GET') {
+    if (!env.TRIP_STATE) return new Response('[]', { status: 200, headers });
+    const raw = await env.TRIP_STATE.get(TRIPS_INDEX_KEY);
+    return new Response(raw || '[]', { status: 200, headers });
+  }
+  if (request.method === 'POST') {
+    let body;
+    try { body = await request.json(); } catch { body = null; }
+    if (!Array.isArray(body)) {
+      return new Response(JSON.stringify({ error: { message: 'Body must be an array of trip metadata' } }), { status: 400, headers });
+    }
+    const clean = body.slice(0, 50);  // cap at 50 trips
+    const cleanStr = JSON.stringify(clean);
+    if (cleanStr.length > 32 * 1024) {
+      return new Response(JSON.stringify({ error: { message: 'trips index exceeds 32 KB' } }), { status: 413, headers });
+    }
+    if (env.TRIP_STATE) await env.TRIP_STATE.put(TRIPS_INDEX_KEY, cleanStr);
     return new Response(JSON.stringify({ ok: true, stored: !!env.TRIP_STATE }), { status: 200, headers });
   }
   return new Response(JSON.stringify({ error: { message: 'Method not allowed' } }), { status: 405, headers });
@@ -96,11 +131,16 @@ export default {
       );
     }
 
-    // Shared trip state (saved/hidden pins) — persisted in KV so all devices
-    // sharing this trip see the same map. Single shared bucket; this is a
-    // private 4-person trip app, not multi-tenant.
+    // Per-trip state (saved/hidden pins + brief) — persisted in KV so all
+    // devices viewing the same trip see the same map. ?trip=<slug> selects
+    // which trip; slug 'nyc-may-2026' (or no slug) maps to the legacy 'shared'
+    // key for backward compatibility.
     if (url.pathname === '/state' || url.pathname === '/state/') {
       return handleState(request, env, baseHeaders);
+    }
+    // Trip index — list of trips the homepage shows.
+    if (url.pathname === '/trips' || url.pathname === '/trips/') {
+      return handleTrips(request, env, baseHeaders);
     }
 
     // Health check — GET returns whether secrets are configured.
