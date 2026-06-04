@@ -1296,6 +1296,11 @@
     background: var(--bg);
   }
   body.home-view .chat-toggle { display: none; }
+  .home-header {
+    display: flex; align-items: flex-start; gap: 24px;
+    margin-bottom: 36px;
+  }
+  .home-header-text { flex: 1; min-width: 0; }
   .home-eyebrow {
     font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.16em;
     color: var(--ink-3); font-weight: 600;
@@ -1306,7 +1311,7 @@
     color: var(--ink); margin: 10px 0 8px; letter-spacing: -0.025em;
   }
   .home-sub {
-    font-size: 15px; color: var(--ink-2); margin: 0 0 36px; max-width: 540px;
+    font-size: 15px; color: var(--ink-2); margin: 0; max-width: 540px;
   }
   .home-section-h {
     font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.14em;
@@ -1358,15 +1363,29 @@
   .home-card-badge.past { color: var(--ink-4); }
   .home-card-badge.upcoming { color: var(--brand, #0F6CBD); border-color: var(--brand, #0F6CBD); }
   .home-card-badge.in-progress { color: var(--cat-saved); border-color: var(--cat-saved); }
-  .home-new-row { margin-top: 36px; }
   .home-new-btn {
+    flex: none; align-self: center; margin-top: 8px;
     background: var(--ink); color: #fff; border: 1px solid var(--ink);
-    border-radius: 999px; padding: 12px 24px; cursor: pointer;
-    font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em;
+    border-radius: 999px; padding: 10px 22px; cursor: pointer;
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em;
     text-transform: uppercase; font-weight: 600;
     transition: background .15s, transform .15s;
+    -webkit-tap-highlight-color: transparent;
   }
   .home-new-btn:hover { background: var(--ink-2); transform: translateY(-1px); }
+
+  /* Trip view: "← Trips" back link in the hero section */
+  .trip-back-link {
+    display: inline-flex; align-items: center;
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-3);
+    text-decoration: none; padding: 4px 10px; margin-bottom: 14px;
+    background: transparent; border: 1px solid var(--rule); border-radius: 999px;
+    transition: color .15s, border-color .15s, background .15s;
+    -webkit-tap-highlight-color: transparent;
+    align-self: flex-start;
+  }
+  .trip-back-link:hover { color: var(--ink); border-color: var(--ink-3); background: var(--panel); }
   .home-empty {
     grid-column: 1 / -1; text-align: center; padding: 24px 0;
     font-family: var(--mono); font-size: 12px; color: var(--ink-4); font-style: italic;
@@ -1447,6 +1466,8 @@
 
   @media (max-width: 760px) {
     body.home-view .home-container { padding: 36px 20px 80px; }
+    .home-header { flex-direction: column; gap: 12px; margin-bottom: 28px; }
+    .home-new-btn { align-self: flex-start; margin-top: 0; }
     .home-title { font-size: 42px; }
     .home-sub { font-size: 14px; }
     .newtrip-body { padding: 20px 16px 80px; }
@@ -1859,9 +1880,12 @@
 <!-- ========= HOME VIEW (trip list dashboard) ========= -->
 <main class="home-container" id="homeContainer">
   <header class="home-header">
-    <div class="home-eyebrow">TRIP PLAN</div>
-    <h1 class="home-title">Your trips</h1>
-    <p class="home-sub">Pick a trip to open, or start a new one.</p>
+    <div class="home-header-text">
+      <div class="home-eyebrow">TRIP PLAN</div>
+      <h1 class="home-title">Your trips</h1>
+      <p class="home-sub">Pick a trip to open, or start a new one.</p>
+    </div>
+    <button type="button" class="home-new-btn" id="homeNewTripBtn" aria-label="Start a new trip">+ New trip</button>
   </header>
   <section class="home-section" id="homeUpcoming">
     <h2 class="home-section-h">Upcoming &amp; in progress</h2>
@@ -1871,9 +1895,6 @@
     <h2 class="home-section-h">Past</h2>
     <div class="home-grid" id="homePastGrid"></div>
   </section>
-  <div class="home-new-row">
-    <button type="button" class="home-new-btn" id="homeNewTripBtn">+ New trip</button>
-  </div>
 </main>
 
 <!-- ========= NEW TRIP MODAL ========= -->
@@ -1923,6 +1944,7 @@
 <div class="app">
 
   <section class="hero">
+    <a href="?" class="trip-back-link" id="tripBackLink" aria-label="Back to all trips">← Trips</a>
     <div class="meta-row">
       <span>An Itinerary</span>
       <span>May 28—31, 2026</span>
